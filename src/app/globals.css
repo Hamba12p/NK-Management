@@ -1,10 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* NK Udada Color Palette */
+  --ink: #0A0A0A;
+  --cream: #FEFEFE;
+  --warm: #FFF0F8;
+  --gold: #EA519D;
+  --gold-lt: #F5A0C5;
+  --purple: #8B2C6B;
+  --purple-lt: #C46AA6;
+  --green: #3A3A3A;
+  --green-lt: #6B6B6B;
+  --rust: #B84C1A;
+  --text: #0A0A0A;
+  --muted: #5F5F5F;
+  --border: #E9DFE6;
+  --background: #FEFEFE;
+  --foreground: #0A0A0A;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -14,14 +30,109 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'DM Sans', sans-serif;
 }
 
 @layer utilities {
   .text-balance {
-    text-wrap: balance;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Typography */
+  .serif-display {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+  }
+  
+  .serif-italic {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+  }
+  
+  /* Colors */
+  .text-gold {
+    color: var(--gold);
+  }
+  
+  .text-purple {
+    color: var(--purple);
+  }
+  
+  .bg-gold {
+    background-color: var(--gold);
+  }
+  
+  .bg-purple {
+    background-color: var(--purple);
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--purple);
+    color: white;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 150ms;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--purple-lt);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    color: var(--ink);
+    border: 2px solid var(--border);
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 150ms;
+  }
+  
+  .btn-secondary:hover {
+    border-color: var(--ink);
+    transform: translateY(-2px);
+  }
+  
+  /* Cards */
+  .card {
+    background-color: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    transition: box-shadow 150ms;
+  }
+  
+  .card:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   }
 }

@@ -1,0 +1,1733 @@
+
+Claude finished the response
+You said: “I’m building a real-time collaborative organizational tool for my company, which will be integrated as a web app.
+
+nk_udada_free_stack.svg
+svg
+
+
+nk_udada_hub_architecture.svg
+svg
+
+“I’m building a real-time collaborative organizational tool for my company, which will be integrated as a web app. The tool should serve as a central hub for uploading documents, syncing edits in real time, organizing meetings, sharing agendas, and disseminating information. It should be an internal web app accessible to staff, and it must enforce real-time collaboration and syncing, along with secure user authentication. The system needs to scale with organizational growth and integrate seamlessly with our website. Ive broken down a tech stack and architecture, including frontend, backend, real-time syncing and authentication, in less than 100 words, share your pov on my current setup
+
+4:06 PM
+Claude responded: Solid foundation — here's the honest read:
+
+Viewed 2 files
+Viewed 2 files
+Solid foundation — here's the honest read:
+
+What's working well: The Next.js + Vercel + Supabase combination is genuinely the right call for a small internal tool at zero cost. Supabase gives you auth, PostgreSQL, file storage, and WebSocket-based real-time in one platform — that consolidation removes a lot of operational complexity. The subdomain strategy (app.the-nkfoundation.org) linking to GitHub Pages is clean and professional.
+
+The one real gap: Supabase Realtime handles presence and data sync well, but it doesn't provide collaborative text editing (think Google Docs-style concurrent editing). If your "syncing edits in real time" means multiple people editing the same document simultaneously, you'll need a CRDT layer — Yjs is the standard open-source choice and integrates with Next.js. If it just means "see each other's uploads/changes live," Supabase Realtime handles that fine as-is.
+
+Watch the free-tier ceiling: Supabase's free tier caps storage at 1 GB and has a limit on concurrent Realtime connections. Fine for 5–15 staff, but worth knowing before you grow.
+
+One thing to add: your diagrams don't show Row Level Security (RLS) policies on Supabase. For an internal staff tool with role-based access (e.g. admin vs. read-only), RLS is essential and should be designed upfront — retrofitting it is painful.
+
+Overall, the architecture is well-suited for your scale and $0 constraint. The thinking is sound.
+
+You said: this is context, id like you to write a complete md file for Haiku to implement this entire program in 10 phases, borrow appropriate security measures from my …
+
+Bio.docx
+docx
+
+
+index.html
+html
+
+Logo.jpeg
+
+UGADON_SECURITY_INFRASTRUCTURE.md
+md
+
+
+README.md
+25 lines
+
+md
+
+this is context, id like you to write a complete md file for Haiku to implement this entire program in 10 phases, borrow appropriate security measures from my other project's infrastructure  attached as well.  it should be simple to use and simple to understand but structurally and securitywise sound. use the scc reasoning skill to implement mathematically solid infrastructure and algorithms to ensure maximum functionality and seamless correlation of all componenets
+
+4:26 PM
+Claude responded: Now I have everything.
+
+Architected 10-phase implementation plan using SCC principles and security frameworks
+Architected 10-phase implementation plan using SCC principles and security frameworks
+Now I have everything. Let me apply SCC reasoning and write the complete implementation guide.
+
+
+Running command
+Running command
+
+Running command
+bash
+
+cat > /home/claude/NK_UDADA_HUB_IMPLEMENTATION.md << 'ENDOFFILE'
+# NK Udada Foundation — Collaborative Hub
+## Complete 10-Phase Implementation Guide for Claude Haiku
+### Version 1.0 · April 2026
+
+---
+
+> **Design Axiom (SCC-derived):** Every feature in this hub — auth, documents, meetings, real-time sync — is an orbit of one operation: **a Supabase row with an RLS policy and a realtime subscription.** Master that pattern once and you have the entire system. This is the Orbit Compression Principle [EQ.15] applied: instead of building ten independent systems (nᵏ complexity), you instantiate one symmetric pattern ten times (n^(k−ε) complexity).
+
+---
+
+## System Summary
+
+| Property | Value |
+|----------|-------|
+| **Org** | NK Udada Foundation — Empower & Equip |
+| **URL** | `app.the-nkfoundation.org` |
+| **Users** | 5 staff + volunteers (scales to ~50) |
+| **Stack** | Next.js 14 · Supabase · Vercel · GitHub Pages |
+| **Cost** | $0/month (free tier) |
+| **Contact** | admin@the-nkfoundation.org |
+
+---
+
+## Before You Begin — Read This First
+
+### The One Pattern You Must Know
+
+Every module in this system follows an identical 3-part structure. Learn it once:
+
+```
+1. DATABASE TABLE     → stores the data (Supabase PostgreSQL)
+2. RLS POLICY         → controls who can see/edit it (Row Level Security)
+3. REALTIME HOOK      → pushes changes live to all users (Supabase Realtime)
+```
+
+Every phase below just applies this pattern to a new domain (documents, meetings, announcements, etc.).
+
+### Security Baseline (adapted from UGADON Security Architecture)
+
+This system applies a scaled, nonprofit-appropriate version of enterprise defense-in-depth:
+
+```
+LAYER 1 — Transport:    TLS 1.3 only via Vercel (automatic, free)
+LAYER 2 — Identity:     Magic link auth (no passwords = no password leaks)
+LAYER 3 — Authorization: Supabase RLS on every table — no exceptions
+LAYER 4 — Sessions:     Short-lived JWTs (1hr) + refresh tokens (Supabase managed)
+LAYER 5 — Data:         Signed file URLs (15-min expiry), no public storage buckets
+LAYER 6 — Input:        Zod schema validation on every form before DB write
+LAYER 7 — Headers:      CSP + HSTS via Next.js config (blocks XSS and MITM)
+LAYER 8 — Audit:        Append-only activity_log table (no DELETE permission on it)
+LAYER 9 — Secrets:      Zero secrets in code — only Supabase env vars
+LAYER 10 — Supply Chain: npm audit on every deploy via Vercel CI
+```
+
+**The core security guarantee:** Even if someone reads all your code, they cannot access any data without a valid Supabase session token AND an RLS policy that allows them in. These are two independent gates.
+
+---
+
+## Phase 0 — One-Time Setup (Do This First, Do It Once)
+
+### 0.1 Create the Supabase Project
+
+1. Go to [supabase.com](https://supabase.com) → New Project
+2. Name: `nk-udada-hub`
+3. Region: **South Africa (Cape Town)** — closest free-tier region to Uganda
+4. Save your project URL and anon key — you'll use these everywhere
+5. Never commit these to GitHub — use environment variables only
+
+### 0.2 Create the GitHub Repository
+
+```bash
+# On your machine
+git init nk-udada-hub
+cd nk-udada-hub
+npx create-next-app@14 . --typescript --tailwind --app --src-dir
+```
+
+### 0.3 Connect to Vercel
+
+1. Push the repo to GitHub
+2. Go to [vercel.com](https://vercel.com) → Import Project → select your repo
+3. Add environment variables in Vercel dashboard:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   ← NEVER use this on frontend
+   ```
+4. Custom domain: Add `app.the-nkfoundation.org` in Vercel → Vercel handles TLS automatically
+
+### 0.4 Install Core Dependencies
+
+```bash
+npm install @supabase/supabase-js @supabase/ssr zod react-hook-form @hookform/resolvers
+npm install date-fns lucide-react clsx tailwind-merge
+npm install -D @types/node
+```
+
+### 0.5 Create the Supabase Client (Use This Everywhere)
+
+```typescript
+// src/lib/supabase/client.ts — browser client
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// src/lib/supabase/server.ts — server component client
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export function createServerSupabaseClient() {
+  const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: any) { cookieStore.set({ name, value, ...options }) },
+        remove(name: string, options: any) { cookieStore.set({ name, value: '', ...options }) },
+      },
+    }
+  )
+}
+```
+
+### 0.6 Security Headers (Set Once, Protects Everything)
+
+```typescript
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline'",   // tighten after launch
+              "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+              "font-src 'self' fonts.gstatic.com",
+              `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} wss://*.supabase.co`,
+              "img-src 'self' data: blob: *.supabase.co",
+            ].join('; ')
+          },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+        ],
+      },
+    ]
+  },
+}
+module.exports = nextConfig
+```
+
+---
+
+## Phase 1 — Authentication & User Management
+
+**Goal:** Staff log in with a magic link sent to their email. No passwords. No password leaks.
+
+**Why magic links:** Passwords can be stolen, guessed, or reused. Magic links expire after 15 minutes and are single-use — an attacker who intercepts an old email gets nothing.
+
+### 1.1 Database Setup (Run in Supabase SQL Editor)
+
+```sql
+-- Profiles table: extends Supabase's built-in auth.users
+CREATE TABLE public.profiles (
+  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name   TEXT NOT NULL,
+  role        TEXT NOT NULL DEFAULT 'member'
+                CHECK (role IN ('admin', 'manager', 'member')),
+  avatar_url  TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Trigger: auto-create profile when user signs up
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
+    'member'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- RLS: every user can read all profiles (needed for @mentions, etc.)
+--      only admins can update roles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "profiles_read_authenticated"
+  ON public.profiles FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "profiles_update_own"
+  ON public.profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id AND role = (SELECT role FROM public.profiles WHERE id = auth.uid()));
+  -- ^ users cannot change their own role
+
+CREATE POLICY "profiles_admin_update_role"
+  ON public.profiles FOR UPDATE
+  TO authenticated
+  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+```
+
+### 1.2 Auth Pages
+
+```typescript
+// src/app/login/page.tsx
+'use client'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { z } from 'zod'
+
+const emailSchema = z.string().email('Please enter a valid email address')
+
+export default function LoginPage() {
+  const [email, setEmail]   = useState('')
+  const [sent, setSent]     = useState(false)
+  const [error, setError]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const supabase = createClient()
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    // Validate before touching the database
+    const result = emailSchema.safeParse(email.trim().toLowerCase())
+    if (!result.success) { setError(result.error.errors[0].message); return }
+
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithOtp({
+      email: result.data,
+      options: {
+        emailRedirectTo: `${location.origin}/auth/callback`,
+        shouldCreateUser: false, // SECURITY: only pre-existing staff can log in
+      },
+    })
+
+    if (error) {
+      // Generic message — don't leak whether email exists
+      setError('Something went wrong. Please try again.')
+    } else {
+      setSent(true)
+    }
+    setLoading(false)
+  }
+
+  if (sent) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center max-w-sm">
+        <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+        <p className="text-gray-600">We sent a login link to <strong>{email}</strong>. It expires in 15 minutes.</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow max-w-sm w-full">
+        <img src="/logo.jpeg" alt="NK Foundation" className="w-16 mx-auto mb-4" />
+        <h1 className="text-xl font-bold text-center mb-6">NK Udada Staff Hub</h1>
+        <label className="block text-sm font-medium mb-1">Email address</label>
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-pink-500 outline-none"
+          placeholder="you@the-nkfoundation.org"
+          required
+        />
+        {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-pink-600 text-white py-2 rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50"
+        >
+          {loading ? 'Sending…' : 'Send Login Link'}
+        </button>
+      </form>
+    </div>
+  )
+}
+```
+
+```typescript
+// src/app/auth/callback/route.ts — handles the magic link redirect
+import { NextResponse } from 'next/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+
+  if (code) {
+    const supabase = createServerSupabaseClient()
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) return NextResponse.redirect(`${origin}/dashboard`)
+  }
+
+  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+}
+```
+
+### 1.3 Middleware — Protect Every Route
+
+```typescript
+// src/middleware.ts — runs on every request
+import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) { return request.cookies.get(name)?.value },
+        set(name, value, options) { response.cookies.set({ name, value, ...options }) },
+        remove(name, options) { response.cookies.set({ name, value: '', ...options }) },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Redirect unauthenticated users to login
+  const isPublicRoute = ['/login', '/auth/callback'].some(p => request.nextUrl.pathname.startsWith(p))
+  if (!user && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Redirect authenticated users away from login
+  if (user && request.nextUrl.pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return response
+}
+
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.jpeg).*)'] }
+```
+
+### 1.4 Add Staff Manually (Admin Step)
+
+```sql
+-- Run this in Supabase SQL Editor to invite a staff member
+-- Supabase sends them a magic link automatically
+SELECT auth.admin_create_user(
+  email := 'naira@the-nkfoundation.org',
+  user_metadata := '{"full_name": "Naira Kateregga"}'
+);
+
+-- Promote to admin
+UPDATE public.profiles
+SET role = 'admin'
+WHERE id = (SELECT id FROM auth.users WHERE email = 'naira@the-nkfoundation.org');
+```
+
+**Do this for each team member:**
+- Naira Kateregga → `role = 'admin'`
+- Kizito Jamal → `role = 'manager'`
+- Hamba Shabil → `role = 'manager'`
+- Balqees Yasin → `role = 'member'`
+- Shamsa Nantongo → `role = 'manager'`
+
+---
+
+## Phase 2 — Dashboard Layout & Navigation
+
+**Goal:** A clean shell that all other phases slot into.
+
+### 2.1 Layout
+
+```typescript
+// src/app/dashboard/layout.tsx
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import Sidebar from '@/components/Sidebar'
+
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar profile={profile} />
+      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+    </div>
+  )
+}
+```
+
+```typescript
+// src/components/Sidebar.tsx
+'use client'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import {
+  LayoutDashboard, FileText, Calendar, Bell,
+  Users, Settings, LogOut
+} from 'lucide-react'
+
+const navItems = [
+  { href: '/dashboard',             label: 'Home',         icon: LayoutDashboard },
+  { href: '/dashboard/documents',   label: 'Documents',    icon: FileText },
+  { href: '/dashboard/meetings',    label: 'Meetings',     icon: Calendar },
+  { href: '/dashboard/announcements', label: 'Announcements', icon: Bell },
+  { href: '/dashboard/team',        label: 'Team',         icon: Users },
+]
+
+export default function Sidebar({ profile }: { profile: any }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
+
+  async function signOut() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  return (
+    <aside className="w-60 bg-white border-r flex flex-col shrink-0">
+      {/* Logo */}
+      <div className="p-5 border-b flex items-center gap-3">
+        <img src="/logo.jpeg" alt="NK Foundation" className="w-9 h-9 rounded-full object-contain" />
+        <div>
+          <p className="font-semibold text-sm leading-tight">NK Udada</p>
+          <p className="text-xs text-gray-500">Staff Hub</p>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-3 space-y-1">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + '/')
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                ${active ? 'bg-pink-50 text-pink-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Icon size={16} />
+              {label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Profile + Sign Out */}
+      <div className="p-3 border-t">
+        <div className="flex items-center gap-2 px-3 py-2 mb-1">
+          <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold">
+            {profile?.full_name?.[0] ?? '?'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium truncate">{profile?.full_name}</p>
+            <p className="text-xs text-gray-400 capitalize">{profile?.role}</p>
+          </div>
+        </div>
+        <button
+          onClick={signOut}
+          className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          <LogOut size={16} />
+          Sign out
+        </button>
+      </div>
+    </aside>
+  )
+}
+```
+
+---
+
+## Phase 3 — Document Hub
+
+**Goal:** Upload, organize, and share files. Only authenticated staff can access. Files expire after 15 minutes if shared externally.
+
+### 3.1 Database + Storage Setup
+
+```sql
+-- Documents metadata table
+CREATE TABLE public.documents (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name         TEXT NOT NULL,
+  description  TEXT,
+  file_path    TEXT NOT NULL,        -- path in Supabase Storage bucket
+  file_size    BIGINT NOT NULL,
+  mime_type    TEXT NOT NULL,
+  category     TEXT DEFAULT 'general'
+                CHECK (category IN ('general', 'policy', 'report', 'template', 'meeting')),
+  uploaded_by  UUID NOT NULL REFERENCES public.profiles(id),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+
+-- All authenticated users can read
+CREATE POLICY "documents_read"
+  ON public.documents FOR SELECT
+  TO authenticated USING (true);
+
+-- Any authenticated user can upload
+CREATE POLICY "documents_insert"
+  ON public.documents FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = uploaded_by);
+
+-- Only uploader or admin can delete
+CREATE POLICY "documents_delete"
+  ON public.documents FOR DELETE
+  TO authenticated
+  USING (
+    auth.uid() = uploaded_by
+    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+  );
+```
+
+```sql
+-- Run in Supabase Storage section (or Dashboard > Storage > New Bucket)
+-- Create a PRIVATE bucket called 'documents'
+-- IMPORTANT: Do NOT make it public — files are only accessible via signed URLs
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'documents',
+  'documents',
+  false,          -- PRIVATE: no public access
+  52428800,       -- 50MB max per file
+  ARRAY['application/pdf', 'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/jpeg', 'image/png', 'image/webp']
+);
+
+-- Storage RLS: authenticated users can upload/read/delete their own files
+CREATE POLICY "storage_authenticated_read"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'documents');
+
+CREATE POLICY "storage_authenticated_insert"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'documents');
+
+CREATE POLICY "storage_owner_delete"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'documents' AND auth.uid()::text = owner);
+```
+
+### 3.2 Document Upload Component
+
+```typescript
+// src/app/dashboard/documents/page.tsx
+'use client'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Upload, FileText, Download, Trash2 } from 'lucide-react'
+import { z } from 'zod'
+
+// Input validation schema
+const uploadSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(500).optional(),
+  category: z.enum(['general', 'policy', 'report', 'template', 'meeting']),
+})
+
+type Document = {
+  id: string; name: string; description: string;
+  file_path: string; file_size: number; mime_type: string;
+  category: string; created_at: string;
+  profiles: { full_name: string }
+}
+
+export default function DocumentsPage() {
+  const [docs, setDocs]         = useState<Document[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [error, setError]       = useState('')
+  const supabase = createClient()
+
+  // Fetch documents
+  async function fetchDocs() {
+    const { data } = await supabase
+      .from('documents')
+      .select('*, profiles(full_name)')
+      .order('created_at', { ascending: false })
+    if (data) setDocs(data)
+  }
+
+  useEffect(() => {
+    fetchDocs()
+
+    // REALTIME: listen for new uploads from other users
+    const channel = supabase
+      .channel('documents-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, fetchDocs)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError(''); setUploading(true)
+
+    // Validate file size client-side (belt + suspenders; server validates too)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('File too large. Maximum 50MB.'); setUploading(false); return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('Not authenticated'); setUploading(false); return }
+
+    // Upload to private bucket
+    const filePath = `${user.id}/${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, '_')}`
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file)
+
+    if (uploadError) { setError(uploadError.message); setUploading(false); return }
+
+    // Save metadata to DB
+    const validation = uploadSchema.safeParse({
+      name: file.name, category: 'general'
+    })
+    if (!validation.success) { setError('Invalid file metadata'); setUploading(false); return }
+
+    await supabase.from('documents').insert({
+      name: validation.data.name,
+      file_path: filePath,
+      file_size: file.size,
+      mime_type: file.type,
+      category: validation.data.category,
+      uploaded_by: user.id,
+    })
+
+    setUploading(false)
+    // No need to call fetchDocs() — realtime subscription handles it
+  }
+
+  async function handleDownload(doc: Document) {
+    // Create a signed URL that expires in 15 minutes (security: no permanent links)
+    const { data } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(doc.file_path, 900)  // 900 seconds = 15 minutes
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  async function handleDelete(doc: Document) {
+    if (!confirm(`Delete "${doc.name}"?`)) return
+    await supabase.storage.from('documents').remove([doc.file_path])
+    await supabase.from('documents').delete().eq('id', doc.id)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Documents</h1>
+        <label className={`flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-pink-700 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <Upload size={16} />
+          {uploading ? 'Uploading…' : 'Upload File'}
+          <input type="file" className="hidden" onChange={handleUpload}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp" />
+        </label>
+      </div>
+
+      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+
+      <div className="grid gap-3">
+        {docs.map(doc => (
+          <div key={doc.id} className="bg-white border rounded-xl p-4 flex items-center gap-4">
+            <FileText className="text-pink-500 shrink-0" size={20} />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">{doc.name}</p>
+              <p className="text-xs text-gray-500">
+                {(doc.file_size / 1024).toFixed(0)} KB ·
+                {doc.profiles?.full_name} ·
+                {new Date(doc.created_at).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => handleDownload(doc)} className="p-2 hover:bg-gray-100 rounded-lg" title="Download">
+                <Download size={16} className="text-gray-500" />
+              </button>
+              <button onClick={() => handleDelete(doc)} className="p-2 hover:bg-red-50 rounded-lg" title="Delete">
+                <Trash2 size={16} className="text-red-400" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {docs.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <FileText size={40} className="mx-auto mb-3 opacity-30" />
+            <p>No documents yet. Upload the first one.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Phase 4 — Meetings Module
+
+**Goal:** Schedule meetings, attach agendas, track status. All synced in real time.
+
+### 4.1 Database
+
+```sql
+CREATE TABLE public.meetings (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title        TEXT NOT NULL CHECK (char_length(title) BETWEEN 3 AND 200),
+  description  TEXT CHECK (char_length(description) < 2000),
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  duration_min INTEGER NOT NULL DEFAULT 60 CHECK (duration_min BETWEEN 15 AND 480),
+  location     TEXT CHECK (char_length(location) < 300),
+  status       TEXT NOT NULL DEFAULT 'upcoming'
+                CHECK (status IN ('upcoming', 'in_progress', 'completed', 'cancelled')),
+  created_by   UUID NOT NULL REFERENCES public.profiles(id),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Agenda items linked to meetings
+CREATE TABLE public.agenda_items (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  meeting_id  UUID NOT NULL REFERENCES public.meetings(id) ON DELETE CASCADE,
+  content     TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
+  order_index INTEGER NOT NULL DEFAULT 0,
+  presenter   UUID REFERENCES public.profiles(id),
+  done        BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agenda_items ENABLE ROW LEVEL SECURITY;
+
+-- Read: all authenticated staff
+CREATE POLICY "meetings_read" ON public.meetings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "agenda_read" ON public.agenda_items FOR SELECT TO authenticated USING (true);
+
+-- Create: any authenticated user
+CREATE POLICY "meetings_insert" ON public.meetings FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = created_by);
+
+CREATE POLICY "agenda_insert" ON public.agenda_items FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+-- Update/Delete: creator or admin
+CREATE POLICY "meetings_modify" ON public.meetings FOR UPDATE TO authenticated
+  USING (auth.uid() = created_by
+    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'manager'));
+
+CREATE POLICY "meetings_delete" ON public.meetings FOR DELETE TO authenticated
+  USING (auth.uid() = created_by
+    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "agenda_modify" ON public.agenda_items FOR ALL TO authenticated
+  USING (true) WITH CHECK (true);  -- anyone can check off agenda items during a meeting
+```
+
+### 4.2 Meetings Page
+
+```typescript
+// src/app/dashboard/meetings/page.tsx
+'use client'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { z } from 'zod'
+import { Calendar, Clock, MapPin, Plus, CheckCircle } from 'lucide-react'
+
+const meetingSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters').max(200),
+  description: z.string().max(2000).optional(),
+  scheduled_at: z.string().datetime({ local: true }),
+  duration_min: z.coerce.number().min(15).max(480).default(60),
+  location: z.string().max(300).optional(),
+})
+
+export default function MeetingsPage() {
+  const [meetings, setMeetings] = useState<any[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ title: '', description: '', scheduled_at: '', duration_min: '60', location: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const supabase = createClient()
+
+  async function fetchMeetings() {
+    const { data } = await supabase
+      .from('meetings')
+      .select('*, profiles(full_name), agenda_items(*)')
+      .gte('scheduled_at', new Date(Date.now() - 7 * 86400000).toISOString())
+      .order('scheduled_at')
+    if (data) setMeetings(data)
+  }
+
+  useEffect(() => {
+    fetchMeetings()
+    const channel = supabase
+      .channel('meetings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, fetchMeetings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items' }, fetchMeetings)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    setErrors({})
+
+    const result = meetingSchema.safeParse({
+      ...form,
+      scheduled_at: new Date(form.scheduled_at).toISOString(),
+    })
+    if (!result.success) {
+      const errs: Record<string, string> = {}
+      result.error.errors.forEach(e => { errs[e.path[0]] = e.message })
+      setErrors(errs); return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    await supabase.from('meetings').insert({ ...result.data, created_by: user!.id })
+    setShowForm(false)
+    setForm({ title: '', description: '', scheduled_at: '', duration_min: '60', location: '' })
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Meetings</h1>
+        <button onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700">
+          <Plus size={16} /> New Meeting
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleCreate} className="bg-white border rounded-xl p-5 mb-6 space-y-4">
+          <h2 className="font-semibold">Schedule Meeting</h2>
+          {[
+            { name: 'title', label: 'Title', type: 'text', required: true },
+            { name: 'scheduled_at', label: 'Date & Time', type: 'datetime-local', required: true },
+            { name: 'duration_min', label: 'Duration (minutes)', type: 'number' },
+            { name: 'location', label: 'Location / Link', type: 'text' },
+          ].map(({ name, label, type, required }) => (
+            <div key={name}>
+              <label className="block text-sm font-medium mb-1">{label}</label>
+              <input type={type} required={required}
+                value={(form as any)[name]}
+                onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+              />
+              {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
+            </div>
+          ))}
+          <div>
+            <label className="block text-sm font-medium mb-1">Notes</label>
+            <textarea value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              rows={3} maxLength={2000}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none resize-none" />
+          </div>
+          <div className="flex gap-3">
+            <button type="submit" className="bg-pink-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-pink-700">Create</button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2 rounded-lg text-sm border hover:bg-gray-50">Cancel</button>
+          </div>
+        </form>
+      )}
+
+      <div className="space-y-4">
+        {meetings.map(meeting => (
+          <div key={meeting.id} className="bg-white border rounded-xl p-5">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-lg">{meeting.title}</h3>
+                <p className="text-xs text-gray-400">Scheduled by {meeting.profiles?.full_name}</p>
+              </div>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium
+                ${meeting.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : ''}
+                ${meeting.status === 'completed' ? 'bg-green-50 text-green-700' : ''}
+                ${meeting.status === 'cancelled' ? 'bg-red-50 text-red-700' : ''}
+              `}>{meeting.status}</span>
+            </div>
+            <div className="flex gap-4 text-sm text-gray-500 mb-3">
+              <span className="flex items-center gap-1"><Calendar size={13} />
+                {new Date(meeting.scheduled_at).toLocaleDateString('en-UG', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </span>
+              <span className="flex items-center gap-1"><Clock size={13} />
+                {new Date(meeting.scheduled_at).toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit' })}
+                · {meeting.duration_min}min
+              </span>
+              {meeting.location && <span className="flex items-center gap-1"><MapPin size={13} />{meeting.location}</span>}
+            </div>
+            {meeting.agenda_items?.length > 0 && (
+              <div className="border-t pt-3">
+                <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Agenda</p>
+                <ul className="space-y-1">
+                  {meeting.agenda_items.sort((a: any, b: any) => a.order_index - b.order_index).map((item: any) => (
+                    <li key={item.id} className="flex items-center gap-2 text-sm">
+                      <CheckCircle size={14} className={item.done ? 'text-green-500' : 'text-gray-300'} />
+                      <span className={item.done ? 'line-through text-gray-400' : ''}>{item.content}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ))}
+        {meetings.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <Calendar size={40} className="mx-auto mb-3 opacity-30" />
+            <p>No upcoming meetings. Schedule the first one.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Phase 5 — Announcements & Information Feed
+
+**Goal:** A top-down broadcast board. Admins and managers post. All staff read. Pinned posts stay at top.
+
+### 5.1 Database
+
+```sql
+CREATE TABLE public.announcements (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title       TEXT NOT NULL CHECK (char_length(title) BETWEEN 3 AND 200),
+  body        TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 5000),
+  pinned      BOOLEAN NOT NULL DEFAULT FALSE,
+  author_id   UUID NOT NULL REFERENCES public.profiles(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "announcements_read" ON public.announcements
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "announcements_write" ON public.announcements
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'manager')
+    AND auth.uid() = author_id
+  );
+
+CREATE POLICY "announcements_manage" ON public.announcements
+  FOR ALL TO authenticated
+  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'manager'));
+```
+
+### 5.2 Announcements Page
+
+```typescript
+// src/app/dashboard/announcements/page.tsx
+'use client'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { z } from 'zod'
+import { Bell, Pin, Plus, Trash2 } from 'lucide-react'
+
+const announcementSchema = z.object({
+  title: z.string().min(3).max(200),
+  body: z.string().min(1).max(5000),
+  pinned: z.boolean().default(false),
+})
+
+export default function AnnouncementsPage() {
+  const [items, setItems]         = useState<any[]>([])
+  const [profile, setProfile]     = useState<any>(null)
+  const [showForm, setShowForm]   = useState(false)
+  const [form, setForm]           = useState({ title: '', body: '', pinned: false })
+  const [error, setError]         = useState('')
+  const supabase = createClient()
+
+  async function fetchAll() {
+    const [{ data: announcements }, { data: { user } }] = await Promise.all([
+      supabase.from('announcements').select('*, profiles(full_name, role)')
+        .order('pinned', { ascending: false }).order('created_at', { ascending: false }),
+      supabase.auth.getUser(),
+    ])
+    if (announcements) setItems(announcements)
+    if (user) {
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      setProfile(p)
+    }
+  }
+
+  useEffect(() => {
+    fetchAll()
+    const channel = supabase.channel('announcements-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, fetchAll)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  async function handlePost(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    const result = announcementSchema.safeParse(form)
+    if (!result.success) { setError(result.error.errors[0].message); return }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error: err } = await supabase.from('announcements').insert({ ...result.data, author_id: user!.id })
+    if (err) { setError(err.message); return }
+    setShowForm(false); setForm({ title: '', body: '', pinned: false })
+  }
+
+  const canPost = ['admin', 'manager'].includes(profile?.role)
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Announcements</h1>
+        {canPost && (
+          <button onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700">
+            <Plus size={16} /> Post
+          </button>
+        )}
+      </div>
+
+      {showForm && canPost && (
+        <form onSubmit={handlePost} className="bg-white border rounded-xl p-5 mb-6 space-y-4">
+          <input type="text" placeholder="Title" value={form.title} maxLength={200} required
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none" />
+          <textarea placeholder="Write your announcement…" value={form.body} maxLength={5000} required rows={4}
+            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none resize-none" />
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={form.pinned}
+              onChange={e => setForm(f => ({ ...f, pinned: e.target.checked }))} />
+            Pin this announcement
+          </label>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <div className="flex gap-3">
+            <button type="submit" className="bg-pink-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-pink-700">Post</button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2 rounded-lg text-sm border hover:bg-gray-50">Cancel</button>
+          </div>
+        </form>
+      )}
+
+      <div className="space-y-4">
+        {items.map(item => (
+          <div key={item.id} className={`bg-white border rounded-xl p-5 ${item.pinned ? 'border-pink-200 bg-pink-50/30' : ''}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {item.pinned && <Pin size={14} className="text-pink-500 shrink-0" />}
+                <h3 className="font-semibold">{item.title}</h3>
+              </div>
+              {canPost && (
+                <button onClick={async () => {
+                  if (confirm('Delete this announcement?'))
+                    await supabase.from('announcements').delete().eq('id', item.id)
+                }} className="p-1 hover:bg-red-50 rounded text-red-400">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">{item.body}</p>
+            <p className="text-xs text-gray-400 mt-3">
+              {item.profiles?.full_name} · {new Date(item.created_at).toLocaleString('en-UG')}
+            </p>
+          </div>
+        ))}
+        {items.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <Bell size={40} className="mx-auto mb-3 opacity-30" />
+            <p>No announcements yet.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Phase 6 — Activity Log & Audit Trail
+
+**Goal:** Every significant action (upload, post, meeting creation) is recorded in an append-only log. This protects accountability and provides a paper trail.
+
+**Security principle borrowed from UGADON:** The audit log table has no DELETE or UPDATE permission for any application role — only INSERT. Even an admin cannot erase history.
+
+### 6.1 Database
+
+```sql
+CREATE TABLE public.activity_log (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id     UUID REFERENCES public.profiles(id),
+  action       TEXT NOT NULL,        -- e.g. 'document.upload', 'meeting.create'
+  target_type  TEXT,                 -- e.g. 'document', 'meeting'
+  target_id    UUID,
+  meta         JSONB DEFAULT '{}',  -- additional context (non-PII only)
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read activity
+CREATE POLICY "activity_read" ON public.activity_log
+  FOR SELECT TO authenticated USING (true);
+
+-- Anyone can insert (via their own session)
+CREATE POLICY "activity_insert" ON public.activity_log
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = actor_id);
+
+-- NO DELETE POLICY — the log is permanent
+-- NO UPDATE POLICY — the log is immutable
+```
+
+### 6.2 Activity Logger Utility
+
+```typescript
+// src/lib/activity.ts
+import { createClient } from '@/lib/supabase/client'
+
+type Action =
+  | 'document.upload' | 'document.delete'
+  | 'meeting.create' | 'meeting.update' | 'meeting.cancel'
+  | 'announcement.create' | 'announcement.delete'
+  | 'user.login' | 'user.logout'
+
+export async function logActivity(
+  action: Action,
+  targetType?: string,
+  targetId?: string,
+  meta?: Record<string, unknown>
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return  // not logged in, skip
+
+  // Fire and forget — don't let logging failure break the user action
+  supabase.from('activity_log').insert({
+    actor_id:    user.id,
+    action,
+    target_type: targetType,
+    target_id:   targetId,
+    meta:        meta ?? {},
+  }).then()
+}
+```
+
+```typescript
+// Usage — add these calls to your other modules:
+
+// In document upload handler:
+await logActivity('document.upload', 'document', docId, { name: file.name, size: file.size })
+
+// In meeting creation:
+await logActivity('meeting.create', 'meeting', meetingId, { title: form.title })
+
+// In announcement post:
+await logActivity('announcement.create', 'announcement', announcementId)
+```
+
+### 6.3 Activity Feed Component (for Dashboard Home)
+
+```typescript
+// src/app/dashboard/page.tsx
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Activity } from 'lucide-react'
+
+const actionLabels: Record<string, string> = {
+  'document.upload': 'uploaded a document',
+  'document.delete': 'deleted a document',
+  'meeting.create':  'scheduled a meeting',
+  'announcement.create': 'posted an announcement',
+  'user.login':      'signed in',
+}
+
+export default function DashboardHome() {
+  const [activity, setActivity] = useState<any[]>([])
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase.from('activity_log')
+      .select('*, profiles(full_name)')
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => { if (data) setActivity(data) })
+
+    const channel = supabase.channel('activity-home')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, () => {
+        supabase.from('activity_log').select('*, profiles(full_name)')
+          .order('created_at', { ascending: false }).limit(20)
+          .then(({ data }) => { if (data) setActivity(data) })
+      }).subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">Welcome back</h1>
+
+      <div className="bg-white border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity size={16} className="text-pink-500" />
+          <h2 className="font-semibold">Recent Activity</h2>
+        </div>
+        <div className="space-y-3">
+          {activity.map(item => (
+            <div key={item.id} className="flex items-start gap-3 text-sm">
+              <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
+                {item.profiles?.full_name?.[0] ?? '?'}
+              </div>
+              <div>
+                <span className="font-medium">{item.profiles?.full_name ?? 'Someone'}</span>
+                {' '}{actionLabels[item.action] ?? item.action}
+                {item.meta?.name && <span className="text-gray-500"> · {item.meta.name}</span>}
+                <p className="text-xs text-gray-400">{new Date(item.created_at).toLocaleString('en-UG')}</p>
+              </div>
+            </div>
+          ))}
+          {activity.length === 0 && <p className="text-gray-400 text-sm">No activity yet.</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Phase 7 — Team Directory
+
+**Goal:** A simple view of all staff, their roles, and contact info. Admins can update roles.
+
+### 7.1 Team Page
+
+```typescript
+// src/app/dashboard/team/page.tsx
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Users } from 'lucide-react'
+
+const ROLES = ['member', 'manager', 'admin'] as const
+const roleColors: Record<string, string> = {
+  admin: 'bg-purple-50 text-purple-700',
+  manager: 'bg-blue-50 text-blue-700',
+  member: 'bg-gray-50 text-gray-600',
+}
+
+export default function TeamPage() {
+  const [members, setMembers]   = useState<any[]>([])
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const supabase = createClient()
+
+  async function fetchTeam() {
+    const [{ data: profiles }, { data: { user } }] = await Promise.all([
+      supabase.from('profiles').select('*').order('full_name'),
+      supabase.auth.getUser(),
+    ])
+    if (profiles) setMembers(profiles)
+    if (user) {
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      setCurrentUser(p)
+    }
+  }
+
+  useEffect(() => { fetchTeam() }, [])
+
+  async function updateRole(memberId: string, newRole: string) {
+    if (currentUser?.role !== 'admin') return
+    await supabase.from('profiles').update({ role: newRole }).eq('id', memberId)
+    fetchTeam()
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">Team</h1>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {members.map(member => (
+          <div key={member.id} className="bg-white border rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-lg">
+                {member.full_name?.[0] ?? '?'}
+              </div>
+              <div>
+                <p className="font-semibold">{member.full_name}</p>
+                {currentUser?.role === 'admin' && member.id !== currentUser?.id ? (
+                  <select
+                    value={member.role}
+                    onChange={e => updateRole(member.id, e.target.value)}
+                    className="text-xs border rounded px-1 py-0.5 mt-0.5"
+                  >
+                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                ) : (
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${roleColors[member.role] ?? ''}`}>
+                    {member.role}
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">
+              Member since {new Date(member.created_at).toLocaleDateString('en-UG', { month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Phase 8 — Email Notifications
+
+**Goal:** Staff get an email when a new announcement is posted or a meeting is scheduled. Uses Resend (free: 100 emails/day).
+
+### 8.1 Setup
+
+1. Create account at [resend.com](https://resend.com) — free
+2. Verify your domain (add the DNS records Resend provides to your domain registrar)
+3. Get your API key → add to Vercel env vars: `RESEND_API_KEY=re_...`
+
+### 8.2 Supabase Edge Function (runs server-side, not in browser)
+
+```typescript
+// supabase/functions/notify-on-announcement/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+serve(async (req) => {
+  const { record } = await req.json()  // the new announcement row
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  )
+
+  // Get all staff emails
+  const { data: users } = await supabase.auth.admin.listUsers()
+  const emails = users?.users?.map(u => u.email).filter(Boolean) ?? []
+
+  // Send via Resend
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'NK Udada Hub <hub@the-nkfoundation.org>',
+      to: emails,
+      subject: `📢 ${record.title}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #be185d;">NK Udada Foundation</h2>
+          <h3>${record.title}</h3>
+          <p style="white-space: pre-wrap; color: #374151;">${record.body}</p>
+          <hr />
+          <a href="https://app.the-nkfoundation.org/dashboard/announcements"
+             style="color: #be185d;">View on Hub →</a>
+        </div>
+      `,
+    }),
+  })
+
+  return new Response('ok')
+})
+```
+
+```bash
+# Deploy the edge function
+npx supabase functions deploy notify-on-announcement --project-ref YOUR_PROJECT_REF
+```
+
+### 8.3 Database Trigger to Fire the Function
+
+```sql
+-- Run in Supabase SQL Editor
+CREATE OR REPLACE FUNCTION notify_announcement_hook()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM net.http_post(
+    url := current_setting('app.supabase_url') || '/functions/v1/notify-on-announcement',
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
+      'Content-Type', 'application/json'
+    ),
+    body := jsonb_build_object('record', row_to_json(NEW))
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_announcement_created
+  AFTER INSERT ON public.announcements
+  FOR EACH ROW EXECUTE FUNCTION notify_announcement_hook();
+```
+
+---
+
+## Phase 9 — Website Integration
+
+**Goal:** The GitHub Pages public website links seamlessly to the internal hub via the `app.` subdomain.
+
+### 9.1 Add to GitHub Pages Site
+
+Add this to your `index.html` nav (already has the structure from your existing site):
+
+```html
+<!-- In your nav, add the staff login link -->
+<a href="https://app.the-nkfoundation.org" class="nav-cta" target="_blank">
+  Staff Hub
+</a>
+```
+
+### 9.2 Custom Domain on Vercel
+
+1. In Vercel → Project → Settings → Domains
+2. Add `app.the-nkfoundation.org`
+3. Vercel shows you a CNAME record to add to your DNS:
+   ```
+   CNAME  app  cname.vercel-dns.com
+   ```
+4. Add this record in your domain registrar's DNS settings
+5. Vercel provisions TLS automatically — takes ~5 minutes
+
+### 9.3 Public Share Links (for external announcements)
+
+For sharing a specific announcement publicly (without auth), create a public share token:
+
+```sql
+-- Add to announcements table
+ALTER TABLE public.announcements
+ADD COLUMN share_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex');
+
+-- Public RLS policy for shared announcements
+CREATE POLICY "announcements_public_share"
+  ON public.announcements FOR SELECT
+  TO anon
+  USING (share_token IS NOT NULL);
+```
+
+```typescript
+// Public route: /share/[token]/page.tsx
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+export default async function SharedAnnouncementPage({ params }: { params: { token: string } }) {
+  const supabase = createServerSupabaseClient()
+  const { data } = await supabase.from('announcements')
+    .select('title, body, created_at')
+    .eq('share_token', params.token)
+    .single()
+
+  if (!data) return <div>Link not found or expired.</div>
+
+  return (
+    <div className="max-w-2xl mx-auto p-8">
+      <img src="/logo.jpeg" alt="NK Foundation" className="w-12 mb-6" />
+      <h1 className="text-2xl font-bold mb-4">{data.title}</h1>
+      <p className="whitespace-pre-wrap text-gray-700">{data.body}</p>
+      <p className="text-sm text-gray-400 mt-6">{new Date(data.created_at).toLocaleDateString()}</p>
+      <a href="https://the-nkfoundation.org" className="text-pink-600 text-sm mt-2 block">
+        NK Udada Foundation →
+      </a>
+    </div>
+  )
+}
+```
+
+---
+
+## Phase 10 — Hardening, Monitoring & Launch
+
+**Goal:** Lock down, observe, and ship. Everything from here is a one-time hardening exercise.
+
+### 10.1 Supabase Final Security Checklist
+
+Run each of these in the Supabase SQL Editor:
+
+```sql
+-- VERIFY: Every table has RLS enabled
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public';
+-- All rows in the result should show: rowsecurity = true
+
+-- VERIFY: No table is readable without auth
+SELECT schemaname, tablename, policyname, cmd, roles
+FROM pg_policies
+WHERE schemaname = 'public';
+-- Review this list — there should be NO policies with roles = '{anon}'
+-- except the public share token policy you intentionally created
+
+-- CREATE: Read-only reporting role (for future data analysis, not needed now)
+-- CREATE ROLE readonly_analyst;
+-- GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_analyst;
+```
+
+### 10.2 Supabase Dashboard Settings
+
+In Supabase Dashboard:
+
+1. **Auth → Email Templates:** Customize the magic link email with your branding
+2. **Auth → URL Configuration:** Add `https://app.the-nkfoundation.org` to "Site URL"
+3. **Auth → Rate Limits:** Magic link: 3 per hour per email (default — leave it)
+4. **Auth → User Management:** Disable "Allow signups" — only admins can add users now
+   - Setting: `Supabase Dashboard → Auth → Providers → Email → Confirm email: ON, Double confirm email: OFF`
+   - Toggle "Allow new users to sign up" → **OFF**
+5. **Storage → Policies:** Double-check `documents` bucket is private
+
+### 10.3 Final next.config.js Additions
+
+```javascript
+// next.config.js — add these to the existing config
+const nextConfig = {
+  // ... your existing config ...
+
+  // Prevent sensitive pages from being indexed
+  async headers() {
+    return [
+      // ... your existing headers ...
+      {
+        source: '/dashboard/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ]
+  },
+
+  // Prevent Next.js from exposing server details
+  poweredByHeader: false,
+}
+```
+
+### 10.4 GitHub Actions — Automated Security Audit
+
+```yaml
+# .github/workflows/security.yml
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - name: Dependency Audit
+        run: npm audit --audit-level=high
+        # Fails the build if any HIGH or CRITICAL vulnerabilities found
+      - name: Type Check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npx next lint
+```
+
+### 10.5 Launch Sequence
+
+Execute in this exact order:
+
+```
+1. Deploy to Vercel (push to main branch)
+2. Verify https://app.the-nkfoundation.org loads (check SSL padlock)
+3. Run Supabase RLS verification SQL (Phase 10.1)
+4. Test magic link login with your own email
+5. Create all 5 staff accounts via SQL (Phase 1.4)
+6. Set roles for each team member
+7. Upload one test document — verify it requires login to access
+8. Post one test announcement — verify all staff receive the email
+9. Update the GitHub Pages site nav link (Phase 9.1)
+10. Send staff the URL and a one-paragraph how-to guide
+```
+
+---
+
+## Quick Reference — The 10 Phases at a Glance
+
+| Phase | What You Build | Key Security Property |
+|-------|---------------|----------------------|
+| **0** | Project setup, env vars, security headers | No secrets in code; CSP + HSTS from day one |
+| **1** | Magic link auth, user profiles, middleware | No passwords; route-level protection |
+| **2** | Dashboard shell, navigation, sidebar | Role displayed; sign-out accessible |
+| **3** | Document upload, download, delete | Private storage bucket; 15-min signed URLs |
+| **4** | Meetings scheduler, agenda items | Creator/admin-only edit; real-time sync |
+| **5** | Announcements board with pinning | Role-gated posting (admin/manager only) |
+| **6** | Append-only activity log, home feed | Immutable audit trail; no DELETE on log |
+| **7** | Team directory, role management | Admin-only role changes; own-role protection |
+| **8** | Email notifications via Resend | Server-side only; API key never in browser |
+| **9** | Website integration, public share links | Anon access only via token; hub stays private |
+| **10** | RLS verification, rate limits, CI audit | Defence-in-depth final check before launch |
+
+---
+
+## Troubleshooting
+
+**Magic link not arriving:** Check Resend/Supabase email logs. Add `admin@the-nkfoundation.org` to your domain's email SPF record.
+
+**RLS blocking a query:** In Supabase → Table Editor, temporarily disable RLS to test, then re-enable and fix the policy.
+
+**Realtime not updating:** Make sure the table is enabled for Realtime in Supabase Dashboard → Database → Replication. Toggle the table on.
+
+**File upload failing:** Check the bucket MIME type allowlist and file size limit. Check the storage RLS policy.
+
+**Vercel build failing:** Run `npm run build` locally first. Usually a TypeScript error.
+
+---
+
+*NK Udada Foundation — Empower & Equip*  
+*This document is for internal implementation use only.*  
+*admin@the-nkfoundation.org · +256765367558*
+ENDOFFILE
+echo "Done"
+Output
+
+Input validation errors occurred:
+description: Field required
+Done

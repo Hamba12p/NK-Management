@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background -->
+  <rect width="100" height="100" fill="#FEFEFE"/>
+  
+  <!-- NK Foundation Logo-inspired Favicon -->
+  <!-- Pink circular shape -->
+  <circle cx="35" cy="50" r="20" fill="#EA519D" opacity="0.9"/>
+  
+  <!-- Black curved shape -->
+  <path d="M 55 30 Q 70 40 70 50 Q 70 60 55 70 L 65 70 Q 75 60 75 50 Q 75 40 65 30 Z" fill="#0A0A0A"/>
+  
+  <!-- Purple accent -->
+  <rect x="55" y="45" width="15" height="10" fill="#8B2C6B" rx="2"/>
+  
+  <!-- Text "N" for NK -->
+  <text x="50" y="65" font-family="serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#8B2C6B">N</text>
+</svg>
