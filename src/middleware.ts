@@ -30,13 +30,18 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/auth/callback', '/auth/confirm']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
-  // If trying to access dashboard without session, redirect to login
-  if (pathname.startsWith('/dashboard') && !user) {
+  // Redirect root path to login if not authenticated
+  if ((pathname === '/' || pathname.startsWith('/dashboard')) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Redirect authenticated users away from login page
+  // Redirect authenticated users away from login page to dashboard
   if (user && pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Redirect authenticated users from root to dashboard
+  if (user && pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
