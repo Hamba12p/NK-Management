@@ -24,15 +24,19 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
 
-  // Redirect unauthenticated users to login
-  const isPublicRoute = ['/login', '/auth/callback'].some(p => request.nextUrl.pathname.startsWith(p))
-  if (!user && !isPublicRoute) {
+  // Public routes that don't require authentication
+  const publicRoutes = ['/login', '/auth/callback', '/auth/confirm']
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+
+  // If trying to access dashboard without session, redirect to login
+  if (pathname.startsWith('/dashboard') && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Redirect authenticated users away from login
-  if (user && request.nextUrl.pathname === '/login') {
+  // Redirect authenticated users away from login page
+  if (user && pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -40,5 +44,14 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api (API routes - optional, can be handled separately)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+  ],
 }
