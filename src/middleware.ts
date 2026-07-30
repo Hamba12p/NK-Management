@@ -1,36 +1,42 @@
 // Next.js middleware for authentication
-// Redirects unauthenticated users to login page
+// Refreshes the Supabase session on every request and redirects based on auth state
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+  // Start from a response tied to the incoming request so cookie reads
+  // inside getAll() stay in sync with what we write in setAll() below.
+  let response = NextResponse.next({ request })
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name, value, options) {
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name, options) {
-          response.cookies.set({ name, value: '', ...options })
+        setAll(cookiesToSet) {
+          // Mirror the refreshed cookies onto the request (so any code later
+          // in this same middleware sees them) and onto a fresh response
+          // (so the browser actually receives them).
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
+  // IMPORTANT: getUser() revalidates the session against Supabase Auth on
+  // every request — don't swap this for getSession(), which only reads the
+  // (possibly stale/tampered) local cookie.
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/auth/callback', '/auth/confirm']
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
-
-  // Redirect root path to login if not authenticated
+  // Redirect root/dashboard to login if not authenticated
   if ((pathname === '/' || pathname.startsWith('/dashboard')) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }

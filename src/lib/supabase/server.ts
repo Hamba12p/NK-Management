@@ -1,31 +1,28 @@
-'use server'
-
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies as getCookies } from 'next/headers'
 
+// Server-side Supabase client for Server Components, Route Handlers, and
+// Server Actions. Not itself a Server Action, so no 'use server' directive —
+// that would turn every export here into a callable RPC endpoint.
 export async function createServerSupabaseClient() {
   const cookieStore = await getCookies()
-  
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Cookie might be read-only in certain contexts
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.delete(name)
-          } catch (error) {
-            // Cookie might be read-only in certain contexts
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Called from a Server Component — safe to ignore as long as
+            // middleware is refreshing the session (it is, see middleware.ts).
           }
         },
       },
