@@ -83,7 +83,7 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="w-full">
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700">
             {error}
@@ -95,9 +95,9 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="w-full">
         <div className="max-w-4xl mx-auto flex items-center justify-center min-h-96">
-          <div className="text-slate-600 text-lg">Loading analytics...</div>
+          <div className="text-muted text-lg">Loading analytics...</div>
         </div>
       </div>
     );
@@ -135,15 +135,15 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <div className="w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-pink-600" />
+          <h1 className="text-4xl font-bold text-ink mb-2 flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-gold" />
             Analytics & Reporting
           </h1>
-          <p className="text-slate-600">Platform usage statistics and team activity insights.</p>
+          <p className="text-muted">Platform usage statistics and team activity insights.</p>
         </div>
 
         {/* Stats Grid */}
@@ -153,42 +153,42 @@ export default function AnalyticsPage() {
             return (
               <div
                 key={card.label}
-                className={`${card.bg} rounded-lg border border-gray-200 shadow-sm p-6`}
+                className={`${card.bg} rounded-lg border border-border shadow-sm p-6`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-slate-700">{card.label}</h3>
+                  <h3 className="text-sm font-semibold text-muted">{card.label}</h3>
                   <Icon className={`w-5 h-5 ${card.color}`} />
                 </div>
                 <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
-                <p className="text-xs text-slate-600 mt-2">Total count</p>
+                <p className="text-xs text-muted mt-2">Total count</p>
               </div>
             );
           })}
         </div>
 
         {/* Key Metrics */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Key Metrics</h2>
+        <div className="bg-cream rounded-lg border border-border shadow-sm p-6 mb-8">
+          <h2 className="text-xl font-bold text-ink mb-6">Key Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Avg Documents per Staff</p>
-              <p className="text-2xl font-bold text-slate-900">
+            <div className="p-4 bg-warm/40 rounded-lg">
+              <p className="text-sm text-muted mb-1">Avg Documents per Staff</p>
+              <p className="text-2xl font-bold text-ink">
                 {analytics.avgDocumentsPerUser.toFixed(1)}
               </p>
             </div>
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Total Activity Log Entries</p>
-              <p className="text-2xl font-bold text-slate-900">{analytics.recentActivityCount}</p>
+            <div className="p-4 bg-warm/40 rounded-lg">
+              <p className="text-sm text-muted mb-1">Total Activity Log Entries</p>
+              <p className="text-2xl font-bold text-ink">{analytics.recentActivityCount}</p>
             </div>
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Meetings per Staff</p>
-              <p className="text-2xl font-bold text-slate-900">
+            <div className="p-4 bg-warm/40 rounded-lg">
+              <p className="text-sm text-muted mb-1">Meetings per Staff</p>
+              <p className="text-2xl font-bold text-ink">
                 {(analytics.totalMeetings / Math.max(1, analytics.totalUsers)).toFixed(1)}
               </p>
             </div>
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Data Collected</p>
-              <p className="text-2xl font-bold text-slate-900">
+            <div className="p-4 bg-warm/40 rounded-lg">
+              <p className="text-sm text-muted mb-1">Data Collected</p>
+              <p className="text-2xl font-bold text-ink">
                 {(
                   (analytics.totalDocuments +
                     analytics.totalMeetings +
@@ -201,36 +201,36 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Reports */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Generate Reports</h2>
+        <div className="bg-cream rounded-lg border border-border shadow-sm p-6">
+          <h2 className="text-xl font-bold text-ink mb-6">Generate Reports</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-gray-200 transition-colors">
+            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-slate-900">Usage Report</p>
-                <p className="text-sm text-slate-600">Platform activity and engagement</p>
+                <p className="font-semibold text-ink">Usage Report</p>
+                <p className="text-sm text-muted">Platform activity and engagement</p>
               </div>
-              <Download className="w-5 h-5 text-slate-400" />
+              <Download className="w-5 h-5 text-muted" />
             </button>
-            <button className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-gray-200 transition-colors">
+            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-slate-900">Team Report</p>
-                <p className="text-sm text-slate-600">Staff activity and contributions</p>
+                <p className="font-semibold text-ink">Team Report</p>
+                <p className="text-sm text-muted">Staff activity and contributions</p>
               </div>
-              <Download className="w-5 h-5 text-slate-400" />
+              <Download className="w-5 h-5 text-muted" />
             </button>
-            <button className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-gray-200 transition-colors">
+            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-slate-900">Document Report</p>
-                <p className="text-sm text-slate-600">File uploads and downloads</p>
+                <p className="font-semibold text-ink">Document Report</p>
+                <p className="text-sm text-muted">File uploads and downloads</p>
               </div>
-              <Download className="w-5 h-5 text-slate-400" />
+              <Download className="w-5 h-5 text-muted" />
             </button>
-            <button className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-gray-200 transition-colors">
+            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-slate-900">Audit Report</p>
-                <p className="text-sm text-slate-600">Security and compliance log</p>
+                <p className="font-semibold text-ink">Audit Report</p>
+                <p className="text-sm text-muted">Security and compliance log</p>
               </div>
-              <Download className="w-5 h-5 text-slate-400" />
+              <Download className="w-5 h-5 text-muted" />
             </button>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import { Calendar, Clock, MapPin, Plus, Trash2, Check, X } from 'lucide-react'
+import { logActivity } from '@/lib/activity'
 
 const meetingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -129,15 +130,17 @@ export default function MeetingsPage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
 
-      const { error } = await supabase.from('meetings').insert({
+      const { data: inserted, error } = await supabase.from('meetings').insert({
         ...result.data,
         created_by: userData.user.id,
-      })
+      }).select('id').single()
 
       if (error) {
         setErrors({ general: error.message })
         return
       }
+
+      logActivity('meeting.create', 'meeting', inserted?.id, { title: result.data.title })
 
       setShowForm(false)
       setForm({ title: '', description: '', scheduled_at: '', duration_min: '60', location: '' })
@@ -213,7 +216,9 @@ export default function MeetingsPage() {
       const { error } = await supabase.from('meetings').delete().eq('id', meetingId)
       if (error) {
         console.error('Delete error:', error)
+        return
       }
+      logActivity('meeting.cancel', 'meeting', meetingId, { reason: 'deleted' })
     } catch (err) {
       console.error('Error:', err)
     }
@@ -224,6 +229,12 @@ export default function MeetingsPage() {
       const { error } = await supabase.from('meetings').update({ status: newStatus }).eq('id', meetingId)
       if (error) {
         console.error('Update error:', error)
+        return
+      }
+      if (newStatus === 'cancelled') {
+        logActivity('meeting.cancel', 'meeting', meetingId, { reason: 'status_update' })
+      } else {
+        logActivity('meeting.update', 'meeting', meetingId, { status: newStatus })
       }
     } catch (err) {
       console.error('Error:', err)
@@ -257,8 +268,8 @@ export default function MeetingsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Meetings</h1>
-        <p className="text-gray-500">Schedule and manage meetings with agendas</p>
+        <h1 className="text-3xl font-bold text-ink mb-2">Meetings</h1>
+        <p className="text-muted">Schedule and manage meetings with agendas</p>
       </div>
 
       {/* Create Meeting Button */}
@@ -266,7 +277,7 @@ export default function MeetingsPage() {
         <div className="mb-6">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white px-4 py-2.5 rounded-lg hover:from-pink-700 hover:to-pink-800 transition-all font-medium"
+            className="flex items-center gap-2 bg-purple text-white px-4 py-2.5 rounded-lg hover:bg-purple-lt transition-all font-medium"
           >
             <Plus size={18} /> Schedule Meeting
           </button>
@@ -275,8 +286,8 @@ export default function MeetingsPage() {
 
       {/* Create Meeting Form */}
       {showForm && (
-        <div className="bg-white border rounded-xl p-6 mb-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Schedule New Meeting</h2>
+        <div className="bg-cream border rounded-xl p-6 mb-6 space-y-4">
+          <h2 className="font-semibold text-ink">Schedule New Meeting</h2>
 
           {errors.general && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{errors.general}</div>
@@ -284,63 +295,63 @@ export default function MeetingsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+              <label className="block text-sm font-medium text-muted mb-1">Title *</label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 maxLength={200}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
                 placeholder="Team Sync Meeting"
               />
               {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time *</label>
+              <label className="block text-sm font-medium text-muted mb-1">Date & Time *</label>
               <input
                 type="datetime-local"
                 value={form.scheduled_at}
                 onChange={(e) => setForm((f) => ({ ...f, scheduled_at: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
               />
               {errors.scheduled_at && <p className="text-red-500 text-xs mt-1">{errors.scheduled_at}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+              <label className="block text-sm font-medium text-muted mb-1">Duration (minutes)</label>
               <input
                 type="number"
                 value={form.duration_min}
                 onChange={(e) => setForm((f) => ({ ...f, duration_min: e.target.value }))}
                 min="15"
                 max="480"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
               />
               {errors.duration_min && <p className="text-red-500 text-xs mt-1">{errors.duration_min}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location / Link</label>
+              <label className="block text-sm font-medium text-muted mb-1">Location / Link</label>
               <input
                 type="text"
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
                 maxLength={300}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
                 placeholder="Conference Room 1 or Google Meet link"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-muted mb-1">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               maxLength={2000}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none"
               placeholder="Meeting objectives and context..."
             />
           </div>
@@ -348,13 +359,13 @@ export default function MeetingsPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleCreateMeeting}
-              className="bg-pink-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-pink-700 transition-colors"
+              className="bg-gold text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-purple transition-colors"
             >
               Schedule Meeting
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="px-5 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2 rounded-lg text-sm border border-border hover:bg-warm/40 transition-colors"
             >
               Cancel
             </button>
@@ -364,14 +375,14 @@ export default function MeetingsPage() {
 
       {/* Meetings List */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-lg font-semibold text-ink mb-4">
           {meetings.length} {meetings.length === 1 ? 'Meeting' : 'Meetings'}
         </h2>
 
         {meetings.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border">
-            <Calendar size={40} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">No meetings scheduled.</p>
+          <div className="text-center py-16 bg-cream rounded-xl border">
+            <Calendar size={40} className="mx-auto mb-3 text-muted" />
+            <p className="text-muted">No meetings scheduled.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -384,17 +395,17 @@ export default function MeetingsPage() {
               return (
                 <div
                   key={meeting.id}
-                  className="bg-white border rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+                  className="bg-cream border rounded-xl overflow-hidden hover:shadow-md transition-shadow"
                 >
                   {/* Meeting Header */}
                   <button
                     onClick={() => setExpandedMeeting(isExpanded ? null : meeting.id)}
-                    className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                    className="w-full text-left p-4 hover:bg-warm/40 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate text-lg">{meeting.title}</h3>
-                        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 flex-wrap">
+                        <h3 className="font-semibold text-ink truncate text-lg">{meeting.title}</h3>
+                        <div className="flex items-center gap-3 mt-2 text-sm text-muted flex-wrap">
                           <span className="flex items-center gap-1">
                             <Calendar size={14} />
                             {date}
@@ -451,23 +462,23 @@ export default function MeetingsPage() {
 
                   {/* Meeting Details (Expanded) */}
                   {isExpanded && (
-                    <div className="border-t bg-gray-50 p-4 space-y-4">
+                    <div className="border-t bg-warm/40 p-4 space-y-4">
                       {/* Description */}
                       {meeting.description && (
                         <div>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{meeting.description}</p>
+                          <p className="text-sm text-muted whitespace-pre-wrap">{meeting.description}</p>
                         </div>
                       )}
 
                       {/* Organizer */}
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted">
                         Organized by <strong>{meeting.profiles?.full_name}</strong>
                       </div>
 
                       {/* Agenda Section */}
                       <div className="border-t pt-4">
                         <div className="mb-3">
-                          <h4 className="font-semibold text-sm text-gray-900 mb-3">
+                          <h4 className="font-semibold text-sm text-ink mb-3">
                             Agenda ({doneCount}/{totalItems})
                           </h4>
 
@@ -477,7 +488,7 @@ export default function MeetingsPage() {
                               {meeting.agenda_items.map((item: AgendaItem) => (
                                 <li
                                   key={item.id}
-                                  className="flex items-start gap-2 p-2 bg-white rounded border border-gray-200 hover:border-gray-300 transition-colors"
+                                  className="flex items-start gap-2 p-2 bg-cream rounded border border-border hover:border-border transition-colors"
                                 >
                                   <button
                                     onClick={() => handleToggleAgendaItem(item.id, item.done)}
@@ -486,19 +497,19 @@ export default function MeetingsPage() {
                                     {item.done ? (
                                       <Check size={16} className="text-green-600" />
                                     ) : (
-                                      <X size={16} className="text-gray-300" />
+                                      <X size={16} className="text-muted" />
                                     )}
                                   </button>
                                   <span
                                     className={`flex-1 text-sm ${
-                                      item.done ? 'line-through text-gray-400' : 'text-gray-700'
+                                      item.done ? 'line-through text-muted' : 'text-muted'
                                     }`}
                                   >
                                     {item.content}
                                   </span>
                                   <button
                                     onClick={() => handleDeleteAgendaItem(item.id)}
-                                    className="ml-auto text-gray-300 hover:text-red-400 transition-colors shrink-0"
+                                    className="ml-auto text-muted hover:text-red-400 transition-colors shrink-0"
                                   >
                                     <Trash2 size={14} />
                                   </button>
@@ -520,11 +531,11 @@ export default function MeetingsPage() {
                               }
                               maxLength={1000}
                               placeholder="Add agenda item..."
-                              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                              className="flex-1 border border-border rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
                             />
                             <button
                               onClick={() => handleAddAgendaItem(meeting.id)}
-                              className="bg-pink-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-pink-700 transition-colors"
+                              className="bg-gold text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-purple transition-colors"
                             >
                               Add
                             </button>

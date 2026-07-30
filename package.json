@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -22,11 +22,20 @@
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "next": {
+      "postcss": "$postcss",
+      "sharp": "^0.35.0"
+    },
+    "minimatch": "^10.2.6"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.12",
     "postcss": "^8",
     "tailwindcss": "^4",
     "typescript": "^6"

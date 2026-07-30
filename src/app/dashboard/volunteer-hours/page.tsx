@@ -82,15 +82,15 @@ export default function VolunteerHoursPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
-            <Clock className="w-8 h-8 text-pink-600" />
+          <h1 className="text-3xl font-bold text-ink mb-2 flex items-center gap-3">
+            <Clock className="w-8 h-8 text-gold" />
             Volunteer Hours
           </h1>
-          <p className="text-slate-600">Track and log your volunteer time with NK Udada</p>
+          <p className="text-muted">Track and log your volunteer time with NK Udada</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
+          className="flex items-center gap-2 bg-gold text-white px-4 py-2 rounded-lg hover:bg-purple"
         >
           <Plus size={16} />
           Log Hours
@@ -99,30 +99,30 @@ export default function VolunteerHoursPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border border-pink-100 p-6">
-          <p className="text-sm text-gray-600 mb-2">Total Hours Logged</p>
-          <p className="text-4xl font-bold text-slate-900">{totalHours}</p>
-          <p className="text-xs text-gray-500 mt-2">All time</p>
+        <div className="bg-gradient-to-br from-warm to-purple/10 rounded-lg border border-gold/20 p-6">
+          <p className="text-sm text-muted mb-2">Total Hours Logged</p>
+          <p className="text-4xl font-bold text-ink">{totalHours}</p>
+          <p className="text-xs text-muted mt-2">All time</p>
         </div>
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100 p-6">
-          <p className="text-sm text-gray-600 mb-2">Hours This Month</p>
-          <p className="text-4xl font-bold text-slate-900">
+          <p className="text-sm text-muted mb-2">Hours This Month</p>
+          <p className="text-4xl font-bold text-ink">
             {hours.filter(h => new Date(h.date).getMonth() === new Date().getMonth()).reduce((sum, h) => sum + h.hours, 0)}
           </p>
-          <p className="text-xs text-gray-500 mt-2">This month</p>
+          <p className="text-xs text-muted mt-2">This month</p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100 p-6">
-          <p className="text-sm text-gray-600 mb-2">Pending Approval</p>
-          <p className="text-4xl font-bold text-slate-900">
+          <p className="text-sm text-muted mb-2">Pending Approval</p>
+          <p className="text-4xl font-bold text-ink">
             {hours.filter(h => !h.approved).reduce((sum, h) => sum + h.hours, 0)}
           </p>
-          <p className="text-xs text-gray-500 mt-2">Awaiting review</p>
+          <p className="text-xs text-muted mt-2">Awaiting review</p>
         </div>
       </div>
 
       {/* Log Form */}
       {showForm && (
-        <div className="bg-white border rounded-xl p-6 mb-6 space-y-4">
+        <div className="bg-cream border rounded-xl p-6 mb-6 space-y-4">
           <h2 className="font-semibold text-lg">Log Volunteer Hours</h2>
           <form onSubmit={handleLogHours} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -133,7 +133,7 @@ export default function VolunteerHoursPage() {
                   value={form.date}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                   required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none"
                 />
               </div>
               <div>
@@ -147,7 +147,7 @@ export default function VolunteerHoursPage() {
                   onChange={(e) => setForm({ ...form, hours: e.target.value })}
                   placeholder="e.g., 2.5"
                   required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none"
                 />
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function VolunteerHoursPage() {
               <select
                 value={form.program}
                 onChange={(e) => setForm({ ...form, program: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none"
               >
                 <option value="general">General Support</option>
                 <option value="school_outreach">School Outreach</option>
@@ -172,20 +172,20 @@ export default function VolunteerHoursPage() {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="What did you do?"
                 rows={3}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none resize-none"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none resize-none"
               />
             </div>
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-purple"
               >
                 Log Hours
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border rounded-lg hover:bg-warm/40"
               >
                 Cancel
               </button>
@@ -196,25 +196,25 @@ export default function VolunteerHoursPage() {
 
       {/* Hours List */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Hours Log</h2>
+        <h2 className="text-lg font-bold text-ink">Hours Log</h2>
         {hours.length === 0 ? (
-          <div className="bg-white rounded-lg border p-12 text-center">
-            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600">No hours logged yet. Start by clicking "Log Hours".</p>
+          <div className="bg-cream rounded-lg border p-12 text-center">
+            <Clock className="w-12 h-12 text-muted mx-auto mb-4" />
+            <p className="text-muted">No hours logged yet. Start by clicking "Log Hours".</p>
           </div>
         ) : (
           <div className="space-y-3">
             {hours.map((entry) => (
-              <div key={entry.id} className="bg-white rounded-lg border p-4 flex items-center justify-between">
+              <div key={entry.id} className="bg-cream rounded-lg border p-4 flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <p className="font-semibold text-slate-900">{entry.hours} hours</p>
+                    <p className="font-semibold text-ink">{entry.hours} hours</p>
                     <span className={`text-xs px-2 py-1 rounded-full ${entry.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {entry.approved ? '✓ Approved' : 'Pending'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">{entry.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(entry.date).toLocaleDateString()} · {entry.program}</p>
+                  <p className="text-sm text-muted">{entry.description}</p>
+                  <p className="text-xs text-muted mt-1">{new Date(entry.date).toLocaleDateString()} · {entry.program}</p>
                 </div>
                 <button className="p-2 hover:bg-red-50 rounded-lg">
                   <Trash2 size={16} className="text-red-400" />

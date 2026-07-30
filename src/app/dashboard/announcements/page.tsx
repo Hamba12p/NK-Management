@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import { Bell, Pin, Plus, Trash2, AlertCircle } from 'lucide-react'
+import { logActivity } from '@/lib/activity'
 
 const announcementSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -97,15 +98,17 @@ export default function AnnouncementsPage() {
         return
       }
 
-      const { error: err } = await supabase.from('announcements').insert({
+      const { data: inserted, error: err } = await supabase.from('announcements').insert({
         ...result.data,
         author_id: userData.user.id,
-      })
+      }).select('id').single()
 
       if (err) {
         setError(err.message)
         return
       }
+
+      logActivity('announcement.create', 'announcement', inserted?.id, { title: result.data.title })
 
       setSuccess('Announcement posted successfully')
       setShowForm(false)
@@ -141,6 +144,8 @@ export default function AnnouncementsPage() {
         return
       }
 
+      logActivity('announcement.delete', 'announcement', id)
+
       setSuccess('Announcement deleted')
     } catch (err) {
       setError(`Error: ${err}`)
@@ -158,8 +163,8 @@ export default function AnnouncementsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Announcements</h1>
-        <p className="text-gray-500">Stay updated with team announcements</p>
+        <h1 className="text-3xl font-bold text-ink mb-2">Announcements</h1>
+        <p className="text-muted">Stay updated with team announcements</p>
       </div>
 
       {/* Create Announcement Button */}
@@ -167,7 +172,7 @@ export default function AnnouncementsPage() {
         <div className="mb-6">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white px-4 py-2.5 rounded-lg hover:from-pink-700 hover:to-pink-800 transition-all font-medium"
+            className="flex items-center gap-2 bg-purple text-white px-4 py-2.5 rounded-lg hover:bg-purple-lt transition-all font-medium"
           >
             <Plus size={18} /> Post Announcement
           </button>
@@ -176,8 +181,8 @@ export default function AnnouncementsPage() {
 
       {/* Create Announcement Form */}
       {showForm && canPost && (
-        <div className="bg-white border rounded-xl p-6 mb-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">New Announcement</h2>
+        <div className="bg-cream border rounded-xl p-6 mb-6 space-y-4">
+          <h2 className="font-semibold text-ink">New Announcement</h2>
 
           {errors.general && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
@@ -186,26 +191,26 @@ export default function AnnouncementsPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <label className="block text-sm font-medium text-muted mb-1">Title *</label>
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               maxLength={200}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
               placeholder="Announcement title"
             />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+            <label className="block text-sm font-medium text-muted mb-1">Message *</label>
             <textarea
               value={form.body}
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
               maxLength={5000}
               rows={5}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none"
               placeholder="Write your announcement..."
             />
             {errors.body && <p className="text-red-500 text-xs mt-1">{errors.body}</p>}
@@ -216,21 +221,21 @@ export default function AnnouncementsPage() {
               type="checkbox"
               checked={form.pinned}
               onChange={(e) => setForm((f) => ({ ...f, pinned: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer"
+              className="w-4 h-4 rounded border-border text-gold focus:ring-gold cursor-pointer"
             />
-            <span className="text-sm text-gray-700">Pin this announcement (appears at top)</span>
+            <span className="text-sm text-muted">Pin this announcement (appears at top)</span>
           </label>
 
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleCreateAnnouncement}
-              className="bg-pink-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-pink-700 transition-colors"
+              className="bg-gold text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-purple transition-colors"
             >
               Post Announcement
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="px-5 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2 rounded-lg text-sm border border-border hover:bg-warm/40 transition-colors"
             >
               Cancel
             </button>
@@ -257,14 +262,14 @@ export default function AnnouncementsPage() {
 
       {/* Announcements List */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-lg font-semibold text-ink mb-4">
           {announcements.length} {announcements.length === 1 ? 'Announcement' : 'Announcements'}
         </h2>
 
         {announcements.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border">
-            <Bell size={40} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">No announcements yet.</p>
+          <div className="text-center py-16 bg-cream rounded-xl border">
+            <Bell size={40} className="mx-auto mb-3 text-muted" />
+            <p className="text-muted">No announcements yet.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -279,7 +284,7 @@ export default function AnnouncementsPage() {
                   className={`rounded-xl border overflow-hidden transition-all ${
                     announcement.pinned
                       ? 'bg-amber-50 border-amber-200'
-                      : 'bg-white border-gray-200'
+                      : 'bg-cream border-border'
                   } hover:shadow-md`}
                 >
                   <div className="p-5">
@@ -290,11 +295,11 @@ export default function AnnouncementsPage() {
                           {announcement.pinned && (
                             <Pin size={16} className="text-amber-600 shrink-0" />
                           )}
-                          <h3 className="font-semibold text-gray-900 text-lg truncate">
+                          <h3 className="font-semibold text-ink text-lg truncate">
                             {announcement.title}
                           </h3>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted">
                           <strong>{announcement.profiles?.full_name}</strong> •{' '}
                           {new Date(announcement.created_at).toLocaleDateString('en-UG', {
                             month: 'short',
@@ -313,7 +318,7 @@ export default function AnnouncementsPage() {
                             className={`p-2 rounded-lg transition-colors ${
                               announcement.pinned
                                 ? 'bg-amber-100 text-amber-600 hover:bg-amber-200'
-                                : 'hover:bg-gray-100 text-gray-400'
+                                : 'hover:bg-warm/60 text-muted'
                             }`}
                             title={announcement.pinned ? 'Unpin' : 'Pin'}
                           >
@@ -331,7 +336,7 @@ export default function AnnouncementsPage() {
                     </div>
 
                     {/* Body */}
-                    <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                    <p className="text-muted whitespace-pre-wrap text-sm leading-relaxed">
                       {announcement.body}
                     </p>
                   </div>

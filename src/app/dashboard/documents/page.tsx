@@ -6,6 +6,7 @@ import InlineConfirm from '@/components/InlineConfirm'
 import DocumentModal from '@/components/DocumentModal'
 import { Upload, FileText, Download, Trash2, AlertCircle } from 'lucide-react'
 import { z } from 'zod'
+import { logActivity } from '@/lib/activity'
 
 const uploadSchema = z.object({
   name: z.string().min(1).max(200),
@@ -101,6 +102,8 @@ export default function DocumentsPage() {
 
       if (dbError) { setError(`Failed to save document: ${dbError.message}`); setUploading(false); return }
 
+      logActivity('document.upload', 'document', undefined, { name: file.name, category: selectedCategory })
+
       setSuccess(`"${file.name}" uploaded successfully`)
       e.target.value = ''
     } catch (err) {
@@ -134,6 +137,8 @@ export default function DocumentsPage() {
 
       const { error: dbError } = await supabase.from('documents').delete().eq('id', doc.id)
       if (dbError) { setError(`Failed to delete record: ${dbError.message}`); return }
+
+      logActivity('document.delete', 'document', doc.id, { name: doc.name })
 
       setSuccess(`"${doc.name}" deleted`)
       setDeletingDocId(null)

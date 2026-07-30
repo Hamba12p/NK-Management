@@ -46,11 +46,10 @@ This is your fresh Next.js 14 project with all Phase 0 infrastructure ready to g
    cp .env.local.example .env.local
    ```
 
-2. Fill in your Supabase credentials:
+2. Fill in your Supabase credentials (these are the only two vars the app reads — see `src/lib/supabase/client.ts` and `server.ts`):
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
    ```
 
 ⚠️ **Never commit `.env.local`** — it's in `.gitignore` for a reason

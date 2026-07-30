@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
 import { formatRole, roleBadgeClass } from '@/lib/utils'
+import { logActivity } from '@/lib/activity'
 import {
   LayoutDashboard,
   FileText,
@@ -64,6 +65,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
   async function handleSignOut() {
     setSigningOut(true)
     try {
+      await logActivity('user.logout', 'auth')
       await supabase.auth.signOut()
       router.push('/login')
     } catch (error) {

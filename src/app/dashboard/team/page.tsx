@@ -25,9 +25,9 @@ const roleColors: Record<string, { bg: string; text: string; border: string }> =
     border: 'border-blue-200',
   },
   member: {
-    bg: 'bg-gray-50',
-    text: 'text-gray-700',
-    border: 'border-gray-200',
+    bg: 'bg-warm/40',
+    text: 'text-muted',
+    border: 'border-border',
   },
 };
 
@@ -41,8 +41,8 @@ const roleBadgeColors: Record<string, { bg: string; text: string }> = {
     text: 'text-blue-800',
   },
   member: {
-    bg: 'bg-gray-100',
-    text: 'text-gray-800',
+    bg: 'bg-warm/60',
+    text: 'text-ink',
   },
 };
 
@@ -118,34 +118,34 @@ export default function TeamPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="w-full">
         <div className="max-w-6xl mx-auto flex items-center justify-center min-h-96">
-          <div className="text-slate-600 text-lg">Loading team members...</div>
+          <div className="text-muted text-lg">Loading team members...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <div className="w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
-            <Users className="w-8 h-8 text-pink-600" />
+          <h1 className="text-4xl font-bold text-ink mb-2 flex items-center gap-3">
+            <Users className="w-8 h-8 text-gold" />
             Team Directory
           </h1>
-          <p className="text-slate-600">
+          <p className="text-muted">
             View and search all staff members. {totalCount} team {totalCount === 1 ? 'member' : 'members'} total.
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
+        <div className="bg-cream rounded-lg border border-border shadow-sm p-6 mb-8">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-muted mb-2">
                 <Search className="w-4 h-4 inline mr-2" />
                 Search by Name
               </label>
@@ -154,20 +154,20 @@ export default function TeamPage() {
                 placeholder="Search team members..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
               />
             </div>
 
             {/* Role Filter */}
             <div className="flex-1">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-muted mb-2">
                 <Filter className="w-4 h-4 inline mr-2" />
                 Filter by Role
               </label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value as any)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
               >
                 <option value="all">All Roles</option>
                 <option value="admin">Admins</option>
@@ -179,8 +179,8 @@ export default function TeamPage() {
             {/* Stats */}
             <div className="flex items-end">
               <div>
-                <p className="text-sm text-slate-600 mb-2">Showing Results</p>
-                <p className="text-3xl font-bold text-pink-600">{filteredMembers.length}</p>
+                <p className="text-sm text-muted mb-2">Showing Results</p>
+                <p className="text-3xl font-bold text-gold">{filteredMembers.length}</p>
               </div>
             </div>
           </div>
@@ -196,11 +196,11 @@ export default function TeamPage() {
         {/* Team Members Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMembers.length === 0 ? (
-            <div className="col-span-full bg-white rounded-lg border border-gray-200 shadow-sm p-12 text-center">
-              <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600 text-lg">No team members found</p>
+            <div className="col-span-full bg-cream rounded-lg border border-border shadow-sm p-12 text-center">
+              <Users className="w-12 h-12 text-muted mx-auto mb-4" />
+              <p className="text-muted text-lg">No team members found</p>
               {searchQuery && (
-                <p className="text-slate-500 text-sm mt-2">
+                <p className="text-muted text-sm mt-2">
                   Try adjusting your search terms
                 </p>
               )}
@@ -217,7 +217,7 @@ export default function TeamPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4 flex-1">
                     <div
-                      className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-semibold text-lg shrink-0"
+                      className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-purple flex items-center justify-center text-white font-semibold text-lg shrink-0"
                     >
                       {member.full_name
                         .split(' ')
@@ -227,7 +227,7 @@ export default function TeamPage() {
                         .toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-slate-900 truncate">
+                      <h3 className="text-lg font-bold text-ink truncate">
                         {member.full_name}
                       </h3>
                       <div className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${
@@ -243,16 +243,16 @@ export default function TeamPage() {
                 {/* Contact Info */}
                 <div className="space-y-3 pt-4 border-t border-current border-opacity-10">
                   <div className="flex items-center gap-3 text-sm">
-                    <Mail className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                    <span className="text-slate-700 truncate">
+                    <Mail className="w-4 h-4 text-muted flex-shrink-0" />
+                    <span className="text-muted truncate">
                       {member.email || 'No email provided'}
                     </span>
                   </div>
 
                   {member.created_at && (
                     <div className="flex items-center gap-3 text-sm">
-                      <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                      <span className="text-slate-600">
+                      <Calendar className="w-4 h-4 text-muted flex-shrink-0" />
+                      <span className="text-muted">
                         Joined {new Date(member.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -265,7 +265,7 @@ export default function TeamPage() {
 
                 {/* Role Badge (larger, for reference) */}
                 <div className="mt-4 pt-4 border-t border-current border-opacity-10">
-                  <p className="text-xs text-slate-600 uppercase tracking-wide">Role Details</p>
+                  <p className="text-xs text-muted uppercase tracking-wide">Role Details</p>
                   <p className={`mt-1 text-sm font-medium ${roleColors[member.role].text}`}>
                     {member.role === 'admin' && 'Full access to all features and audit logs'}
                     {member.role === 'manager' && 'Can create meetings and post announcements'}
@@ -278,7 +278,7 @@ export default function TeamPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 text-center text-slate-600">
+        <div className="mt-12 text-center text-muted">
           <p className="text-sm">
             Total staff members: <strong>{totalCount}</strong>
           </p>
