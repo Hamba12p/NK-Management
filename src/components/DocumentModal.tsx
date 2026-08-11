@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { X, FileText, Download, Loader, AlertCircle, ExternalLink } from 'lucide-react'
+import { X, FileText, Loader, AlertCircle, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 type Document = {
@@ -32,15 +32,6 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const supabase = createClient()
-
-  useEffect(() => {
-    if (doc) {
-      setEditedName(doc.name)
-      setEditedDescription(doc.description || '')
-      setEditedCategory(doc.category)
-      loadPreview(doc)
-    }
-  }, [doc])
 
   async function loadPreview(document: Document) {
     setLoading(true)
@@ -102,6 +93,17 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (doc) {
+      // Synchronise editable fields when a different document is selected.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEditedName(doc.name)
+      setEditedDescription(doc.description || '')
+      setEditedCategory(doc.category)
+      loadPreview(doc)
+    }
+  }, [doc])
 
   async function handleOpenWithApp() {
     if (!doc) return

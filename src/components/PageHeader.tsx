@@ -8,14 +8,15 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-8 rounded-2xl bg-ink px-6 py-5 text-cream">
+    <div className="mb-8 flex items-end justify-between gap-4 border-b border-border pb-5">
       <div>
-        <h1 className="text-3xl font-bold text-cream serif-display mb-1">{title}</h1>
+        <p className="mb-2 text-[.68rem] font-bold uppercase tracking-[.17em] text-gold">NK Udada Hub</p>
+        <h1 className="serif-display mb-1 text-3xl text-ink md:text-4xl">{title}</h1>
         {description && (
-          <p className="text-white/65 text-sm">{description}</p>
+          <p className="max-w-2xl text-sm leading-6 text-muted">{description}</p>
         )}
       </div>
-      {action && <div className="shrink-0 ml-6">{action}</div>}
+      {action && <div className="ml-4 shrink-0">{action}</div>}
     </div>
   )
 }

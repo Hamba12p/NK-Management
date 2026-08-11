@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import { Calendar, Clock, MapPin, Plus, Trash2, Check, X } from 'lucide-react'
 import { logActivity } from '@/lib/activity'
+import { archiveAndDeleteContent } from '@/lib/content-deletion'
 
 const meetingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -11,10 +12,6 @@ const meetingSchema = z.object({
   scheduled_at: z.string().datetime({ local: true }),
   duration_min: z.coerce.number().min(15).max(480).default(60),
   location: z.string().max(300).optional().default(''),
-})
-
-const agendaSchema = z.object({
-  content: z.string().min(1).max(1000),
 })
 
 type Meeting = {
@@ -25,7 +22,7 @@ type Meeting = {
   duration_min: number
   location: string
   status: string
-  created_by: string
+  created_by: string | null
   created_at: string
   profiles: { full_name: string; role: string }
   agenda_items: AgendaItem[]
@@ -38,6 +35,7 @@ type AgendaItem = {
   order_index: number
   presenter: string | null
   done: boolean
+  created_by: string | null
   created_at: string
 }
 
@@ -93,6 +91,8 @@ export default function MeetingsPage() {
   }
 
   useEffect(() => {
+    // Initial hydration deliberately updates local state after the first query.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll()
 
     // REALTIME: listen for changes
@@ -165,10 +165,17 @@ export default function MeetingsPage() {
       const currentMeeting = meetings.find((m) => m.id === meetingId)
       const order = (currentMeeting?.agenda_items?.length || 0) + 1
 
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setAgendaError({ [meetingId]: 'You must be signed in to add an agenda item.' })
+        return
+      }
+
       const { error } = await supabase.from('agenda_items').insert({
         meeting_id: meetingId,
         content: content.trim(),
         order_index: order,
+        created_by: user.id,
       })
 
       if (error) {
@@ -200,10 +207,7 @@ export default function MeetingsPage() {
 
   async function handleDeleteAgendaItem(itemId: string) {
     try {
-      const { error } = await supabase.from('agenda_items').delete().eq('id', itemId)
-      if (error) {
-        console.error('Delete error:', error)
-      }
+      await archiveAndDeleteContent(supabase, 'agenda_item', itemId)
     } catch (err) {
       console.error('Error:', err)
     }
@@ -213,12 +217,7 @@ export default function MeetingsPage() {
     if (!confirm('Delete this meeting? This will also delete all agenda items.')) return
 
     try {
-      const { error } = await supabase.from('meetings').delete().eq('id', meetingId)
-      if (error) {
-        console.error('Delete error:', error)
-        return
-      }
-      logActivity('meeting.cancel', 'meeting', meetingId, { reason: 'deleted' })
+      await archiveAndDeleteContent(supabase, 'meeting', meetingId)
     } catch (err) {
       console.error('Error:', err)
     }
@@ -262,6 +261,9 @@ export default function MeetingsPage() {
   const canEditMeeting = (meeting: Meeting) => {
     return profile?.role === 'admin' || profile?.role === 'manager' || profile?.id === meeting.created_by
   }
+
+  const canDeleteMeeting = (meeting: Meeting) => profile?.role === 'admin' || profile?.id === meeting.created_by
+  const canDeleteAgendaItem = (item: AgendaItem) => profile?.role === 'admin' || profile?.id === item.created_by
 
   const dt = formatDateTime(new Date().toISOString())
 
@@ -445,7 +447,7 @@ export default function MeetingsPage() {
                           </span>
                         )}
 
-                        {canEditMeeting(meeting) && (
+                        {canDeleteMeeting(meeting) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -507,12 +509,15 @@ export default function MeetingsPage() {
                                   >
                                     {item.content}
                                   </span>
-                                  <button
-                                    onClick={() => handleDeleteAgendaItem(item.id)}
-                                    className="ml-auto text-muted hover:text-red-400 transition-colors shrink-0"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
+                                  {canDeleteAgendaItem(item) && (
+                                    <button
+                                      onClick={() => handleDeleteAgendaItem(item.id)}
+                                      className="ml-auto text-muted hover:text-red-400 transition-colors shrink-0"
+                                      title="Remove agenda item"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  )}
                                 </li>
                               ))}
                             </ul>

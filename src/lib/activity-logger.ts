@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { activityDetailsForUser } from '@/lib/activity'
+import { activityDetailsForUser, insertActivityRecord } from '@/lib/activity'
 
 export type ActivityType = string
 
@@ -12,14 +12,21 @@ export async function logActivity(
   details: Record<string, unknown> = {},
 ) {
   const supabase = createClient()
-  const { error } = await supabase.from('activity_log').insert({
-    user_id: userId,
-    action_type: actionType,
-    resource_type: resourceType,
-    resource_id: resourceId,
+  const { error } = await insertActivityRecord(supabase, {
+    userId,
+    action: actionType,
+    resourceType,
+    resourceId: resourceId ?? undefined,
     details: await activityDetailsForUser(supabase, details),
   })
-  if (error) console.error('Failed to log activity:', error)
+  if (error) {
+    console.error('Failed to log activity:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
+  }
   return !error
 }
 

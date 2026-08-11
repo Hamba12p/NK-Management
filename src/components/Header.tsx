@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import Image from 'next/image'
 
 export default function Header({ profile }: { profile?: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

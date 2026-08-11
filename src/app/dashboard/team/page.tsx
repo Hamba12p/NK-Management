@@ -4,16 +4,18 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Users, Search, Filter, Mail, Badge, Calendar } from 'lucide-react';
 
+type ProfileRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead';
+
 interface TeamMember {
   id: string;
   full_name: string;
   email?: string;
-  role: 'admin' | 'manager' | 'member';
+  role: string;
   avatar_url?: string;
   created_at?: string;
 }
 
-const roleColors: Record<string, { bg: string; text: string; border: string }> = {
+const roleColors: Record<ProfileRole, { bg: string; text: string; border: string }> = {
   admin: {
     bg: 'bg-red-50',
     text: 'text-red-700',
@@ -24,14 +26,29 @@ const roleColors: Record<string, { bg: string; text: string; border: string }> =
     text: 'text-blue-700',
     border: 'border-blue-200',
   },
-  member: {
+  dpo: {
+    bg: 'bg-purple-50',
+    text: 'text-purple-700',
+    border: 'border-purple-200',
+  },
+  volunteer_lead: {
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    border: 'border-amber-200',
+  },
+  volunteer_senior: {
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+  },
+  volunteer: {
     bg: 'bg-warm/40',
     text: 'text-muted',
     border: 'border-border',
   },
 };
 
-const roleBadgeColors: Record<string, { bg: string; text: string }> = {
+const roleBadgeColors: Record<ProfileRole, { bg: string; text: string }> = {
   admin: {
     bg: 'bg-red-100',
     text: 'text-red-800',
@@ -40,11 +57,45 @@ const roleBadgeColors: Record<string, { bg: string; text: string }> = {
     bg: 'bg-blue-100',
     text: 'text-blue-800',
   },
-  member: {
+  dpo: {
+    bg: 'bg-purple-100',
+    text: 'text-purple-800',
+  },
+  volunteer_lead: {
+    bg: 'bg-amber-100',
+    text: 'text-amber-800',
+  },
+  volunteer_senior: {
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-800',
+  },
+  volunteer: {
     bg: 'bg-warm/60',
     text: 'text-ink',
   },
 };
+
+const roleLabels: Record<ProfileRole, string> = {
+  admin: 'Admin',
+  manager: 'Manager',
+  dpo: 'DPO',
+  volunteer_lead: 'Volunteer Lead',
+  volunteer_senior: 'Senior Volunteer',
+  volunteer: 'Volunteer',
+};
+
+const roleDescriptions: Record<ProfileRole, string> = {
+  admin: 'Full access to all features and audit logs',
+  manager: 'Can create meetings and post announcements',
+  dpo: 'Manages data protection processing activities and requests',
+  volunteer_lead: 'Coordinates volunteers and can view team activity',
+  volunteer_senior: 'Elevated volunteer with additional hour-tracking access',
+  volunteer: 'Can view and download documents',
+};
+
+function normalizeRole(role?: string): ProfileRole {
+  return role && role in roleColors ? role as ProfileRole : 'volunteer';
+}
 
 export default function TeamPage() {
   const supabase = createClient();
@@ -52,14 +103,10 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'manager' | 'member'>('all');
+  const [selectedRole, setSelectedRole] = useState<'all' | ProfileRole>('all');
   const [totalCount, setTotalCount] = useState(0);
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
+  async function fetchMembers() {
     try {
       const { data, error: err } = await supabase
         .from('profiles')
@@ -77,7 +124,13 @@ export default function TeamPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    // The initial remote fetch intentionally hydrates the client-side directory.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMembers();
+  }, []);
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -112,7 +165,7 @@ export default function TeamPage() {
     const matchesSearch = member.full_name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesRole = selectedRole === 'all' || member.role === selectedRole;
+    const matchesRole = selectedRole === 'all' || normalizeRole(member.role) === selectedRole;
     return matchesSearch && matchesRole;
   });
 
@@ -172,7 +225,10 @@ export default function TeamPage() {
                 <option value="all">All Roles</option>
                 <option value="admin">Admins</option>
                 <option value="manager">Managers</option>
-                <option value="member">Members</option>
+                <option value="dpo">DPOs</option>
+                <option value="volunteer_lead">Volunteer Leads</option>
+                <option value="volunteer_senior">Senior Volunteers</option>
+                <option value="volunteer">Volunteers</option>
               </select>
             </div>
 
@@ -206,12 +262,14 @@ export default function TeamPage() {
               )}
             </div>
           ) : (
-            filteredMembers.map((member) => (
+            filteredMembers.map((member) => {
+              const role = normalizeRole(member.role);
+              return (
               <div
                 key={member.id}
                 className={`rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-6 ${
-                  roleColors[member.role].bg
-                } ${roleColors[member.role].border}`}
+                  roleColors[role].bg
+                } ${roleColors[role].border}`}
               >
                 {/* Avatar & Name */}
                 <div className="flex items-start justify-between mb-4">
@@ -231,10 +289,10 @@ export default function TeamPage() {
                         {member.full_name}
                       </h3>
                       <div className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${
-                        roleBadgeColors[member.role].bg
-                      } ${roleBadgeColors[member.role].text}`}>
+                        roleBadgeColors[role].bg
+                      } ${roleBadgeColors[role].text}`}>
                         <Badge className="w-3 h-3 inline mr-1" />
-                        {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                        {roleLabels[role]}
                       </div>
                     </div>
                   </div>
@@ -266,14 +324,13 @@ export default function TeamPage() {
                 {/* Role Badge (larger, for reference) */}
                 <div className="mt-4 pt-4 border-t border-current border-opacity-10">
                   <p className="text-xs text-muted uppercase tracking-wide">Role Details</p>
-                  <p className={`mt-1 text-sm font-medium ${roleColors[member.role].text}`}>
-                    {member.role === 'admin' && 'Full access to all features and audit logs'}
-                    {member.role === 'manager' && 'Can create meetings and post announcements'}
-                    {member.role === 'member' && 'Can view and download documents'}
+                  <p className={`mt-1 text-sm font-medium ${roleColors[role].text}`}>
+                    {roleDescriptions[role]}
                   </p>
                 </div>
               </div>
-            ))
+              )
+            })
           )}
         </div>
 

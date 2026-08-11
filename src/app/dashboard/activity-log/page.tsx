@@ -16,6 +16,13 @@ interface ActivityEntry {
   user_name?: string;
 }
 
+interface AdminNotification {
+  id: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+  read_at: string | null;
+}
+
 const actionIcons: Record<string, React.ReactNode> = {
   document_upload: <FileUp className="w-4 h-4 text-blue-500" />,
   document_download: <FileDown className="w-4 h-4 text-green-500" />,
@@ -95,6 +102,7 @@ export default function ActivityLogPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('week');
+  const [deletionNotices, setDeletionNotices] = useState<AdminNotification[]>([]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -120,18 +128,26 @@ export default function ActivityLogPage() {
       }
 
       setUserRole(profile.role);
+      if (profile.role === 'admin') {
+        const { data: notices } = await supabase
+          .from('admin_notifications')
+          .select('id, payload, created_at, read_at')
+          .eq('event_type', 'content_deleted')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        setDeletionNotices(notices || []);
+      }
       await fetchActivities();
     };
 
     checkAccess();
   }, []);
 
-  const fetchActivities = async () => {
+  async function fetchActivities(filter = selectedFilter, range = dateRange) {
     try {
-      const now = new Date();
       let startDate = new Date();
 
-      switch (dateRange) {
+      switch (range) {
         case 'today':
           startDate.setHours(0, 0, 0, 0);
           break;
@@ -146,7 +162,7 @@ export default function ActivityLogPage() {
           break;
       }
 
-      let query = supabase
+      const query = supabase
         .from('activity_log')
         .select(`
           *
@@ -155,15 +171,22 @@ export default function ActivityLogPage() {
         .order('created_at', { ascending: false })
         .limit(500);
 
-      if (selectedFilter !== 'all') {
-        query = query.eq('action_type', selectedFilter);
-      }
-
       const { data, error: err } = await query;
 
       if (err) throw err;
 
-      setActivities(data || []);
+      // The compatibility migration upgrades older actor_id/action/meta rows,
+      // but normalize them here as well so the audit view remains usable while
+      // a project is awaiting that deployment.
+      const normalized = (data || []).map((entry: any) => entry.user_id ? entry : ({
+        ...entry,
+        user_id: entry.actor_id || '',
+        action_type: entry.action || 'activity',
+        resource_type: entry.target_type || 'system',
+        resource_id: entry.target_id || null,
+        details: entry.meta || {},
+      })) as ActivityEntry[];
+      setActivities(filter === 'all' ? normalized : normalized.filter((entry) => entry.action_type === filter));
       setError(null);
     } catch (err) {
       console.error('Failed to fetch activities:', err);
@@ -171,7 +194,7 @@ export default function ActivityLogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     if (!userRole || !['admin', 'dpo'].includes(userRole)) return;
@@ -191,6 +214,34 @@ export default function ActivityLogPage() {
       supabase.removeChannel(channel);
     };
   }, [userRole]);
+
+  useEffect(() => {
+    if (userRole !== 'admin') return;
+
+    const channel = supabase
+      .channel('admin-deletion-notices')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, (payload) => {
+        setDeletionNotices((current) => [payload.new as AdminNotification, ...current].slice(0, 10));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userRole]);
+
+  async function markNoticeRead(id: string) {
+    const { error: updateError } = await supabase
+      .from('admin_notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (!updateError) {
+      setDeletionNotices((current) => current.map((notice) =>
+        notice.id === id ? { ...notice, read_at: new Date().toISOString() } : notice,
+      ));
+    }
+  }
 
   if (error) {
     return (
@@ -230,6 +281,26 @@ export default function ActivityLogPage() {
           </p>
         </div>
 
+        {userRole === 'admin' && deletionNotices.length > 0 && (
+          <section className="mb-8 rounded-lg border border-amber-400/30 bg-amber-400/10 p-5">
+            <h2 className="text-lg font-semibold text-amber-100">Deletion notices</h2>
+            <div className="mt-3 space-y-2">
+              {deletionNotices.map((notice) => {
+                const title = typeof notice.payload.title === 'string' ? notice.payload.title : 'Untitled content';
+                const resourceType = typeof notice.payload.resource_type === 'string' ? notice.payload.resource_type.replace(/_/g, ' ') : 'content';
+                return (
+                  <div key={notice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-slate-950/30 px-3 py-2 text-sm">
+                    <p className={notice.read_at ? 'text-slate-400' : 'font-medium text-white'}>
+                      {title} ({resourceType}) was removed and retained in the archive.
+                    </p>
+                    {!notice.read_at && <button onClick={() => markNoticeRead(notice.id)} className="rounded border border-amber-300/50 px-2 py-1 text-xs font-semibold text-amber-100">Mark read</button>}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Filters */}
         <div className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-lg p-6 mb-8">
           <div className="flex flex-col sm:flex-row gap-6">
@@ -244,7 +315,7 @@ export default function ActivityLogPage() {
                 onChange={(e) => {
                   setDateRange(e.target.value as any);
                   setLoading(true);
-                  setTimeout(fetchActivities, 300);
+                  fetchActivities(selectedFilter, e.target.value as typeof dateRange);
                 }}
                 className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
               >
@@ -265,7 +336,7 @@ export default function ActivityLogPage() {
                 onChange={(e) => {
                   setSelectedFilter(e.target.value);
                   setLoading(true);
-                  setTimeout(fetchActivities, 300);
+                  fetchActivities(e.target.value, dateRange);
                 }}
                 className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
               >

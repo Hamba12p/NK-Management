@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
@@ -94,11 +95,11 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
     name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 
   return (
-    <div className="flex flex-col h-full bg-ink text-cream">
+    <div className="app-sidebar flex flex-col h-full bg-ink text-cream">
       <div className="p-6 border-b border-white/10">
         <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3 no-underline hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 rounded-full bg-purple flex items-center justify-center text-white font-bold text-sm serif-display shrink-0">
-            NK
+          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-gold bg-white p-0.5">
+            <Image src="/favicon.svg" alt="NK Udada Foundation" width={44} height={44} className="h-full w-full rounded-full object-cover" priority />
           </div>
           <div>
             <p className="font-bold text-cream text-sm serif-display leading-tight">NK Udada</p>
@@ -170,19 +171,13 @@ export default function Sidebar({ profile }: { profile: any }) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  useEffect(() => {
-    if (!isMobile) {
-      setMobileOpen(false)
-    }
-  }, [isMobile])
-
   return (
     <>
       {/* Mobile hamburger */}
       {isMobile && (
         <button
           onClick={() => setMobileOpen(true)}
-          className="md:hidden fixed top-4 left-4 z-40 p-2 bg-ink border border-white/10 rounded-lg shadow-sm"
+          className="md:hidden fixed top-4 left-4 z-40 rounded-lg border border-white/10 bg-[#0A0A0A] p-2 shadow-sm"
           aria-label="Open menu"
         >
           <Menu size={20} className="text-cream" />
@@ -196,7 +191,7 @@ export default function Sidebar({ profile }: { profile: any }) {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative w-72 h-full shadow-2xl border-r border-white/10 overflow-hidden bg-ink">
+          <aside className="app-sidebar relative w-72 h-full shadow-2xl border-r border-white/10 overflow-hidden bg-ink">
             <button
               onClick={() => setMobileOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/10 transition-colors z-10"
@@ -210,7 +205,7 @@ export default function Sidebar({ profile }: { profile: any }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 bg-ink border-r border-white/10 flex-col shrink-0 h-screen sticky top-0">
+      <aside className="app-sidebar hidden md:flex w-64 bg-ink border-r border-white/10 flex-col shrink-0 h-screen sticky top-0">
         <SidebarContent profile={profile} pathname={pathname} />
       </aside>
     </>

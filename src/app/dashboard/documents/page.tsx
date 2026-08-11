@@ -7,6 +7,7 @@ import DocumentModal from '@/components/DocumentModal'
 import { Upload, FileText, Download, Trash2, AlertCircle } from 'lucide-react'
 import { z } from 'zod'
 import { logActivity } from '@/lib/activity'
+import { archiveAndDeleteContent } from '@/lib/content-deletion'
 
 const uploadSchema = z.object({
   name: z.string().min(1).max(200),
@@ -53,6 +54,8 @@ export default function DocumentsPage() {
   }
 
   useEffect(() => {
+    // Initial hydration deliberately updates local state after the first query.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDocs()
 
     const channel = supabase
@@ -129,18 +132,9 @@ export default function DocumentsPage() {
   async function handleDelete(doc: Document) {
     try {
       setError('')
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([doc.file_path])
+      await archiveAndDeleteContent(supabase, 'document', doc.id)
 
-      if (storageError) { setError(`Failed to delete file: ${storageError.message}`); return }
-
-      const { error: dbError } = await supabase.from('documents').delete().eq('id', doc.id)
-      if (dbError) { setError(`Failed to delete record: ${dbError.message}`); return }
-
-      logActivity('document.delete', 'document', doc.id, { name: doc.name })
-
-      setSuccess(`"${doc.name}" deleted`)
+      setSuccess(`"${doc.name}" was removed from the shared hub and retained for administrator review.`)
       setDeletingDocId(null)
     } catch (err) {
       setError(`Delete error: ${err}`)

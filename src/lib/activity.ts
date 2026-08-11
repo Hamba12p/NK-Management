@@ -20,6 +20,34 @@ export async function activityDetailsForUser(
   return volunteerName ? { ...details, volunteer_name: volunteerName } : details
 }
 
+export async function insertActivityRecord(
+  supabase: SupabaseClient,
+  record: { userId: string; action: string; resourceType: string; resourceId?: string; details: Record<string, unknown> },
+) {
+  const canonical = await supabase.from('activity_log').insert({
+    user_id: record.userId,
+    action_type: record.action,
+    resource_type: record.resourceType,
+    resource_id: record.resourceId ?? null,
+    details: record.details,
+  })
+
+  // The compatibility migration has not yet been deployed on every existing
+  // project. Keep audit logging functional against the legacy Phase 6 table
+  // until its actor_id/action/meta columns are migrated.
+  if (canonical.error?.code === 'PGRST204' && canonical.error.message.includes('action_type')) {
+    return supabase.from('activity_log').insert({
+      actor_id: record.userId,
+      action: record.action,
+      target_type: record.resourceType,
+      target_id: record.resourceId ?? null,
+      meta: record.details,
+    })
+  }
+
+  return canonical
+}
+
 /** Write an append-only audit entry. Logging never interrupts the action it describes. */
 export async function logActivity(
   action: string,
@@ -38,12 +66,19 @@ export async function logActivity(
   }
   if (!actorId) return
 
-  const { error } = await supabase.from('activity_log').insert({
-    user_id: actorId,
-    action_type: action,
-    resource_type: resourceType,
-    resource_id: resourceId ?? null,
+  const { error } = await insertActivityRecord(supabase, {
+    userId: actorId,
+    action,
+    resourceType,
+    resourceId,
     details: await activityDetailsForUser(supabase, details, user),
   })
-  if (error) console.error('[activity] failed to log', action, error)
+  if (error) {
+    console.error('[activity] failed to log', action, {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
+  }
 }

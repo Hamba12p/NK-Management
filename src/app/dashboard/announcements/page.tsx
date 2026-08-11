@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import { Bell, Pin, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { logActivity } from '@/lib/activity'
+import { archiveAndDeleteContent } from '@/lib/content-deletion'
 
 const announcementSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -60,6 +61,8 @@ export default function AnnouncementsPage() {
   }
 
   useEffect(() => {
+    // Initial hydration deliberately updates local state after the first query.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll()
 
     // REALTIME: listen for changes
@@ -137,29 +140,14 @@ export default function AnnouncementsPage() {
     if (!confirm('Delete this announcement? This cannot be undone.')) return
 
     try {
-      const { error: err } = await supabase.from('announcements').delete().eq('id', id)
-
-      if (err) {
-        setError(err.message)
-        return
-      }
-
-      logActivity('announcement.delete', 'announcement', id)
-
-      setSuccess('Announcement deleted')
+      await archiveAndDeleteContent(supabase, 'announcement', id)
+      setSuccess('Announcement removed and retained in the administrator archive.')
     } catch (err) {
       setError(`Error: ${err}`)
     }
   }
 
   const canPost = profile && ['admin', 'manager'].includes(profile.role)
-  const canManage = (announcement: Announcement) => {
-    return (
-      profile &&
-      (profile.role === 'admin' || profile.id === announcement.author_id)
-    )
-  }
-
   return (
     <div>
       <div className="mb-8">
