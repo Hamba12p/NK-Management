@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Settings, User, Bell, Moon, Lock, ChevronRight } from 'lucide-react';
+import { Settings, User, Bell, Lock } from 'lucide-react';
 
 interface UserSettings {
   full_name: string;
@@ -25,6 +25,8 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   useEffect(() => {
     const fetchUserSettings = async () => {
@@ -82,6 +84,22 @@ export default function SettingsPage() {
       console.error('Failed to save settings:', err);
       setError('Failed to save settings');
     }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage('');
+    if (newPassword.length < 8) {
+      setPasswordMessage('Use at least 8 characters.');
+      return;
+    }
+    const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+    if (passwordError) {
+      setPasswordMessage(passwordError.message);
+      return;
+    }
+    setNewPassword('');
+    setPasswordMessage('Password updated successfully.');
   };
 
   if (loading) {
@@ -255,31 +273,14 @@ export default function SettingsPage() {
             <h2 className="text-xl font-bold text-ink">Security</h2>
           </div>
 
-          <div className="space-y-3">
-            <button className="w-full flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg transition-colors">
-              <div className="text-left">
-                <p className="font-semibold text-ink">Change Password</p>
-                <p className="text-sm text-muted">Update your login credentials</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg transition-colors">
-              <div className="text-left">
-                <p className="font-semibold text-ink">Two-Factor Authentication</p>
-                <p className="text-sm text-muted">Add extra security to your account</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg transition-colors">
-              <div className="text-left">
-                <p className="font-semibold text-ink">Active Sessions</p>
-                <p className="text-sm text-muted">Manage your login sessions</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted" />
-            </button>
-          </div>
+          <form onSubmit={handlePasswordChange} className="space-y-3">
+            <p className="text-sm text-muted">Change your password whenever you need to. There is no forced first-login reset.</p>
+            <label className="block text-sm font-semibold text-muted">New password
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} required autoComplete="new-password" className="mt-2 w-full rounded-lg border border-border px-4 py-2 text-ink outline-none focus:ring-2 focus:ring-gold" />
+            </label>
+            {passwordMessage && <p className="text-sm text-muted">{passwordMessage}</p>}
+            <button className="rounded-lg bg-purple px-4 py-2 font-semibold text-white hover:bg-purple-lt">Update password</button>
+          </form>
         </div>
 
         {/* Save Button */}

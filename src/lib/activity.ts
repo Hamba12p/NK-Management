@@ -1,52 +1,49 @@
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient, User } from '@supabase/supabase-js'
 
-type Action =
-  | 'document.upload' | 'document.delete'
-  | 'meeting.create' | 'meeting.update' | 'meeting.cancel'
-  | 'announcement.create' | 'announcement.delete'
-  | 'user.login' | 'user.logout'
+type LogActivityOptions = { client?: SupabaseClient; actorId?: string }
 
-type LogActivityOptions = {
-  /** Pass a server-side Supabase client when calling from a route handler or
-   *  server action (e.g. /auth/callback), where the browser client isn't available. */
-  client?: SupabaseClient
-  /** Pass the actor id directly when it's already known server-side, to skip
-   *  an extra getUser() round trip. */
-  actorId?: string
+function volunteerNameFromCookie() {
+  if (typeof document === 'undefined') return undefined
+  const value = document.cookie.split('; ').find((item) => item.startsWith('nk_volunteer_name='))?.split('=').slice(1).join('=')
+  return value ? decodeURIComponent(value).trim().slice(0, 100) : undefined
 }
 
-/**
- * Writes an entry to the append-only activity_log audit table.
- * Fire-and-forget by design: a logging failure must never block the user's
- * actual action (upload, meeting creation, etc.), so errors are only logged
- * to the console, not thrown.
- */
+export async function activityDetailsForUser(
+  supabase: SupabaseClient,
+  details: Record<string, unknown> = {},
+  user?: User | null,
+) {
+  const authenticatedUser = user ?? (await supabase.auth.getUser()).data.user
+  if (authenticatedUser?.email?.toLowerCase() !== 'volunteers@the-nkfoundation.org') return details
+  const volunteerName = volunteerNameFromCookie()
+  return volunteerName ? { ...details, volunteer_name: volunteerName } : details
+}
+
+/** Write an append-only audit entry. Logging never interrupts the action it describes. */
 export async function logActivity(
-  action: Action,
-  targetType?: string,
-  targetId?: string,
-  meta?: Record<string, unknown>,
-  options?: LogActivityOptions
+  action: string,
+  resourceType = 'system',
+  resourceId?: string,
+  details?: Record<string, unknown>,
+  options?: LogActivityOptions,
 ) {
   const supabase = options?.client ?? createBrowserClient()
-
   let actorId = options?.actorId
-  if (!actorId) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return // not logged in, skip
-    actorId = user.id
+  let user: User | null = null
+  if (!actorId || !options?.client) {
+    const result = await supabase.auth.getUser()
+    user = result.data.user
+    actorId ??= user?.id
   }
+  if (!actorId) return
 
   const { error } = await supabase.from('activity_log').insert({
-    actor_id: actorId,
-    action,
-    target_type: targetType,
-    target_id: targetId,
-    meta: meta ?? {},
+    user_id: actorId,
+    action_type: action,
+    resource_type: resourceType,
+    resource_id: resourceId ?? null,
+    details: await activityDetailsForUser(supabase, details, user),
   })
-
-  if (error) {
-    console.error('[activity] failed to log', action, error)
-  }
+  if (error) console.error('[activity] failed to log', action, error)
 }

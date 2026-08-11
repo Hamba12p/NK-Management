@@ -106,15 +106,15 @@ export default function ActivityLogPage() {
         return;
       }
 
-      // Check if user is admin
+      // DPOs need this read-only audit view for incident review; RLS enforces it too.
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
 
-      if (profile?.role !== 'admin') {
-        setError('Only admins can view the activity log');
+      if (!profile || !['admin', 'dpo'].includes(profile.role)) {
+        setError('Only administrators and the Data Protection Officer can view the activity log');
         setLoading(false);
         return;
       }
@@ -174,7 +174,7 @@ export default function ActivityLogPage() {
   };
 
   useEffect(() => {
-    if (!userRole || userRole !== 'admin') return;
+    if (!userRole || !['admin', 'dpo'].includes(userRole)) return;
 
     const channel = supabase
       .channel('activity-log-realtime')
@@ -318,7 +318,7 @@ export default function ActivityLogPage() {
                       </time>
                     </div>
                     <p className="text-sm text-slate-400">
-                      <span className="font-medium text-slate-300">{activity.user_name || 'Unknown User'}</span>
+                      <span className="font-medium text-slate-300">{activity.details?.volunteer_name ? `Volunteer (${String(activity.details.volunteer_name)})` : activity.user_name || 'Team member'}</span>
                       {activity.ip_address && (
                         <span className="ml-3 text-slate-500">IP: {activity.ip_address}</span>
                       )}

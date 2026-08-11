@@ -17,6 +17,10 @@ import {
   Eye,
   Archive,
   BarChart3,
+  ClipboardList,
+  ShieldCheck,
+  ScrollText,
+  AlertTriangle,
   ChevronRight,
   Menu,
   X,
@@ -27,6 +31,7 @@ const getNavItems = (role?: string) => {
     { href: '/dashboard', label: 'Home', icon: LayoutDashboard, adminOnly: false },
     { href: '/dashboard/documents', label: 'Documents', icon: FileText, adminOnly: false },
     { href: '/dashboard/announcements', label: 'Announcements', icon: Bell, adminOnly: false },
+    { href: '/dashboard/workspace', label: 'Workspace', icon: ClipboardList, adminOnly: false },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings, adminOnly: false },
   ]
 
@@ -44,6 +49,16 @@ const getNavItems = (role?: string) => {
 
   if (role === 'admin' || role === 'manager') {
     return [...baseItems, ...managerItems, ...adminItems]
+  }
+
+  if (role === 'dpo') {
+    return [
+      ...baseItems,
+      { href: '/dashboard/dpo/register', label: 'Processing Register', icon: ShieldCheck, adminOnly: false },
+      { href: '/dashboard/dpo/requests', label: 'Data Requests', icon: ScrollText, adminOnly: false },
+      { href: '/dashboard/dpo/incidents', label: 'Incident Log', icon: AlertTriangle, adminOnly: false },
+      { href: '/dashboard/activity-log', label: 'Activity Log', icon: Eye, adminOnly: false },
+    ]
   }
 
   if (role === 'volunteer' || role === 'volunteer_senior' || role === 'volunteer_lead') {
@@ -67,6 +82,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
     try {
       await logActivity('user.logout', 'auth')
       await supabase.auth.signOut()
+      document.cookie = 'nk_volunteer_name=; Path=/; Max-Age=0; SameSite=Lax'
       router.push('/login')
     } catch (error) {
       console.error('Sign out error:', error)
@@ -78,15 +94,15 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
     name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 
   return (
-    <div className="flex flex-col h-full bg-cream">
-      <div className="p-6 border-b border-border">
+    <div className="flex flex-col h-full bg-ink text-cream">
+      <div className="p-6 border-b border-white/10">
         <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3 no-underline hover:opacity-80 transition-opacity">
           <div className="w-10 h-10 rounded-full bg-purple flex items-center justify-center text-white font-bold text-sm serif-display shrink-0">
             NK
           </div>
           <div>
-            <p className="font-bold text-ink text-sm serif-display leading-tight">NK Udada</p>
-            <p className="text-xs text-muted">Staff Hub</p>
+            <p className="font-bold text-cream text-sm serif-display leading-tight">NK Udada</p>
+            <p className="text-xs text-white/60">Staff Hub</p>
           </div>
         </Link>
       </div>
@@ -101,10 +117,10 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
               href={href}
               onClick={onNavigate}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive ? 'bg-warm text-gold shadow-sm' : 'text-muted hover:bg-warm/50 hover:text-ink'
+                isActive ? 'bg-white/10 text-gold shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-cream'
               }`}
             >
-              <Icon size={18} className={isActive ? 'text-gold' : 'text-muted'} />
+              <Icon size={18} className={isActive ? 'text-gold' : 'text-white/60'} />
               {label}
               {isActive && <ChevronRight size={16} className="ml-auto text-gold" />}
             </Link>
@@ -112,14 +128,14 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
         })}
       </nav>
 
-      <div className="p-4 border-t border-border space-y-3">
+      <div className="p-4 border-t border-white/10 space-y-3">
         {profile && (
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-warm/50">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5">
             <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-gold font-semibold text-xs shrink-0">
               {getInitials(profile.full_name || 'User')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-ink truncate">{profile.full_name}</p>
+              <p className="text-sm font-semibold text-cream truncate">{profile.full_name}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${roleBadgeClass(profile.role)}`}>
                 {formatRole(profile.role)}
               </span>
@@ -129,7 +145,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted hover:text-gold hover:bg-warm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/70 hover:text-gold hover:bg-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <LogOut size={18} />
           {signingOut ? 'Signing out…' : 'Sign out'}
@@ -166,10 +182,10 @@ export default function Sidebar({ profile }: { profile: any }) {
       {isMobile && (
         <button
           onClick={() => setMobileOpen(true)}
-          className="md:hidden fixed top-4 left-4 z-40 p-2 bg-cream border border-border rounded-lg shadow-sm"
+          className="md:hidden fixed top-4 left-4 z-40 p-2 bg-ink border border-white/10 rounded-lg shadow-sm"
           aria-label="Open menu"
         >
-          <Menu size={20} className="text-ink" />
+          <Menu size={20} className="text-cream" />
         </button>
       )}
 
@@ -180,13 +196,13 @@ export default function Sidebar({ profile }: { profile: any }) {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative w-72 h-full shadow-2xl border-r border-border overflow-hidden bg-cream">
+          <aside className="relative w-72 h-full shadow-2xl border-r border-white/10 overflow-hidden bg-ink">
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-warm transition-colors z-10"
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/10 transition-colors z-10"
               aria-label="Close menu"
             >
-              <X size={18} className="text-muted" />
+              <X size={18} className="text-cream" />
             </button>
             <SidebarContent profile={profile} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
           </aside>
@@ -194,7 +210,7 @@ export default function Sidebar({ profile }: { profile: any }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 bg-cream border-r border-border flex-col shrink-0 h-screen sticky top-0">
+      <aside className="hidden md:flex w-64 bg-ink border-r border-white/10 flex-col shrink-0 h-screen sticky top-0">
         <SidebarContent profile={profile} pathname={pathname} />
       </aside>
     </>
