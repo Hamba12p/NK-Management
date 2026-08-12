@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import Image from 'next/image'
 
 export default function Header({ profile }: { profile?: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -20,8 +21,8 @@ export default function Header({ profile }: { profile?: any }) {
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between h-16">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-3 no-underline hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 rounded-full bg-purple flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg serif-display">N</span>
+          <div className="w-10 h-10 overflow-hidden rounded-full border border-gold/40 bg-white flex-shrink-0">
+            <Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={40} height={40} className="h-full w-full object-cover" />
           </div>
           <div>
             <div className="font-bold text-base text-ink serif-display leading-none">NK Udada</div>

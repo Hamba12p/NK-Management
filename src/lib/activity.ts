@@ -34,8 +34,13 @@ export async function insertActivityRecord(
 
   // The compatibility migration has not yet been deployed on every existing
   // project. Keep audit logging functional against the legacy Phase 6 table
-  // until its actor_id/action/meta columns are migrated.
-  if (canonical.error?.code === 'PGRST204' && canonical.error.message.includes('action_type')) {
+  // until its actor_id/action/meta columns are migrated. Some databases have
+  // the canonical columns but still retain the legacy required `action` field.
+  const needsLegacyShape =
+    (canonical.error?.code === 'PGRST204' && canonical.error.message.includes('action_type')) ||
+    (canonical.error?.code === '23502' && canonical.error.message.includes('column "action"'))
+
+  if (needsLegacyShape) {
     return supabase.from('activity_log').insert({
       actor_id: record.userId,
       action: record.action,

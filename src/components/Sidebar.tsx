@@ -99,7 +99,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
       <div className="p-6 border-b border-white/10">
         <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3 no-underline hover:opacity-80 transition-opacity">
           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-gold bg-white p-0.5">
-            <Image src="/favicon.svg" alt="NK Udada Foundation" width={44} height={44} className="h-full w-full rounded-full object-cover" priority />
+            <Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={44} height={44} className="h-full w-full rounded-full object-cover" priority />
           </div>
           <div>
             <p className="font-bold text-cream text-sm serif-display leading-tight">NK Udada</p>

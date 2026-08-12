@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'NK Udada Staff Hub',
   description: 'Collaborative platform for NK Foundation staff',
   icons: {
-    icon: '/favicon.svg',
+    icon: '/logo.jpeg',
   },
 }
 

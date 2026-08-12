@@ -56,7 +56,7 @@ export default function LoginPage() {
         <div className="absolute w-96 h-96 bg-purple rounded-full blur-3xl -bottom-48 -right-48" />
       </div>
       <form onSubmit={handleLogin} className="bg-cream rounded-3xl border border-border shadow-xl p-10 w-full max-w-sm relative z-10">
-        <div className="mb-8 flex justify-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-gold bg-white p-1 shadow-sm"><Image src="/favicon.svg" alt="NK Udada Foundation" width={80} height={80} className="h-full w-full rounded-full object-cover" priority /></div></div>
+        <div className="mb-8 flex justify-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-gold bg-white p-1 shadow-sm"><Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={80} height={80} className="h-full w-full rounded-full object-cover" priority /></div></div>
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-ink serif-display mb-2">NK Udada</h1>
           <p className="text-muted text-sm font-medium uppercase tracking-wider">Staff Hub</p>
