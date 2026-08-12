@@ -22,12 +22,17 @@ type DocumentModalProps = {
   onSave: (updates: Partial<Document>) => Promise<void>
 }
 
+type Preview =
+  | { kind: 'text'; content: string }
+  | { kind: 'image' | 'pdf' | 'office'; url: string }
+  | { kind: 'unavailable'; content: string }
+
 export default function DocumentModal({ doc, onClose, onSave }: DocumentModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [editedCategory, setEditedCategory] = useState('')
-  const [preview, setPreview] = useState<string | null>(null)
+  const [preview, setPreview] = useState<Preview | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -45,27 +50,41 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
       const isPDF = document.mime_type === 'application/pdf'
       const isText = textTypes.includes(document.mime_type) || document.name.endsWith('.txt')
       const isImage = imageTypes.includes(document.mime_type)
+      const isOfficeDocument = /\.(doc|docx|xls|xlsx|ppt|pptx)$/i.test(document.name)
+        || [
+          'application/msword',
+          'application/vnd.ms-excel',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        ].includes(document.mime_type)
 
-      if (!isText && !isPDF && !isImage) {
-        setPreview(`[Preview not available for ${document.mime_type}]\nDownload to view this file type.`)
+      if (!isText && !isPDF && !isImage && !isOfficeDocument) {
+        setPreview({
+          kind: 'unavailable',
+          content: `Preview is not available for ${document.mime_type}. Download to view this file type.`,
+        })
         setLoading(false)
         return
       }
 
-      // For images, generate a signed URL for preview
-      if (isImage) {
+      if (isImage || isPDF || isOfficeDocument) {
         const { data, error: err } = await supabase.storage
           .from('documents')
           .createSignedUrl(document.file_path, 3600)
 
         if (err) {
-          setError(`Failed to load image: ${err.message}`)
+          setError(`Failed to load preview: ${err.message}`)
           setLoading(false)
           return
         }
 
         if (data?.signedUrl) {
-          setPreview(`[IMAGE:${data.signedUrl}]`)
+          setPreview({
+            kind: isImage ? 'image' : isPDF ? 'pdf' : 'office',
+            url: data.signedUrl,
+          })
         }
         setLoading(false)
         return
@@ -83,9 +102,10 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
 
       if (isText) {
         const text = await data.text()
-        setPreview(text.substring(0, 5000) + (text.length > 5000 ? '\n\n[Preview truncated...]' : ''))
-      } else if (isPDF) {
-        setPreview('[PDF file - Download to view full content]')
+        setPreview({
+          kind: 'text',
+          content: text.substring(0, 5000) + (text.length > 5000 ? '\n\n[Preview truncated...]' : ''),
+        })
       }
     } catch (err) {
       setError(`Error loading preview: ${err}`)
@@ -254,19 +274,31 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
                 <p className="text-xs text-rust">{error}</p>
               </div>
             ) : preview ? (
-              preview.startsWith('[IMAGE:') ? (
+              preview.kind === 'image' ? (
                 <div className="bg-gray-50 rounded-lg p-4 border border-border flex items-center justify-center max-h-64">
                   <img
-                    src={preview.slice(7, -1)}
+                    src={preview.url}
                     alt={doc.name}
                     className="max-w-full max-h-60 rounded-lg object-contain"
                   />
                 </div>
-              ) : (
+              ) : preview.kind === 'pdf' ? (
+                <iframe
+                  src={preview.url}
+                  title={`${doc.name} preview`}
+                  className="h-[480px] w-full rounded-lg border border-border bg-white"
+                />
+              ) : preview.kind === 'office' ? (
+                <iframe
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(preview.url)}`}
+                  title={`${doc.name} preview`}
+                  className="h-[480px] w-full rounded-lg border border-border bg-white"
+                />
+              ) : (preview.kind === 'text' || preview.kind === 'unavailable') ? (
                 <div className="bg-gray-50 rounded-lg p-4 border border-border max-h-48 overflow-y-auto font-mono text-xs text-ink whitespace-pre-wrap break-words">
-                  {preview}
+                  {preview.content}
                 </div>
-              )
+              ) : null
             ) : null}
           </div>
         </div>

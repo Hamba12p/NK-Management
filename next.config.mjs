@@ -49,6 +49,7 @@ const nextConfig = {
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ''} wss://*.supabase.co ws://localhost:*`,
+              "frame-src 'self' https://view.officeapps.live.com",
               "frame-ancestors 'none'",
             ]
               .filter(Boolean)
