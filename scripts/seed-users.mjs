@@ -20,7 +20,7 @@ if (profilesCheckError) {
 const roster = [
   ['Naira Kateregga', 'naira@the-nkfoundation.org', 'admin'], ['Kizito Jamal', 'kizito@the-nkfoundation.org', 'manager'],
   ['Hamba Shabil', 'hamba@the-nkfoundation.org', 'manager'], ['Balqees Yasin', 'balqees@the-nkfoundation.org', 'manager'],
-  ['Shamsa Nantongo', 'shamsa@the-nkfoundation.org', 'manager'], ['Aminah Yarmah', 'aminah@the-nkfoundation.org', 'dpo'],
+u  ['Shamsa Nantongo', 'shamsa@the-nkfoundation.org', 'manager'], ['Aminah Yarmah', 'aminah@the-nkfoundation.org', 'dpo'],
   ['Volunteer team', 'volunteers@the-nkfoundation.org', 'volunteer'],
 ]
 
