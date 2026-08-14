@@ -236,9 +236,13 @@ create table if not exists public.dpo_incidents (
 alter table public.processing_activities enable row level security;
 alter table public.data_subject_requests enable row level security;
 alter table public.dpo_incidents enable row level security;
+drop policy if exists "dpo_processing_access" on public.processing_activities;
 create policy "dpo_processing_access" on public.processing_activities for all to authenticated using ((select role from public.profiles where id = auth.uid()) in ('admin', 'dpo')) with check ((select role from public.profiles where id = auth.uid()) in ('admin', 'dpo'));
+drop policy if exists "dpo_requests_access" on public.data_subject_requests;
 create policy "dpo_requests_access" on public.data_subject_requests for all to authenticated using ((select role from public.profiles where id = auth.uid()) in ('admin', 'dpo')) with check ((select role from public.profiles where id = auth.uid()) in ('admin', 'dpo'));
+drop policy if exists "dpo_incidents_read" on public.dpo_incidents;
 create policy "dpo_incidents_read" on public.dpo_incidents for select to authenticated using ((select role from public.profiles where id = auth.uid()) in ('admin', 'dpo'));
+drop policy if exists "dpo_incidents_append" on public.dpo_incidents;
 create policy "dpo_incidents_append" on public.dpo_incidents for insert to authenticated with check (auth.uid() = reported_by and (select role from public.profiles where id = auth.uid()) in ('admin', 'dpo'));
 
 -- ============================================================
@@ -278,13 +282,21 @@ create table if not exists public.tasks (
 alter table public.workspace_docs enable row level security;
 alter table public.workspace_comments enable row level security;
 alter table public.tasks enable row level security;
+drop policy if exists "workspace_docs_read" on public.workspace_docs;
 create policy "workspace_docs_read" on public.workspace_docs for select to authenticated using (true);
+drop policy if exists "workspace_docs_create" on public.workspace_docs;
 create policy "workspace_docs_create" on public.workspace_docs for insert to authenticated with check (auth.uid() = author_id);
+drop policy if exists "workspace_docs_update" on public.workspace_docs;
 create policy "workspace_docs_update" on public.workspace_docs for update to authenticated using (author_id = auth.uid() or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager')) with check (author_id = auth.uid() or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager'));
+drop policy if exists "workspace_comments_read" on public.workspace_comments;
 create policy "workspace_comments_read" on public.workspace_comments for select to authenticated using (true);
+drop policy if exists "workspace_comments_create" on public.workspace_comments;
 create policy "workspace_comments_create" on public.workspace_comments for insert to authenticated with check (auth.uid() = author_id);
+drop policy if exists "workspace_comments_delete_own" on public.workspace_comments;
 create policy "workspace_comments_delete_own" on public.workspace_comments for delete to authenticated using (author_id = auth.uid() or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager'));
+drop policy if exists "tasks_read" on public.tasks;
 create policy "tasks_read" on public.tasks for select to authenticated using (true);
+drop policy if exists "tasks_manage" on public.tasks;
 create policy "tasks_manage" on public.tasks for all to authenticated using ((select role from public.profiles where id = auth.uid()) in ('admin', 'manager')) with check ((select role from public.profiles where id = auth.uid()) in ('admin', 'manager'));
 
 -- ============================================================

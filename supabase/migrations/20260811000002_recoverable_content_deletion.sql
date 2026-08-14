@@ -71,13 +71,16 @@ where agenda.meeting_id = meetings.id and agenda.created_by is null;
 drop policy if exists "documents_read_all" on public.documents;
 drop policy if exists "documents_update" on public.documents;
 drop policy if exists "documents_delete" on public.documents;
+drop policy if exists "documents_read_active" on public.documents;
 create policy "documents_read_active" on public.documents for select to authenticated using (deleted_at is null);
+drop policy if exists "documents_update_active" on public.documents;
 create policy "documents_update_active" on public.documents for update to authenticated
   using (deleted_at is null and (auth.uid() = uploaded_by or (select role from public.profiles where id = auth.uid()) = 'admin'))
   with check (deleted_at is null and (auth.uid() = uploaded_by or (select role from public.profiles where id = auth.uid()) = 'admin'));
 
 drop policy if exists "storage_authenticated_read" on storage.objects;
 drop policy if exists "storage_delete_own" on storage.objects;
+drop policy if exists "storage_read_active_documents" on storage.objects;
 create policy "storage_read_active_documents" on storage.objects for select to authenticated
   using (
     bucket_id = 'documents' and (
@@ -89,7 +92,9 @@ create policy "storage_read_active_documents" on storage.objects for select to a
 drop policy if exists "announcements_read_all" on public.announcements;
 drop policy if exists "announcements_update" on public.announcements;
 drop policy if exists "announcements_delete" on public.announcements;
+drop policy if exists "announcements_read_active" on public.announcements;
 create policy "announcements_read_active" on public.announcements for select to authenticated using (deleted_at is null);
+drop policy if exists "announcements_update_active" on public.announcements;
 create policy "announcements_update_active" on public.announcements for update to authenticated
   using (deleted_at is null and (auth.uid() = author_id or (select role from public.profiles where id = auth.uid()) = 'admin'))
   with check (deleted_at is null and (auth.uid() = author_id or (select role from public.profiles where id = auth.uid()) = 'admin'));
@@ -97,7 +102,9 @@ create policy "announcements_update_active" on public.announcements for update t
 drop policy if exists "meetings_read_all" on public.meetings;
 drop policy if exists "meetings_update" on public.meetings;
 drop policy if exists "meetings_delete" on public.meetings;
+drop policy if exists "meetings_read_active" on public.meetings;
 create policy "meetings_read_active" on public.meetings for select to authenticated using (deleted_at is null);
+drop policy if exists "meetings_update_active" on public.meetings;
 create policy "meetings_update_active" on public.meetings for update to authenticated
   using (deleted_at is null and (auth.uid() = created_by or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager')))
   with check (deleted_at is null and (auth.uid() = created_by or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager')));
@@ -106,35 +113,46 @@ drop policy if exists "agenda_items_read" on public.agenda_items;
 drop policy if exists "agenda_items_insert" on public.agenda_items;
 drop policy if exists "agenda_items_update" on public.agenda_items;
 drop policy if exists "agenda_items_delete" on public.agenda_items;
+drop policy if exists "agenda_items_read_active" on public.agenda_items;
 create policy "agenda_items_read_active" on public.agenda_items for select to authenticated using (deleted_at is null);
+drop policy if exists "agenda_items_insert_own" on public.agenda_items;
 create policy "agenda_items_insert_own" on public.agenda_items for insert to authenticated with check (created_by = auth.uid());
+drop policy if exists "agenda_items_update_active" on public.agenda_items;
 create policy "agenda_items_update_active" on public.agenda_items for update to authenticated
   using (deleted_at is null and (created_by = auth.uid() or (select role from public.profiles where id = auth.uid()) = 'admin'))
   with check (deleted_at is null and (created_by = auth.uid() or (select role from public.profiles where id = auth.uid()) = 'admin'));
 
 drop policy if exists "workspace_docs_read" on public.workspace_docs;
 drop policy if exists "workspace_docs_update" on public.workspace_docs;
+drop policy if exists "workspace_docs_read_active" on public.workspace_docs;
 create policy "workspace_docs_read_active" on public.workspace_docs for select to authenticated using (deleted_at is null);
+drop policy if exists "workspace_docs_update_active" on public.workspace_docs;
 create policy "workspace_docs_update_active" on public.workspace_docs for update to authenticated
   using (deleted_at is null and (author_id = auth.uid() or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager')))
   with check (deleted_at is null and (author_id = auth.uid() or (select role from public.profiles where id = auth.uid()) in ('admin', 'manager')));
 
 drop policy if exists "workspace_comments_read" on public.workspace_comments;
 drop policy if exists "workspace_comments_delete_own" on public.workspace_comments;
+drop policy if exists "workspace_comments_read_active" on public.workspace_comments;
 create policy "workspace_comments_read_active" on public.workspace_comments for select to authenticated using (deleted_at is null);
 
 drop policy if exists "tasks_read" on public.tasks;
 drop policy if exists "tasks_manage" on public.tasks;
+drop policy if exists "tasks_read_active" on public.tasks;
 create policy "tasks_read_active" on public.tasks for select to authenticated using (deleted_at is null);
+drop policy if exists "tasks_manage_active" on public.tasks;
 create policy "tasks_manage_active" on public.tasks for all to authenticated
   using (deleted_at is null and (select role from public.profiles where id = auth.uid()) in ('admin', 'manager'))
   with check (deleted_at is null and (select role from public.profiles where id = auth.uid()) in ('admin', 'manager'));
 
 drop policy if exists "dpo_processing_access" on public.processing_activities;
+drop policy if exists "dpo_processing_read_active" on public.processing_activities;
 create policy "dpo_processing_read_active" on public.processing_activities for select to authenticated
   using (deleted_at is null and (select role from public.profiles where id = auth.uid()) in ('admin', 'dpo'));
+drop policy if exists "dpo_processing_write_active" on public.processing_activities;
 create policy "dpo_processing_write_active" on public.processing_activities for insert to authenticated
   with check ((select role from public.profiles where id = auth.uid()) in ('admin', 'dpo') and created_by = auth.uid());
+drop policy if exists "dpo_processing_update_active" on public.processing_activities;
 create policy "dpo_processing_update_active" on public.processing_activities for update to authenticated
   using (deleted_at is null and (created_by = auth.uid() or (select role from public.profiles where id = auth.uid()) = 'admin'))
   with check (deleted_at is null and (created_by = auth.uid() or (select role from public.profiles where id = auth.uid()) = 'admin'));
