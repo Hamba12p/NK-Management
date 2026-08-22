@@ -6,46 +6,35 @@ import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
 import { formatRole, roleBadgeClass } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
+import HubIcon, { type HubIconName } from '@/components/HubIcon'
 import {
-  LayoutDashboard,
-  FileText,
-  Calendar,
-  Bell,
-  Users,
-  UserCheck,
-  Settings,
   LogOut,
-  Eye,
-  Archive,
-  BarChart3,
-  ClipboardList,
-  ShieldCheck,
-  ScrollText,
-  AlertTriangle,
   ChevronRight,
   Menu,
   X,
 } from 'lucide-react'
 
+type NavItem = { href: string; label: string; icon: HubIconName; adminOnly: boolean }
+
 const getNavItems = (role?: string) => {
-  const baseItems = [
-    { href: '/dashboard', label: 'Home', icon: LayoutDashboard, adminOnly: false },
-    { href: '/dashboard/documents', label: 'Documents', icon: FileText, adminOnly: false },
-    { href: '/dashboard/announcements', label: 'Announcements', icon: Bell, adminOnly: false },
-    { href: '/dashboard/workspace', label: 'Workspace', icon: ClipboardList, adminOnly: false },
-    { href: '/dashboard/settings', label: 'Settings', icon: Settings, adminOnly: false },
+  const baseItems: NavItem[] = [
+    { href: '/dashboard', label: 'Home', icon: 'home', adminOnly: false },
+    { href: '/dashboard/documents', label: 'Documents', icon: 'documents', adminOnly: false },
+    { href: '/dashboard/announcements', label: 'Announcements', icon: 'announcements', adminOnly: false },
+    { href: '/dashboard/workspace', label: 'Workspace', icon: 'workspace', adminOnly: false },
+    { href: '/dashboard/settings', label: 'Settings', icon: 'settings', adminOnly: false },
   ]
 
   const managerItems = [
-    { href: '/dashboard/meetings', label: 'Meetings', icon: Calendar, adminOnly: false },
-    { href: '/dashboard/team', label: 'Team', icon: Users, adminOnly: false },
-    { href: '/dashboard/volunteers', label: 'Volunteers', icon: UserCheck, adminOnly: false },
+    { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false },
+    { href: '/dashboard/team', label: 'Team', icon: 'team' as const, adminOnly: false },
+    { href: '/dashboard/volunteers', label: 'Volunteers', icon: 'volunteers' as const, adminOnly: false },
   ]
 
   const adminItems = [
-    { href: '/dashboard/activity-log', label: 'Activity Log', icon: Eye, adminOnly: true },
-    { href: '/dashboard/advanced', label: 'Advanced', icon: Archive, adminOnly: true },
-    { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3, adminOnly: true },
+    { href: '/dashboard/activity-log', label: 'Activity Log', icon: 'activity' as const, adminOnly: true },
+    { href: '/dashboard/advanced', label: 'Advanced', icon: 'advanced' as const, adminOnly: true },
+    { href: '/dashboard/analytics', label: 'Analytics', icon: 'analytics' as const, adminOnly: true },
   ]
 
   if (role === 'admin' || role === 'manager') {
@@ -55,18 +44,18 @@ const getNavItems = (role?: string) => {
   if (role === 'dpo') {
     return [
       ...baseItems,
-      { href: '/dashboard/dpo/register', label: 'Processing Register', icon: ShieldCheck, adminOnly: false },
-      { href: '/dashboard/dpo/requests', label: 'Data Requests', icon: ScrollText, adminOnly: false },
-      { href: '/dashboard/dpo/incidents', label: 'Incident Log', icon: AlertTriangle, adminOnly: false },
-      { href: '/dashboard/activity-log', label: 'Activity Log', icon: Eye, adminOnly: false },
+      { href: '/dashboard/dpo/register', label: 'Processing Register', icon: 'dpo-register' as const, adminOnly: false },
+      { href: '/dashboard/dpo/requests', label: 'Data Requests', icon: 'dpo-requests' as const, adminOnly: false },
+      { href: '/dashboard/dpo/incidents', label: 'Incident Log', icon: 'dpo-incidents' as const, adminOnly: false },
+      { href: '/dashboard/activity-log', label: 'Activity Log', icon: 'activity' as const, adminOnly: false },
     ]
   }
 
   if (role === 'volunteer' || role === 'volunteer_senior' || role === 'volunteer_lead') {
     return [
       ...baseItems,
-      { href: '/dashboard/volunteer-profile', label: 'My Profile', icon: UserCheck, adminOnly: false },
-      { href: '/dashboard/volunteer-hours', label: 'My Hours', icon: Calendar, adminOnly: false },
+      { href: '/dashboard/volunteer-profile', label: 'My Profile', icon: 'profile' as const, adminOnly: false },
+      { href: '/dashboard/volunteer-hours', label: 'My Hours', icon: 'hours' as const, adminOnly: false },
     ]
   }
 
@@ -109,7 +98,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {getNavItems(profile?.role).map(({ href, label, icon: Icon, adminOnly }) => {
+        {getNavItems(profile?.role).map(({ href, label, icon, adminOnly }) => {
           if (adminOnly && profile?.role !== 'admin') return null
           const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
           return (
@@ -117,13 +106,13 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
               key={href}
               href={href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive ? 'bg-white/10 text-gold shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-cream'
+              className={`flex items-center gap-3 border-l-2 px-4 py-3 text-sm font-medium transition-colors ${
+                isActive ? 'border-gold bg-cream text-purple' : 'border-transparent text-white/70 hover:bg-white/10 hover:text-cream'
               }`}
             >
-              <Icon size={18} className={isActive ? 'text-gold' : 'text-white/60'} />
+              <HubIcon name={icon} width={18} height={18} className={isActive ? 'text-purple' : 'text-white/60'} />
               {label}
-              {isActive && <ChevronRight size={16} className="ml-auto text-gold" />}
+              {isActive && <ChevronRight size={16} className="ml-auto text-purple" />}
             </Link>
           )
         })}
@@ -132,7 +121,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
       <div className="p-4 border-t border-white/10 space-y-3">
         {profile && (
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5">
-            <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-gold font-semibold text-xs shrink-0">
+            <div className="w-10 h-10 rounded-full border border-gold/50 bg-white/10 flex items-center justify-center text-cream font-semibold text-xs shrink-0">
               {getInitials(profile.full_name || 'User')}
             </div>
             <div className="flex-1 min-w-0">
@@ -146,7 +135,7 @@ function SidebarContent({ profile, pathname, onNavigate }: { profile: any; pathn
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/70 hover:text-gold hover:bg-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/70 hover:text-cream hover:bg-white/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <LogOut size={18} />
           {signingOut ? 'Signing out…' : 'Sign out'}
@@ -177,7 +166,7 @@ export default function Sidebar({ profile }: { profile: any }) {
       {isMobile && (
         <button
           onClick={() => setMobileOpen(true)}
-          className="md:hidden fixed top-4 left-4 z-40 rounded-lg border border-white/10 bg-[#0A0A0A] p-2 shadow-sm"
+          className="app-sidebar fixed left-4 top-4 z-40 border border-white/20 p-2 md:hidden"
           aria-label="Open menu"
         >
           <Menu size={20} className="text-cream" />
@@ -191,7 +180,7 @@ export default function Sidebar({ profile }: { profile: any }) {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="app-sidebar relative w-72 h-full shadow-2xl border-r border-white/10 overflow-hidden bg-ink">
+          <aside className="app-sidebar relative w-72 h-full border-r border-white/15 overflow-hidden">
             <button
               onClick={() => setMobileOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/10 transition-colors z-10"

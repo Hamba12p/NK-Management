@@ -2,9 +2,12 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
-import { Bell, Pin, Plus, Trash2, AlertCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Pin, Plus, Trash2, Users } from 'lucide-react'
 import { logActivity } from '@/lib/activity'
 import { archiveAndDeleteContent } from '@/lib/content-deletion'
+import CreatorTag from '@/components/CreatorTag'
+import { EmptyLedger } from '@/components/BrandIllustrations'
+import { volunteerContributor } from '@/lib/creator'
 
 const announcementSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -19,8 +22,13 @@ type Announcement = {
   pinned: boolean
   author_id: string
   created_at: string
-  profiles: { full_name: string; role: string }
+  contributor_name: string | null
+  contributor_tag: string | null
+  profiles: { full_name: string; role: string; display_tag: string | null; display_color: string | null }
+  announcement_acknowledgements: { user_id: string; acknowledged_at: string }[]
 }
+
+type StaffMember = { id: string; full_name: string }
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
@@ -30,6 +38,8 @@ export default function AnnouncementsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [currentUserId, setCurrentUserId] = useState('')
+  const [staff, setStaff] = useState<StaffMember[]>([])
   const supabase = createClient()
 
   async function fetchAll() {
@@ -37,7 +47,7 @@ export default function AnnouncementsPage() {
       const [{ data: announcementsData }, { data: userData }] = await Promise.all([
         supabase
           .from('announcements')
-          .select('*, profiles(full_name, role)')
+          .select('*, profiles!announcements_author_id_fkey(*), announcement_acknowledgements(user_id, acknowledged_at)')
           .order('pinned', { ascending: false })
           .order('created_at', { ascending: false }),
         supabase.auth.getUser(),
@@ -48,12 +58,17 @@ export default function AnnouncementsPage() {
       }
 
       if (userData.user) {
+        setCurrentUserId(userData.user.id)
         const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userData.user.id)
           .single()
         setProfile(profileData)
+        if (profileData?.role === 'admin') {
+          const { data: staffData } = await supabase.from('profiles').select('id, full_name').order('full_name')
+          setStaff(staffData || [])
+        }
       }
     } catch (e) {
       console.error('Fetch error:', e)
@@ -104,6 +119,7 @@ export default function AnnouncementsPage() {
       const { data: inserted, error: err } = await supabase.from('announcements').insert({
         ...result.data,
         author_id: userData.user.id,
+        ...volunteerContributor(),
       }).select('id').single()
 
       if (err) {
@@ -147,6 +163,13 @@ export default function AnnouncementsPage() {
     }
   }
 
+  async function acknowledge(id: string) {
+    setError(''); setSuccess('')
+    const { error: acknowledgementError } = await supabase.from('announcement_acknowledgements').upsert({ announcement_id: id, user_id: currentUserId, acknowledged_at: new Date().toISOString() }, { onConflict: 'announcement_id,user_id' })
+    if (acknowledgementError) { setError(acknowledgementError.message); return }
+    setSuccess('Acknowledgement recorded.'); await logActivity('announcement.acknowledge', 'announcement', id); await fetchAll()
+  }
+
   const canPost = profile && ['admin', 'manager'].includes(profile.role)
   return (
     <div>
@@ -169,11 +192,11 @@ export default function AnnouncementsPage() {
 
       {/* Create Announcement Form */}
       {showForm && canPost && (
-        <div className="bg-cream border rounded-xl p-6 mb-6 space-y-4">
+        <div className="card mb-6 space-y-4">
           <h2 className="font-semibold text-ink">New Announcement</h2>
 
           {errors.general && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="rounded border border-rust/30 bg-rust/10 p-3 text-sm text-rust">
               {errors.general}
             </div>
           )}
@@ -188,7 +211,7 @@ export default function AnnouncementsPage() {
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
               placeholder="Announcement title"
             />
-            {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+            {errors.title && <p className="text-rust text-xs mt-1">{errors.title}</p>}
           </div>
 
           <div>
@@ -201,7 +224,7 @@ export default function AnnouncementsPage() {
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none"
               placeholder="Write your announcement..."
             />
-            {errors.body && <p className="text-red-500 text-xs mt-1">{errors.body}</p>}
+            {errors.body && <p className="text-rust text-xs mt-1">{errors.body}</p>}
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
@@ -233,11 +256,11 @@ export default function AnnouncementsPage() {
 
       {/* Alerts */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-          <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+        <div className="mb-6 flex items-start gap-3 rounded border border-rust/30 bg-rust/10 p-4">
+          <AlertCircle size={20} className="text-rust shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-red-900">Error</h3>
-            <p className="text-sm text-red-700 mt-0.5">{error}</p>
+            <h3 className="font-medium text-rust">Error</h3>
+            <p className="text-sm text-rust mt-0.5">{error}</p>
           </div>
         </div>
       )}
@@ -255,9 +278,9 @@ export default function AnnouncementsPage() {
         </h2>
 
         {announcements.length === 0 ? (
-          <div className="text-center py-16 bg-cream rounded-xl border">
-            <Bell size={40} className="mx-auto mb-3 text-muted" />
-            <p className="text-muted">No announcements yet.</p>
+          <div className="record-surface py-16 text-center">
+            <EmptyLedger variant="documents" className="empty-illustration mx-auto mb-3" />
+            <p className="font-semibold text-ink">No announcements recorded yet.</p><p className="mt-1 text-sm text-muted">New team notices will appear here; managers can use Post Announcement.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -265,15 +288,18 @@ export default function AnnouncementsPage() {
               const isAdmin = profile?.role === 'admin'
               const isAuthor = profile?.id === announcement.author_id
               const canManageThis = isAdmin || isAuthor
+              const acknowledgements = announcement.announcement_acknowledgements || []
+              const hasAcknowledged = acknowledgements.some(item => item.user_id === currentUserId)
+              const missing = isAdmin ? staff.filter(item => !acknowledgements.some(ack => ack.user_id === item.id)) : []
 
               return (
                 <div
                   key={announcement.id}
-                  className={`rounded-xl border overflow-hidden transition-all ${
+                  className={`record-surface overflow-hidden ${
                     announcement.pinned
-                      ? 'bg-amber-50 border-amber-200'
-                      : 'bg-cream border-border'
-                  } hover:shadow-md`}
+                      ? 'bg-gold/10'
+                      : ''
+                  }`}
                 >
                   <div className="p-5">
                     {/* Header */}
@@ -281,14 +307,15 @@ export default function AnnouncementsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {announcement.pinned && (
-                            <Pin size={16} className="text-amber-600 shrink-0" />
+                            <Pin size={16} className="text-gold shrink-0" />
                           )}
                           <h3 className="font-semibold text-ink text-lg truncate">
                             {announcement.title}
                           </h3>
+                          <CreatorTag profile={announcement.profiles} contributorName={announcement.contributor_name} contributorTag={announcement.contributor_tag} />
                         </div>
                         <p className="text-xs text-muted">
-                          <strong>{announcement.profiles?.full_name}</strong> •{' '}
+                          <CreatorTag profile={announcement.profiles} contributorName={announcement.contributor_name} contributorTag={announcement.contributor_tag} showName /> •{' '}
                           {new Date(announcement.created_at).toLocaleDateString('en-UG', {
                             month: 'short',
                             day: 'numeric',
@@ -305,7 +332,7 @@ export default function AnnouncementsPage() {
                             onClick={() => handleTogglePin(announcement.id, announcement.pinned)}
                             className={`p-2 rounded-lg transition-colors ${
                               announcement.pinned
-                                ? 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+                                ? 'bg-gold/15 text-purple hover:bg-gold/25'
                                 : 'hover:bg-warm/60 text-muted'
                             }`}
                             title={announcement.pinned ? 'Unpin' : 'Pin'}
@@ -314,7 +341,7 @@ export default function AnnouncementsPage() {
                           </button>
                           <button
                             onClick={() => handleDelete(announcement.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-400 hover:text-red-600"
+                            className="p-2 hover:bg-rust/10 rounded transition-colors text-rust/70 hover:text-rust"
                             title="Delete"
                           >
                             <Trash2 size={18} />
@@ -327,6 +354,7 @@ export default function AnnouncementsPage() {
                     <p className="text-muted whitespace-pre-wrap text-sm leading-relaxed">
                       {announcement.body}
                     </p>
+                    {announcement.pinned && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div className="flex items-center gap-2 text-sm text-muted"><Users size={16} /><span>{acknowledgements.length} acknowledgement{acknowledgements.length === 1 ? '' : 's'}</span>{isAdmin && <details className="relative"><summary className="cursor-pointer font-semibold text-purple">{missing.length} pending</summary><div className="record-surface absolute right-0 z-10 mt-2 w-64 p-3"><p className="mb-2 text-xs font-bold uppercase text-muted">Not acknowledged</p>{missing.length ? missing.map(item => <p key={item.id} className="py-1 text-sm text-ink">{item.full_name}</p>) : <p className="text-sm text-muted">Everyone has acknowledged.</p>}</div></details>}</div>{hasAcknowledged ? <span className="flex items-center gap-2 text-sm font-semibold text-green"><CheckCircle2 size={16} />Acknowledged</span> : <button onClick={() => acknowledge(announcement.id)} className="btn-secondary !min-h-0 !px-3 !py-2">Acknowledge</button>}</div>}
                   </div>
                 </div>
               )

@@ -1,250 +1,85 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { Users, Trophy, Clock, Plus, Edit, Trash2, Award } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react'
+import { Award, Clock, Users } from 'lucide-react'
+import PageHeader from '@/components/PageHeader'
+import { createClient } from '@/lib/supabase/client'
+import { formatRole } from '@/lib/utils'
 
-interface Volunteer {
-  id: string;
-  full_name: string;
-  volunteer_tier: 'volunteer' | 'volunteer_senior' | 'volunteer_lead';
-  volunteer_hours: number;
-  volunteer_join_date: string;
-  volunteer_department: string;
-  volunteer_status: 'active' | 'inactive' | 'onboarding';
+type VolunteerDetails = {
+  tier: 'volunteer' | 'volunteer_senior' | 'volunteer_lead'
+  department: string
+  status: 'active' | 'inactive' | 'onboarding'
+  join_date: string
+  hours_total: number
 }
 
+type Volunteer = {
+  id: string
+  full_name: string
+  role: string
+  volunteer_profiles: VolunteerDetails | VolunteerDetails[] | null
+}
+
+const detailsFor = (item: Volunteer) => Array.isArray(item.volunteer_profiles)
+  ? item.volunteer_profiles[0]
+  : item.volunteer_profiles
+
 export default function VolunteersPage() {
-  const supabase = createClient();
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ full_name: '', volunteer_department: '', volunteer_tier: 'volunteer' });
+  const supabase = useMemo(() => createClient(), [])
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    const load = async () => {
+      const { data, error: queryError } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, volunteer_profiles(tier, department, status, join_date, hours_total)')
+        .in('role', ['volunteer', 'volunteer_senior', 'volunteer_lead'])
+        .order('full_name')
 
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+      if (queryError) setError(queryError.message)
+      else setVolunteers((data || []) as Volunteer[])
+      setLoading(false)
+    }
+    load()
+  }, [supabase])
 
-        setProfile(profileData);
+  if (loading) return <div className="grid min-h-80 place-items-center text-muted">Loading volunteers…</div>
 
-        // Fetch volunteers (only managers/admins can view all)
-        if (profileData?.role === 'admin' || profileData?.role === 'manager') {
-          const { data: volunteersData } = await supabase
-            .from('profiles')
-            .select('*')
-            .like('role', 'volunteer%')
-            .order('volunteer_hours', { ascending: false });
+  const activeCount = volunteers.filter(item => detailsFor(item)?.status === 'active').length
+  const totalHours = volunteers.reduce((sum, item) => sum + Number(detailsFor(item)?.hours_total || 0), 0)
+  const leadCount = volunteers.filter(item => detailsFor(item)?.tier === 'volunteer_lead').length
 
-          if (volunteersData) {
-            setVolunteers(volunteersData);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const getTierColor = (tier: string) => {
-    if (tier === 'volunteer_lead') return 'bg-gold-100 text-gold-800';
-    if (tier === 'volunteer_senior') return 'bg-blue-100 text-blue-800';
-    return 'bg-green-100 text-green-800';
-  };
-
-  const getTierLabel = (tier: string) => {
-    if (tier === 'volunteer_lead') return 'Volunteer Lead';
-    if (tier === 'volunteer_senior') return 'Senior Volunteer';
-    return 'Volunteer';
-  };
-
-  const getTierIcon = (tier: string) => {
-    if (tier === 'volunteer_lead') return '👑';
-    if (tier === 'volunteer_senior') return '⭐';
-    return '🌟';
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted">Loading...</div>
-      </div>
-    );
-  }
-
-  const isManager = profile?.role === 'admin' || profile?.role === 'manager';
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-ink mb-2 flex items-center gap-3">
-            <Users className="w-8 h-8 text-gold" />
-            Volunteer Network
-          </h1>
-          <p className="text-muted">
-            {isManager ? 'Manage and support our volunteer community' : 'Your volunteer journey with NK Udada'}
-          </p>
-        </div>
-        {isManager && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-gold text-white px-4 py-2 rounded-lg hover:bg-purple"
-          >
-            <Plus size={16} />
-            Add Volunteer
-          </button>
-        )}
-      </div>
-
-      {showForm && isManager && (
-        <div className="bg-cream border rounded-xl p-6 mb-6 space-y-4">
-          <h2 className="font-semibold text-lg">Register New Volunteer</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Department"
-              value={form.volunteer_department}
-              onChange={(e) => setForm({ ...form, volunteer_department: e.target.value })}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none"
-            />
-          </div>
-          <select
-            value={form.volunteer_tier}
-            onChange={(e) => setForm({ ...form, volunteer_tier: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gold outline-none"
-          >
-            <option value="volunteer">Volunteer</option>
-            <option value="volunteer_senior">Senior Volunteer</option>
-            <option value="volunteer_lead">Volunteer Lead</option>
-          </select>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-purple"
-            >
-              Submit
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 border rounded-lg hover:bg-warm/40"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-cream rounded-lg border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted mb-1">Active Volunteers</p>
-              <p className="text-3xl font-bold text-ink">{volunteers.filter(v => v.volunteer_status === 'active').length}</p>
-            </div>
-            <Users className="w-10 h-10 text-white/60" />
-          </div>
-        </div>
-        <div className="bg-cream rounded-lg border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted mb-1">Volunteer Leads</p>
-              <p className="text-3xl font-bold text-ink">{volunteers.filter(v => v.volunteer_tier === 'volunteer_lead').length}</p>
-            </div>
-            <Award className="w-10 h-10 text-gold-200" />
-          </div>
-        </div>
-        <div className="bg-cream rounded-lg border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted mb-1">Total Hours</p>
-              <p className="text-3xl font-bold text-ink">{volunteers.reduce((sum, v) => sum + (v.volunteer_hours || 0), 0)}</p>
-            </div>
-            <Clock className="w-10 h-10 text-purple-200" />
-          </div>
-        </div>
-        <div className="bg-cream rounded-lg border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted mb-1">Avg Hours/Volunteer</p>
-              <p className="text-3xl font-bold text-ink">
-                {volunteers.length > 0 
-                  ? (volunteers.reduce((sum, v) => sum + (v.volunteer_hours || 0), 0) / volunteers.length).toFixed(0)
-                  : 0}
-              </p>
-            </div>
-            <Trophy className="w-10 h-10 text-green-200" />
-          </div>
-        </div>
-      </div>
-
-      {/* Volunteers List */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-ink">Volunteer Directory</h2>
-        {volunteers.length === 0 ? (
-          <div className="bg-cream rounded-lg border p-12 text-center">
-            <Users className="w-12 h-12 text-muted mx-auto mb-4" />
-            <p className="text-muted">No volunteers yet</p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {volunteers.map((vol) => (
-              <div key={vol.id} className="bg-cream rounded-lg border p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold/20 to-purple/20 flex items-center justify-center font-semibold text-purple">
-                      {vol.full_name?.[0] ?? '?'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-ink">{vol.full_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getTierColor(vol.volunteer_tier)}`}>
-                          {getTierIcon(vol.volunteer_tier)} {getTierLabel(vol.volunteer_tier)}
-                        </span>
-                        <span className="text-xs text-muted">{vol.volunteer_department}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-ink">{vol.volunteer_hours || 0}</p>
-                    <p className="text-xs text-muted">hours</p>
-                  </div>
-                  {isManager && (
-                    <div className="flex items-center gap-2 ml-6">
-                      <button className="p-2 hover:bg-warm/60 rounded-lg" title="Edit">
-                        <Edit size={16} className="text-muted" />
-                      </button>
-                      <button className="p-2 hover:bg-red-50 rounded-lg" title="Remove">
-                        <Trash2 size={16} className="text-red-400" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+  return <div>
+    <PageHeader title="Volunteer Network" description="A durable directory of volunteer assignments, status, and auditable hours." />
+    {error && <p className="mb-6 rounded-lg border border-rust/30 bg-rust/10 p-3 text-sm text-rust">{error}</p>}
+    <div className="mb-7 grid gap-4 md:grid-cols-3">
+      <Stat icon={Users} label="Active volunteers" value={activeCount} />
+      <Stat icon={Award} label="Volunteer leads" value={leadCount} />
+      <Stat icon={Clock} label="Approved hours" value={totalHours.toFixed(1)} />
     </div>
-  );
+    <div className="table-surface">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-warm text-muted"><tr><th className="p-4">Volunteer</th><th className="p-4">Tier</th><th className="p-4">Department</th><th className="p-4">Status</th><th className="p-4 text-right">Hours</th></tr></thead>
+        <tbody>{volunteers.map(item => {
+          const details = detailsFor(item)
+          return <tr key={item.id} className="border-t border-border">
+            <td className="p-4"><p className="font-semibold text-ink">{item.full_name}</p><p className="text-xs text-muted">Joined {details?.join_date ? new Date(details.join_date).toLocaleDateString('en-UG') : '—'}</p></td>
+            <td className="p-4 text-ink">{formatRole(details?.tier || item.role)}</td>
+            <td className="p-4 text-muted">{details?.department || 'General'}</td>
+            <td className="p-4 capitalize text-muted">{details?.status || 'onboarding'}</td>
+            <td className="p-4 text-right font-semibold text-ink">{Number(details?.hours_total || 0).toFixed(1)}</td>
+          </tr>
+        })}</tbody>
+      </table>
+      {!volunteers.length && !error && <div className="p-12 text-center text-muted">No volunteer profiles are available yet.</div>}
+    </div>
+    <p className="mt-4 text-xs text-muted">New volunteers are provisioned through the organisation’s staff account setup so every record remains linked to a verified login.</p>
+  </div>
+}
+
+function Stat({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: string | number }) {
+  return <div className="card"><div className="flex items-center justify-between"><div><p className="text-sm text-muted">{label}</p><p className="serif-display mt-2 text-3xl text-ink">{value}</p></div><Icon className="text-purple/35" size={34} /></div></div>
 }

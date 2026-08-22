@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FileUp, FileDown, Calendar, MessageSquare, Pin, Trash2, LogIn, LogOut, Eye, Filter } from 'lucide-react';
+import CreatorTag from '@/components/CreatorTag';
 
 interface ActivityEntry {
   id: string;
@@ -14,6 +15,7 @@ interface ActivityEntry {
   ip_address: string | null;
   created_at: string;
   user_name?: string;
+  profiles?: { full_name: string; display_tag: string | null; display_color: string | null } | null;
 }
 
 interface AdminNotification {
@@ -24,18 +26,18 @@ interface AdminNotification {
 }
 
 const actionIcons: Record<string, React.ReactNode> = {
-  document_upload: <FileUp className="w-4 h-4 text-blue-500" />,
-  document_download: <FileDown className="w-4 h-4 text-green-500" />,
-  document_delete: <Trash2 className="w-4 h-4 text-red-500" />,
-  meeting_create: <Calendar className="w-4 h-4 text-purple-500" />,
-  meeting_update: <Calendar className="w-4 h-4 text-purple-400" />,
-  meeting_delete: <Trash2 className="w-4 h-4 text-red-500" />,
-  announcement_post: <MessageSquare className="w-4 h-4 text-orange-500" />,
-  announcement_pin: <Pin className="w-4 h-4 text-amber-500" />,
-  announcement_unpin: <Pin className="w-4 h-4 text-gray-400" />,
-  announcement_delete: <Trash2 className="w-4 h-4 text-red-500" />,
-  login: <LogIn className="w-4 h-4 text-green-600" />,
-  logout: <LogOut className="w-4 h-4 text-gray-500" />,
+  document_upload: <FileUp className="w-4 h-4 text-purple" />,
+  document_download: <FileDown className="w-4 h-4 text-green" />,
+  document_delete: <Trash2 className="w-4 h-4 text-rust" />,
+  meeting_create: <Calendar className="w-4 h-4 text-purple" />,
+  meeting_update: <Calendar className="w-4 h-4 text-purple-lt" />,
+  meeting_delete: <Trash2 className="w-4 h-4 text-rust" />,
+  announcement_post: <MessageSquare className="w-4 h-4 text-purple" />,
+  announcement_pin: <Pin className="w-4 h-4 text-gold" />,
+  announcement_unpin: <Pin className="w-4 h-4 text-muted" />,
+  announcement_delete: <Trash2 className="w-4 h-4 text-rust" />,
+  login: <LogIn className="w-4 h-4 text-green" />,
+  logout: <LogOut className="w-4 h-4 text-muted" />,
 };
 
 const actionLabels: Record<string, string> = {
@@ -164,9 +166,7 @@ export default function ActivityLogPage() {
 
       const query = supabase
         .from('activity_log')
-        .select(`
-          *
-        `)
+        .select('*, profiles!activity_log_user_id_fkey(*)')
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: false })
         .limit(500);
@@ -175,18 +175,8 @@ export default function ActivityLogPage() {
 
       if (err) throw err;
 
-      // The compatibility migration upgrades older actor_id/action/meta rows,
-      // but normalize them here as well so the audit view remains usable while
-      // a project is awaiting that deployment.
-      const normalized = (data || []).map((entry: any) => entry.user_id ? entry : ({
-        ...entry,
-        user_id: entry.actor_id || '',
-        action_type: entry.action || 'activity',
-        resource_type: entry.target_type || 'system',
-        resource_id: entry.target_id || null,
-        details: entry.meta || {},
-      })) as ActivityEntry[];
-      setActivities(filter === 'all' ? normalized : normalized.filter((entry) => entry.action_type === filter));
+      const activities = (data || []) as ActivityEntry[];
+      setActivities(filter === 'all' ? activities : activities.filter((entry) => entry.action_type === filter));
       setError(null);
     } catch (err) {
       console.error('Failed to fetch activities:', err);
@@ -245,9 +235,9 @@ export default function ActivityLogPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8">
+      <div className="w-full">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 text-red-400">
+          <div className="record-surface bg-rust/10 p-6 text-rust">
             {error}
           </div>
         </div>
@@ -257,8 +247,8 @@ export default function ActivityLogPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 flex items-center justify-center">
-        <div className="text-slate-300 text-lg">Loading activity log...</div>
+      <div className="flex min-h-96 items-center justify-center">
+        <div className="text-muted text-lg">Loading activity log...</div>
       </div>
     );
   }
@@ -268,32 +258,32 @@ export default function ActivityLogPage() {
   ).sort();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8">
+    <div className="w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-            <Eye className="w-8 h-8 text-blue-400" />
+          <h1 className="serif-display text-4xl text-ink mb-2 flex items-center gap-3">
+            <Eye className="w-8 h-8 text-purple" />
             Activity Log & Audit Trail
           </h1>
-          <p className="text-slate-400">
+          <p className="text-muted">
             Track all user actions across the platform. This is an append-only log for compliance and security.
           </p>
         </div>
 
         {userRole === 'admin' && deletionNotices.length > 0 && (
-          <section className="mb-8 rounded-lg border border-amber-400/30 bg-amber-400/10 p-5">
-            <h2 className="text-lg font-semibold text-amber-100">Deletion notices</h2>
+          <section className="record-surface mb-8 bg-rust/10 p-5">
+            <h2 className="serif-display text-xl text-ink">Deletion notices</h2>
             <div className="mt-3 space-y-2">
               {deletionNotices.map((notice) => {
                 const title = typeof notice.payload.title === 'string' ? notice.payload.title : 'Untitled content';
                 const resourceType = typeof notice.payload.resource_type === 'string' ? notice.payload.resource_type.replace(/_/g, ' ') : 'content';
                 return (
-                  <div key={notice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-slate-950/30 px-3 py-2 text-sm">
-                    <p className={notice.read_at ? 'text-slate-400' : 'font-medium text-white'}>
+                  <div key={notice.id} className="flex flex-wrap items-center justify-between gap-3 rounded bg-cream/70 px-3 py-2 text-sm">
+                    <p className={notice.read_at ? 'text-muted' : 'font-medium text-ink'}>
                       {title} ({resourceType}) was removed and retained in the archive.
                     </p>
-                    {!notice.read_at && <button onClick={() => markNoticeRead(notice.id)} className="rounded border border-amber-300/50 px-2 py-1 text-xs font-semibold text-amber-100">Mark read</button>}
+                    {!notice.read_at && <button onClick={() => markNoticeRead(notice.id)} className="rounded border border-rust/30 px-2 py-1 text-xs font-semibold text-rust">Mark read</button>}
                   </div>
                 );
               })}
@@ -302,11 +292,11 @@ export default function ActivityLogPage() {
         )}
 
         {/* Filters */}
-        <div className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-lg p-6 mb-8">
+        <div className="card mb-8">
           <div className="flex flex-col sm:flex-row gap-6">
             {/* Date Range Filter */}
             <div className="flex-1">
-              <label className="block text-sm font-semibold text-slate-300 mb-3">
+              <label className="block text-sm font-semibold text-muted mb-3">
                 <Filter className="w-4 h-4 inline mr-2" />
                 Time Range
               </label>
@@ -317,7 +307,7 @@ export default function ActivityLogPage() {
                   setLoading(true);
                   fetchActivities(selectedFilter, e.target.value as typeof dateRange);
                 }}
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                className="w-full border border-border px-4 py-2"
               >
                 <option value="today">Today</option>
                 <option value="week">Last 7 Days</option>
@@ -328,7 +318,7 @@ export default function ActivityLogPage() {
 
             {/* Action Type Filter */}
             <div className="flex-1">
-              <label className="block text-sm font-semibold text-slate-300 mb-3">
+              <label className="block text-sm font-semibold text-muted mb-3">
                 Action Type
               </label>
               <select
@@ -338,7 +328,7 @@ export default function ActivityLogPage() {
                   setLoading(true);
                   fetchActivities(e.target.value, dateRange);
                 }}
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                className="w-full border border-border px-4 py-2"
               >
                 <option value="all">All Actions</option>
                 {actionTypes.map((type) => (
@@ -352,8 +342,8 @@ export default function ActivityLogPage() {
             {/* Stats */}
             <div className="flex items-end">
               <div>
-                <p className="text-sm text-slate-400 mb-2">Total Entries</p>
-                <p className="text-3xl font-bold text-blue-400">{activities.length}</p>
+                <p className="text-sm text-muted mb-2">Total Entries</p>
+                <p className="serif-display text-3xl text-purple">{activities.length}</p>
               </div>
             </div>
           </div>
@@ -362,45 +352,45 @@ export default function ActivityLogPage() {
         {/* Activity List */}
         <div className="space-y-3">
           {activities.length === 0 ? (
-            <div className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-lg p-8 text-center">
-              <Eye className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-              <p className="text-slate-400 text-lg">No activities found</p>
+            <div className="record-surface p-8 text-center">
+              <Eye className="w-12 h-12 text-purple/35 mx-auto mb-4" />
+              <p className="text-muted text-lg">No activities found</p>
             </div>
           ) : (
             activities.map((activity) => (
               <div
                 key={activity.id}
-                className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-lg p-4 hover:border-slate-600/60 transition-colors"
+                className="record-surface p-4"
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
                   <div className="flex-shrink-0 mt-1">
-                    {actionIcons[activity.action_type] || <Eye className="w-4 h-4 text-slate-500" />}
+                    {actionIcons[activity.action_type] || <Eye className="w-4 h-4 text-muted" />}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-4 mb-1">
-                      <p className="font-semibold text-white">
+                      <p className="font-semibold text-ink">
                         {formatActionLabel(activity.action_type, activity.details)}
                       </p>
-                      <time className="text-sm text-slate-400 flex-shrink-0">
+                      <time className="text-sm text-muted flex-shrink-0">
                         {formatDate(activity.created_at)}
                       </time>
                     </div>
-                    <p className="text-sm text-slate-400">
-                      <span className="font-medium text-slate-300">{activity.details?.volunteer_name ? `Volunteer (${String(activity.details.volunteer_name)})` : activity.user_name || 'Team member'}</span>
+                    <p className="text-sm text-muted">
+                      <CreatorTag profile={activity.profiles} contributorName={activity.details?.volunteer_name ? String(activity.details.volunteer_name) : null} showName />
                       {activity.ip_address && (
-                        <span className="ml-3 text-slate-500">IP: {activity.ip_address}</span>
+                        <span className="ml-3 text-muted">IP: {activity.ip_address}</span>
                       )}
                     </p>
 
                     {/* Details */}
                     {Object.keys(activity.details || {}).length > 0 && (
-                      <div className="mt-2 text-xs text-slate-500 bg-slate-900/40 rounded px-3 py-2">
+                      <div className="mt-2 rounded bg-warm/70 px-3 py-2 text-xs text-muted">
                         {Object.entries(activity.details).map(([key, value]) => (
                           <div key={key}>
-                            <span className="text-slate-400">{key}:</span> {String(value)}
+                            <span className="text-purple">{key}:</span> {String(value)}
                           </div>
                         ))}
                       </div>
@@ -413,7 +403,7 @@ export default function ActivityLogPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-8 bg-slate-800/20 border border-slate-700/20 rounded-lg p-4 text-center text-sm text-slate-400">
+        <div className="mt-8 border-t border-purple/20 p-4 text-center text-sm text-muted">
           <p>
             This activity log is <strong>append-only</strong> — entries cannot be deleted. This ensures compliance and audit trail integrity.
           </p>

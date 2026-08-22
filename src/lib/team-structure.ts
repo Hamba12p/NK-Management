@@ -1,13 +1,13 @@
 export type HubRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead'
 
 export const teamMembers = [
-  { email: 'naira@the-nkfoundation.org', name: 'Naira Kateregga', title: 'Founder & Coordinator', role: 'admin' as const, avatar: 'NK', color: 'var(--purple)' },
-  { email: 'kizito@the-nkfoundation.org', name: 'Kizito Jamal', title: 'General Manager', role: 'manager' as const, avatar: 'KJ', color: 'var(--gold)' },
-  { email: 'hamba@the-nkfoundation.org', name: 'Hamba Shabil', title: 'Operations & Programs Manager', role: 'manager' as const, avatar: 'HS', color: 'var(--rust)' },
-  { email: 'balqees@the-nkfoundation.org', name: 'Balqees Yasin', title: 'Consultations & Advisory Board Lead', role: 'manager' as const, avatar: 'BY', color: 'var(--green)' },
-  { email: 'shamsa@the-nkfoundation.org', name: 'Shamsa Nantongo', title: 'Finance & Procurement Manager', role: 'manager' as const, avatar: 'SN', color: 'var(--purple-lt)' },
-  { email: 'aminah@the-nkfoundation.org', name: 'Aminah Yarmah', title: 'Data Protection Officer', role: 'dpo' as const, avatar: 'AY', color: 'var(--gold)' },
-  { email: 'volunteers@the-nkfoundation.org', name: 'Volunteer team', title: 'Shared volunteer account', role: 'volunteer' as const, avatar: 'VT', color: 'var(--green)' },
+  { email: 'nkateregga003@gmail.com', name: 'Naira Kateregga', title: 'Founder & Coordinator', role: 'admin' as const, avatar: 'NK', color: 'var(--purple)' },
+  { email: 'jfaizal633@gmail.com', name: 'Faizal Kizito Jamal', title: 'General Manager', role: 'manager' as const, avatar: 'FKJ', color: 'var(--purple-lt)' },
+  { email: 'nantongoshamsa2@gmail.com', name: 'Shamsa Nantongo', title: 'Finance & Procurement Manager', role: 'manager' as const, avatar: 'SN', color: 'var(--gold)' },
+  { email: 'shabehamba@gmail.com', name: 'Hamba Shabil', title: 'Operations & Programs Manager', role: 'manager' as const, avatar: 'HS', color: 'var(--rust)' },
+  { email: 'aminayarmah@gmail.com', name: 'Amina Yarmah', title: 'Volunteer Rep / DPO', role: 'dpo' as const, avatar: 'AY', color: 'var(--purple)' },
+  { email: 'admin@the-nkfoundation.org', name: 'Admin', title: 'Organization administrator', role: 'admin' as const, avatar: 'ADM', color: 'var(--ink)' },
+  { email: 'volunteers@the-nkfoundation.org', name: 'Volunteers', title: 'Shared volunteer login', role: 'volunteer' as const, avatar: 'VOL', color: 'var(--purple-lt)' },
 ]
 
 export const rolePermissions: Record<HubRole, string[]> = {

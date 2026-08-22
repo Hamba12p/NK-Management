@@ -5,15 +5,11 @@ import PageHeader from '@/components/PageHeader'
 import InlineConfirm from '@/components/InlineConfirm'
 import DocumentModal from '@/components/DocumentModal'
 import { Upload, FileText, Download, Trash2, AlertCircle } from 'lucide-react'
-import { z } from 'zod'
 import { logActivity } from '@/lib/activity'
 import { archiveAndDeleteContent } from '@/lib/content-deletion'
-
-const uploadSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(500).optional().default(''),
-  category: z.enum(['general', 'policy', 'report', 'template', 'meeting']).default('general'),
-})
+import CreatorTag from '@/components/CreatorTag'
+import { EmptyLedger } from '@/components/BrandIllustrations'
+import { volunteerContributor } from '@/lib/creator'
 
 type Document = {
   id: string
@@ -25,7 +21,9 @@ type Document = {
   category: string
   created_at: string
   uploaded_by: string
-  profiles: { full_name: string }
+  contributor_name: string | null
+  contributor_tag: string | null
+  profiles: { full_name: string; display_tag: string | null; display_color: string | null }
 }
 
 export default function DocumentsPage() {
@@ -37,17 +35,20 @@ export default function DocumentsPage() {
   // Inline confirm: stores id of doc pending deletion
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
+  const [currentUserId, setCurrentUserId] = useState('')
+  const [createdByMe, setCreatedByMe] = useState(false)
   const supabase = createClient()
 
   async function fetchDocs() {
     try {
-      const { data, error: err } = await supabase
+      const [{ data, error: err }, { data: authData }] = await Promise.all([supabase
         .from('documents')
-        .select('*, profiles(full_name)')
-        .order('created_at', { ascending: false })
+        .select('*, profiles!documents_uploaded_by_fkey(*)')
+        .order('created_at', { ascending: false }), supabase.auth.getUser()])
 
       if (err) { console.error('Error fetching documents:', err); return }
       setDocs(data || [])
+      setCurrentUserId(authData.user?.id || '')
     } catch (e) {
       console.error('Fetch error:', e)
     }
@@ -101,6 +102,7 @@ export default function DocumentsPage() {
         mime_type: file.type || 'application/octet-stream',
         category: selectedCategory,
         uploaded_by: user.id,
+        ...volunteerContributor(),
       })
 
       if (dbError) { setError(`Failed to save document: ${dbError.message}`); setUploading(false); return }
@@ -183,6 +185,7 @@ export default function DocumentsPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
+  const visibleDocs = createdByMe ? docs.filter(doc => doc.uploaded_by === currentUserId) : docs
 
   return (
     <div>
@@ -196,7 +199,7 @@ export default function DocumentsPage() {
       />
 
       {/* Upload Section */}
-      <div className="border-2 border-dashed border-gold/30 rounded-2xl p-8 mb-6 hover:border-gold transition-colors card bg-warm/50">
+      <div className="card mb-6 border-dashed bg-cream p-8 hover:border-purple-lt">
         <div className="flex flex-col items-center justify-center">
           <div className="mb-4 p-3 bg-warm rounded-lg">
             <Upload size={24} className="text-gold" />
@@ -255,21 +258,19 @@ export default function DocumentsPage() {
 
       {/* Documents List */}
       <div>
-        <h2 className="text-lg font-semibold text-ink mb-4">
-          {docs.length} {docs.length === 1 ? 'Document' : 'Documents'}
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold text-ink">{visibleDocs.length} {visibleDocs.length === 1 ? 'Document' : 'Documents'}</h2><label className="flex items-center gap-2 text-sm font-semibold text-muted"><input type="checkbox" checked={createdByMe} onChange={event => setCreatedByMe(event.target.checked)} /> Created by me</label></div>
 
-        {docs.length === 0 ? (
+        {visibleDocs.length === 0 ? (
           <div className="text-center py-16 text-muted card">
-            <FileText size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-muted">No documents yet. Upload the first one.</p>
+            <EmptyLedger variant="documents" className="empty-illustration mx-auto mb-3" />
+            <p className="font-semibold text-ink">{createdByMe ? 'You have not uploaded a document yet.' : 'No documents recorded yet.'}</p><p className="mt-1 text-sm text-muted">Choose a category above, then select a file to share.</p>
           </div>
         ) : (
           <div className="grid gap-3">
-            {docs.map((doc) => (
+            {visibleDocs.map((doc) => (
               <div
                 key={doc.id}
-                className="card hover:shadow-md transition-all cursor-pointer border border-transparent hover:border-purple"
+                className="card cursor-pointer hover:border-purple"
                 onClick={() => setSelectedDoc(doc)}
               >
                 <div className="flex items-start gap-4">
@@ -278,16 +279,14 @@ export default function DocumentsPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-ink truncate hover:text-purple transition-colors">
-                      {doc.name}
-                    </h3>
+                    <div className="flex min-w-0 items-center gap-2"><h3 className="min-w-0 truncate font-medium text-ink transition-colors hover:text-purple">{doc.name}</h3><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} /></div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-xs font-medium px-2 py-1 rounded-full capitalize bg-purple/10 text-purple">
                         {doc.category}
                       </span>
                       <span className="text-xs text-muted">{formatFileSize(doc.file_size)}</span>
                       <span className="text-xs text-muted">•</span>
-                      <span className="text-xs text-muted">{doc.profiles?.full_name}</span>
+                      <CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} showName />
                       <span className="text-xs text-muted">•</span>
                       <span className="text-xs text-muted">
                         {new Date(doc.created_at).toLocaleDateString('en-UG', {

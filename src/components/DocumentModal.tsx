@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { X, FileText, Loader, AlertCircle, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import CreatorTag from '@/components/CreatorTag'
 
 type Document = {
   id: string
@@ -13,7 +14,9 @@ type Document = {
   category: string
   created_at: string
   uploaded_by: string
-  profiles: { full_name: string }
+  contributor_name: string | null
+  contributor_tag: string | null
+  profiles: { full_name: string; display_tag: string | null; display_color: string | null }
 }
 
 type DocumentModalProps = {
@@ -166,7 +169,7 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="record-surface max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
@@ -175,12 +178,12 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
             </div>
             <div>
               <h2 className="font-semibold text-ink">{doc.name}</h2>
-              <p className="text-xs text-muted mt-1">{doc.profiles?.full_name}</p>
+              <div className="mt-1"><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} showName /></div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-warm rounded transition-colors"
           >
             <X size={20} />
           </button>
@@ -275,7 +278,7 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
               </div>
             ) : preview ? (
               preview.kind === 'image' ? (
-                <div className="bg-gray-50 rounded-lg p-4 border border-border flex items-center justify-center max-h-64">
+                <div className="bg-warm/60 rounded p-4 border border-border flex items-center justify-center max-h-64">
                   <img
                     src={preview.url}
                     alt={doc.name}
@@ -295,7 +298,7 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
                   className="h-[480px] w-full rounded-lg border border-border bg-white"
                 />
               ) : (preview.kind === 'text' || preview.kind === 'unavailable') ? (
-                <div className="bg-gray-50 rounded-lg p-4 border border-border max-h-48 overflow-y-auto font-mono text-xs text-ink whitespace-pre-wrap break-words">
+                <div className="bg-warm/60 rounded p-4 border border-border max-h-48 overflow-y-auto font-mono text-xs text-ink whitespace-pre-wrap break-words">
                   {preview.content}
                 </div>
               ) : null
@@ -304,11 +307,11 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-border bg-gray-50">
+        <div className="flex items-center justify-between p-6 border-t border-border bg-warm/60">
           <button
             onClick={() => setIsEditing(!isEditing)}
             disabled={isSaving}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-border hover:bg-gray-100 transition-colors disabled:opacity-50"
+            className="btn-secondary !min-h-0 !px-4 !py-2 disabled:opacity-50"
           >
             {isEditing ? 'Cancel' : 'Edit'}
           </button>
@@ -316,14 +319,14 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
           <div className="flex items-center gap-3">
             <button
               onClick={handleOpenWithApp}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-gold text-gold hover:bg-gold/10 transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium rounded border border-purple text-purple hover:bg-purple/10 transition-colors flex items-center gap-2"
             >
               <ExternalLink size={16} />
               Open with App
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-border hover:bg-gray-100 transition-colors"
+              className="btn-secondary !min-h-0 !px-4 !py-2"
             >
               Close
             </button>
@@ -331,7 +334,7 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium rounded-lg bg-gold text-white hover:bg-gold/90 transition-colors disabled:opacity-50"
+                className="btn-primary !min-h-0 !px-4 !py-2 disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>

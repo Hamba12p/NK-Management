@@ -24,33 +24,13 @@ export async function insertActivityRecord(
   supabase: SupabaseClient,
   record: { userId: string; action: string; resourceType: string; resourceId?: string; details: Record<string, unknown> },
 ) {
-  const canonical = await supabase.from('activity_log').insert({
+  return supabase.from('activity_log').insert({
     user_id: record.userId,
     action_type: record.action,
     resource_type: record.resourceType,
     resource_id: record.resourceId ?? null,
     details: record.details,
   })
-
-  // The compatibility migration has not yet been deployed on every existing
-  // project. Keep audit logging functional against the legacy Phase 6 table
-  // until its actor_id/action/meta columns are migrated. Some databases have
-  // the canonical columns but still retain the legacy required `action` field.
-  const needsLegacyShape =
-    (canonical.error?.code === 'PGRST204' && canonical.error.message.includes('action_type')) ||
-    (canonical.error?.code === '23502' && canonical.error.message.includes('column "action"'))
-
-  if (needsLegacyShape) {
-    return supabase.from('activity_log').insert({
-      actor_id: record.userId,
-      action: record.action,
-      target_type: record.resourceType,
-      target_id: record.resourceId ?? null,
-      meta: record.details,
-    })
-  }
-
-  return canonical
 }
 
 /** Write an append-only audit entry. Logging never interrupts the action it describes. */

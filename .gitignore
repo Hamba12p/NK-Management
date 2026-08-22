@@ -8,6 +8,8 @@
 
 # testing
 /coverage
+/artifacts/**/*.log
+/artifacts/**/*.yml
 
 # next.js
 /.next/

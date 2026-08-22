@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className="bg-gray-50">{children}</body>
+      <body className="bg-background">{children}</body>
     </html>
   )
 }

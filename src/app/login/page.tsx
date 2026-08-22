@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import Image from 'next/image'
+import { LoginMotif } from '@/components/BrandIllustrations'
 
 const emailSchema = z.string().email('Please enter a valid email address')
 
@@ -50,13 +51,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-warm via-cream to-cream px-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute w-96 h-96 bg-gold rounded-full blur-3xl -top-48 -left-48" />
-        <div className="absolute w-96 h-96 bg-purple rounded-full blur-3xl -bottom-48 -right-48" />
-      </div>
-      <form onSubmit={handleLogin} className="bg-cream rounded-3xl border border-border shadow-xl p-10 w-full max-w-sm relative z-10">
-        <div className="mb-8 flex justify-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-gold bg-white p-1 shadow-sm"><Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={80} height={80} className="h-full w-full rounded-full object-cover" priority /></div></div>
+    <div className="login-page min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <LoginMotif />
+      <form onSubmit={handleLogin} className="record-surface p-10 w-full max-w-sm relative z-10">
+        <div className="mb-8 flex justify-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-gold bg-cream p-1"><Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={80} height={80} className="h-full w-full rounded-full object-cover" priority /></div></div>
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-ink serif-display mb-2">NK Udada</h1>
           <p className="text-muted text-sm font-medium uppercase tracking-wider">Staff Hub</p>
@@ -64,23 +62,23 @@ export default function LoginPage() {
         </div>
         <div className="space-y-5">
           <label className="block text-sm font-semibold text-ink">Email address
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-3 w-full border border-border rounded-xl px-5 py-3 text-ink placeholder-muted focus:ring-2 focus:ring-gold focus:border-transparent outline-none transition bg-warm/30" placeholder="staff@the-nkfoundation.org" required disabled={loading} autoComplete="email" />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-3 w-full border border-border px-5 py-3 text-ink placeholder-muted bg-warm/30" placeholder="staff@the-nkfoundation.org" required disabled={loading} autoComplete="email" />
           </label>
           <label className="block text-sm font-semibold text-ink">Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-3 w-full border border-border rounded-xl px-5 py-3 text-ink focus:ring-2 focus:ring-gold focus:border-transparent outline-none transition bg-warm/30" required minLength={8} disabled={loading} autoComplete="current-password" />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-3 w-full border border-border px-5 py-3 text-ink bg-warm/30" required minLength={8} disabled={loading} autoComplete="current-password" />
           </label>
-          {error && <div className="bg-rust/10 border border-rust/30 rounded-xl p-4 text-sm text-rust font-medium">{error}</div>}
-          <button type="submit" disabled={loading} className="w-full bg-purple hover:bg-purple-lt text-white py-3 rounded-xl font-semibold transition-all hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Sign in'}</button>
+          {error && <div className="rounded border border-rust/30 bg-rust/10 p-4 text-sm text-rust font-medium">{error}</div>}
+          <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Sign in'}</button>
         </div>
         <p className="text-center text-xs text-muted mt-6 font-medium">Only registered staff can access the Hub</p>
       </form>
       {volunteerPrompt && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/55 px-4">
-          <form onSubmit={continueAsVolunteer} className="w-full max-w-sm rounded-2xl bg-cream p-7 shadow-2xl">
+          <form onSubmit={continueAsVolunteer} className="record-surface w-full max-w-sm p-7">
             <h2 className="serif-display text-2xl text-ink">Who’s working right now?</h2>
             <p className="mt-2 text-sm text-muted">This is recorded with the volunteer team’s activity for this browser session.</p>
-            <input value={volunteerName} onChange={(e) => setVolunteerName(e.target.value)} className="mt-5 w-full rounded-xl border border-border px-4 py-3 outline-none focus:ring-2 focus:ring-gold" placeholder="Your name" autoFocus required maxLength={100} />
-            <button className="mt-4 w-full rounded-xl bg-purple py-3 font-semibold text-white hover:bg-purple-lt">Continue to the Hub</button>
+            <input value={volunteerName} onChange={(e) => setVolunteerName(e.target.value)} className="mt-5 w-full border border-border px-4 py-3" placeholder="Your name" autoFocus required maxLength={100} />
+            <button className="btn-primary mt-4 w-full">Continue to the Hub</button>
           </form>
         </div>
       )}

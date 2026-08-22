@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
     return (
       <div className="w-full">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700">
+          <div className="record-surface bg-rust/10 p-6 text-rust">
             {error}
           </div>
         </div>
@@ -108,29 +108,29 @@ export default function AnalyticsPage() {
       icon: Users,
       label: 'Total Staff',
       value: analytics.totalUsers,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
+      color: 'text-purple',
+      bg: 'bg-purple/10',
     },
     {
       icon: FileText,
       label: 'Documents',
       value: analytics.totalDocuments,
-      color: 'text-green-600',
-      bg: 'bg-green-50',
+      color: 'text-green',
+      bg: 'bg-green/10',
     },
     {
       icon: Calendar,
       label: 'Meetings',
       value: analytics.totalMeetings,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
+      color: 'text-purple',
+      bg: 'bg-purple-lt/15',
     },
     {
       icon: TrendingUp,
       label: 'Announcements',
       value: analytics.totalAnnouncements,
-      color: 'text-orange-600',
-      bg: 'bg-orange-50',
+      color: 'text-rust',
+      bg: 'bg-rust/10',
     },
   ];
 
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-ink mb-2 flex items-center gap-3">
+          <h1 className="serif-display text-4xl text-ink mb-2 flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-gold" />
             Analytics & Reporting
           </h1>
@@ -153,13 +153,13 @@ export default function AnalyticsPage() {
             return (
               <div
                 key={card.label}
-                className={`${card.bg} rounded-lg border border-border shadow-sm p-6`}
+                className={`${card.bg} record-surface p-6`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-muted">{card.label}</h3>
                   <Icon className={`w-5 h-5 ${card.color}`} />
                 </div>
-                <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+                <p className={`serif-display text-3xl ${card.color}`}>{card.value}</p>
                 <p className="text-xs text-muted mt-2">Total count</p>
               </div>
             );
@@ -167,8 +167,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="bg-cream rounded-lg border border-border shadow-sm p-6 mb-8">
-          <h2 className="text-xl font-bold text-ink mb-6">Key Metrics</h2>
+        <div className="card mb-8">
+          <h2 className="serif-display text-2xl text-ink mb-6">Key Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 bg-warm/40 rounded-lg">
               <p className="text-sm text-muted mb-1">Avg Documents per Staff</p>
@@ -201,8 +201,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Reports */}
-        <div className="bg-cream rounded-lg border border-border shadow-sm p-6">
-          <h2 className="text-xl font-bold text-ink mb-6">Generate Reports</h2>
+        <div className="card">
+          <h2 className="serif-display text-2xl text-ink mb-6">Generate Reports</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
               <div className="text-left">

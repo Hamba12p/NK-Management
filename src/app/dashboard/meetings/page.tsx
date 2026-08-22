@@ -1,10 +1,13 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
-import { Calendar, Clock, MapPin, Plus, Trash2, Check, X } from 'lucide-react'
+import { Calendar, Clock, MapPin, Plus, Trash2, Check, X, ListTodo } from 'lucide-react'
 import { logActivity } from '@/lib/activity'
 import { archiveAndDeleteContent } from '@/lib/content-deletion'
+import CreatorTag from '@/components/CreatorTag'
+import { EmptyLedger } from '@/components/BrandIllustrations'
+import { volunteerContributor } from '@/lib/creator'
 
 const meetingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -24,7 +27,9 @@ type Meeting = {
   status: string
   created_by: string | null
   created_at: string
-  profiles: { full_name: string; role: string }
+  contributor_name: string | null
+  contributor_tag: string | null
+  profiles: { full_name: string; role: string; display_tag: string | null; display_color: string | null }
   agenda_items: AgendaItem[]
 }
 
@@ -54,14 +59,14 @@ export default function MeetingsPage() {
     location: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  async function fetchAll() {
+  const fetchAll = useCallback(async () => {
     try {
       const [{ data: meetingsData }, { data: userData }] = await Promise.all([
         supabase
           .from('meetings')
-          .select('*, profiles(full_name, role), agenda_items(*)')
+          .select('*, profiles!meetings_created_by_fkey(*), agenda_items(*)')
           .gte('scheduled_at', new Date(Date.now() - 7 * 86400000).toISOString())
           .order('scheduled_at', { ascending: true }),
         supabase.auth.getUser(),
@@ -88,7 +93,7 @@ export default function MeetingsPage() {
     } catch (e) {
       console.error('Fetch error:', e)
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
     // Initial hydration deliberately updates local state after the first query.
@@ -105,7 +110,7 @@ export default function MeetingsPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [fetchAll, supabase])
 
   async function handleCreateMeeting(e: React.FormEvent) {
     e.preventDefault()
@@ -133,6 +138,7 @@ export default function MeetingsPage() {
       const { data: inserted, error } = await supabase.from('meetings').insert({
         ...result.data,
         created_by: userData.user.id,
+        ...volunteerContributor(),
       }).select('id').single()
 
       if (error) {
@@ -225,11 +231,14 @@ export default function MeetingsPage() {
 
   async function handleUpdateStatus(meetingId: string, newStatus: string) {
     try {
-      const { error } = await supabase.from('meetings').update({ status: newStatus }).eq('id', meetingId)
+      const { error } = newStatus === 'completed'
+        ? await supabase.rpc('complete_meeting_and_carry_forward', { p_meeting_id: meetingId })
+        : await supabase.from('meetings').update({ status: newStatus }).eq('id', meetingId)
       if (error) {
-        console.error('Update error:', error)
+        setAgendaError({ [meetingId]: error.message })
         return
       }
+      setAgendaError({})
       if (newStatus === 'cancelled') {
         logActivity('meeting.cancel', 'meeting', meetingId, { reason: 'status_update' })
       } else {
@@ -238,6 +247,28 @@ export default function MeetingsPage() {
     } catch (err) {
       console.error('Error:', err)
     }
+  }
+
+  async function handleConvertToTask(meeting: Meeting, item: AgendaItem) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    // This timestamp is captured from the user's conversion action, not during render.
+    // eslint-disable-next-line react-hooks/purity
+    const actionTime = Date.now()
+    const dueDate = new Date(Math.max(actionTime, new Date(meeting.scheduled_at).getTime()) + 7 * 86400000)
+      .toISOString().slice(0, 10)
+    const { error } = await supabase.from('tasks').insert({
+      title: item.content.slice(0, 200),
+      description: `Converted from the agenda for ${meeting.title}`,
+      assignee_id: item.presenter || user.id,
+      due_date: dueDate,
+      source_meeting_id: meeting.id,
+      source_agenda_item_id: item.id,
+      created_by: user.id,
+      ...volunteerContributor(),
+    })
+    if (error) { setAgendaError({ [meeting.id]: error.code === '23505' ? 'This agenda item is already a task.' : error.message }); return }
+    setAgendaError({}); await logActivity('task.create_from_agenda', 'task', undefined, { meeting: meeting.title, agenda_item: item.content })
   }
 
   const formatDateTime = (dateStr: string) => {
@@ -250,10 +281,10 @@ export default function MeetingsPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      upcoming: 'bg-blue-50 text-blue-700 border-blue-200',
-      in_progress: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      completed: 'bg-green-50 text-green-700 border-green-200',
-      cancelled: 'bg-red-50 text-red-700 border-red-200',
+      upcoming: 'bg-purple/10 text-purple border-purple/20',
+      in_progress: 'bg-gold/15 text-purple border-gold/30',
+      completed: 'bg-green/10 text-green border-green/20',
+      cancelled: 'bg-rust/10 text-rust border-rust/25',
     }
     return colors[status] || colors.upcoming
   }
@@ -264,8 +295,6 @@ export default function MeetingsPage() {
 
   const canDeleteMeeting = (meeting: Meeting) => profile?.role === 'admin' || profile?.id === meeting.created_by
   const canDeleteAgendaItem = (item: AgendaItem) => profile?.role === 'admin' || profile?.id === item.created_by
-
-  const dt = formatDateTime(new Date().toISOString())
 
   return (
     <div>
@@ -288,11 +317,11 @@ export default function MeetingsPage() {
 
       {/* Create Meeting Form */}
       {showForm && (
-        <div className="bg-cream border rounded-xl p-6 mb-6 space-y-4">
+        <div className="card mb-6 space-y-4">
           <h2 className="font-semibold text-ink">Schedule New Meeting</h2>
 
           {errors.general && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{errors.general}</div>
+            <div className="rounded border border-rust/30 bg-rust/10 p-3 text-sm text-rust">{errors.general}</div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,7 +335,7 @@ export default function MeetingsPage() {
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
                 placeholder="Team Sync Meeting"
               />
-              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+              {errors.title && <p className="text-rust text-xs mt-1">{errors.title}</p>}
             </div>
 
             <div>
@@ -317,7 +346,7 @@ export default function MeetingsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, scheduled_at: e.target.value }))}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
               />
-              {errors.scheduled_at && <p className="text-red-500 text-xs mt-1">{errors.scheduled_at}</p>}
+              {errors.scheduled_at && <p className="text-rust text-xs mt-1">{errors.scheduled_at}</p>}
             </div>
 
             <div>
@@ -330,7 +359,7 @@ export default function MeetingsPage() {
                 max="480"
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
               />
-              {errors.duration_min && <p className="text-red-500 text-xs mt-1">{errors.duration_min}</p>}
+              {errors.duration_min && <p className="text-rust text-xs mt-1">{errors.duration_min}</p>}
             </div>
 
             <div>
@@ -382,9 +411,9 @@ export default function MeetingsPage() {
         </h2>
 
         {meetings.length === 0 ? (
-          <div className="text-center py-16 bg-cream rounded-xl border">
-            <Calendar size={40} className="mx-auto mb-3 text-muted" />
-            <p className="text-muted">No meetings scheduled.</p>
+          <div className="record-surface py-16 text-center">
+            <EmptyLedger variant="ledger" className="empty-illustration mx-auto mb-3" />
+            <p className="font-semibold text-ink">No upcoming meetings recorded.</p><p className="mt-1 text-sm text-muted">Managers can schedule the first meeting and add its agenda.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -397,7 +426,7 @@ export default function MeetingsPage() {
               return (
                 <div
                   key={meeting.id}
-                  className="bg-cream border rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+                  className="record-surface overflow-hidden"
                 >
                   {/* Meeting Header */}
                   <button
@@ -406,7 +435,7 @@ export default function MeetingsPage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-ink truncate text-lg">{meeting.title}</h3>
+                        <div className="flex items-center gap-2"><h3 className="min-w-0 truncate text-lg font-semibold text-ink">{meeting.title}</h3><CreatorTag profile={meeting.profiles} contributorName={meeting.contributor_name} contributorTag={meeting.contributor_tag} /></div>
                         <div className="flex items-center gap-3 mt-2 text-sm text-muted flex-wrap">
                           <span className="flex items-center gap-1">
                             <Calendar size={14} />
@@ -453,7 +482,7 @@ export default function MeetingsPage() {
                               e.stopPropagation()
                               handleDeleteMeeting(meeting.id)
                             }}
-                            className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors"
+                            className="p-1 hover:bg-rust/10 rounded text-rust/70 hover:text-rust transition-colors"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -474,7 +503,7 @@ export default function MeetingsPage() {
 
                       {/* Organizer */}
                       <div className="text-xs text-muted">
-                        Organized by <strong>{meeting.profiles?.full_name}</strong>
+                        Organized by <CreatorTag profile={meeting.profiles} contributorName={meeting.contributor_name} contributorTag={meeting.contributor_tag} showName />
                       </div>
 
                       {/* Agenda Section */}
@@ -509,10 +538,15 @@ export default function MeetingsPage() {
                                   >
                                     {item.content}
                                   </span>
+                                  {!item.done && canEditMeeting(meeting) && (
+                                    <button onClick={() => handleConvertToTask(meeting, item)} className="shrink-0 text-muted transition-colors hover:text-purple" title="Convert to task">
+                                      <ListTodo size={15} />
+                                    </button>
+                                  )}
                                   {canDeleteAgendaItem(item) && (
                                     <button
                                       onClick={() => handleDeleteAgendaItem(item.id)}
-                                      className="ml-auto text-muted hover:text-red-400 transition-colors shrink-0"
+                                      className="ml-auto text-muted hover:text-rust transition-colors shrink-0"
                                       title="Remove agenda item"
                                     >
                                       <Trash2 size={14} />
@@ -546,7 +580,7 @@ export default function MeetingsPage() {
                             </button>
                           </div>
                           {agendaError[meeting.id] && (
-                            <p className="text-red-500 text-xs mt-1">{agendaError[meeting.id]}</p>
+                            <p className="text-rust text-xs mt-1">{agendaError[meeting.id]}</p>
                           )}
                         </div>
                       </div>

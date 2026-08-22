@@ -17,11 +17,11 @@ export default function Header({ profile }: { profile?: any }) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-cream/92 backdrop-blur-md border-b border-border transition-shadow hover:shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-cream/92 backdrop-blur-md border-b border-purple/20">
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between h-16">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-3 no-underline hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 overflow-hidden rounded-full border border-gold/40 bg-white flex-shrink-0">
+          <div className="w-10 h-10 overflow-hidden rounded-full border border-gold/40 bg-cream flex-shrink-0">
             <Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={40} height={40} className="h-full w-full object-cover" />
           </div>
           <div>
@@ -52,7 +52,7 @@ export default function Header({ profile }: { profile?: any }) {
                 <p className="text-xs text-muted capitalize">{profile.role || 'member'}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-gold font-bold text-sm">{profile.name?.[0] || 'U'}</span>
+                <span className="text-purple font-bold text-sm">{profile.name?.[0] || 'U'}</span>
               </div>
             </div>
           )}
@@ -81,21 +81,21 @@ export default function Header({ profile }: { profile?: any }) {
           <div className="px-6 py-4 space-y-3">
             <Link
               href="/dashboard"
-              className="block text-sm font-medium text-ink hover:text-gold transition-colors py-2"
+              className="block text-sm font-medium text-ink hover:text-purple transition-colors py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               Dashboard
             </Link>
             <Link
               href="/dashboard/documents"
-              className="block text-sm font-medium text-ink hover:text-gold transition-colors py-2"
+              className="block text-sm font-medium text-ink hover:text-purple transition-colors py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               Documents
             </Link>
             <Link
               href="/dashboard/announcements"
-              className="block text-sm font-medium text-ink hover:text-gold transition-colors py-2"
+              className="block text-sm font-medium text-ink hover:text-purple transition-colors py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               Announcements
@@ -105,7 +105,7 @@ export default function Header({ profile }: { profile?: any }) {
                 handleLogout()
                 setMobileMenuOpen(false)
               }}
-              className="w-full flex items-center justify-center gap-2 mt-4 text-sm font-medium text-gold bg-warm py-2 rounded-lg hover:bg-warm/80 transition-colors"
+              className="w-full flex items-center justify-center gap-2 mt-4 text-sm font-medium text-purple bg-warm py-2 rounded hover:bg-purple/10 transition-colors"
             >
               <LogOut size={16} /> Logout
             </button>

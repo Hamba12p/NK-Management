@@ -51,6 +51,28 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  const protectedRoles = (() => {
+    if (pathname === '/dashboard/advanced' || pathname === '/dashboard/analytics') return ['admin']
+    if (pathname === '/dashboard/activity-log' || pathname.startsWith('/dashboard/dpo/')) return ['admin', 'dpo']
+    if (pathname === '/dashboard/volunteers') return ['admin', 'manager']
+    if (pathname === '/dashboard/volunteer-profile' || pathname === '/dashboard/volunteer-hours') {
+      return ['volunteer', 'volunteer_senior', 'volunteer_lead']
+    }
+    return null
+  })()
+
+  if (user && protectedRoles) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !protectedRoles.includes(profile.role)) {
+      return NextResponse.redirect(new URL('/dashboard?access=denied', request.url))
+    }
+  }
+
   return response
 }
 

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Users, Search, Filter, Mail, Badge, Calendar } from 'lucide-react';
+import { Search, Filter, Mail, Badge, Calendar } from 'lucide-react';
+import HubIcon from '@/components/HubIcon';
+import { EmptyLedger } from '@/components/BrandIllustrations';
+import { teamMembers } from '@/lib/team-structure';
 
 type ProfileRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead';
 
@@ -10,6 +13,10 @@ interface TeamMember {
   id: string;
   full_name: string;
   email?: string;
+  job_title?: string;
+  account_type?: 'person' | 'organization' | 'shared';
+  display_tag?: string;
+  display_color?: string;
   role: string;
   avatar_url?: string;
   created_at?: string;
@@ -17,29 +24,29 @@ interface TeamMember {
 
 const roleColors: Record<ProfileRole, { bg: string; text: string; border: string }> = {
   admin: {
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    border: 'border-red-200',
+    bg: 'bg-rust/10',
+    text: 'text-rust',
+    border: 'border-rust/25',
   },
   manager: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
+    bg: 'bg-purple/10',
+    text: 'text-purple',
+    border: 'border-purple/25',
   },
   dpo: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-700',
-    border: 'border-purple-200',
+    bg: 'bg-purple-lt/15',
+    text: 'text-purple',
+    border: 'border-purple-lt/35',
   },
   volunteer_lead: {
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    border: 'border-amber-200',
+    bg: 'bg-gold/10',
+    text: 'text-purple',
+    border: 'border-gold/30',
   },
   volunteer_senior: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
+    bg: 'bg-green/10',
+    text: 'text-green',
+    border: 'border-green/20',
   },
   volunteer: {
     bg: 'bg-warm/40',
@@ -50,24 +57,24 @@ const roleColors: Record<ProfileRole, { bg: string; text: string; border: string
 
 const roleBadgeColors: Record<ProfileRole, { bg: string; text: string }> = {
   admin: {
-    bg: 'bg-red-100',
-    text: 'text-red-800',
+    bg: 'bg-rust/15',
+    text: 'text-rust',
   },
   manager: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
+    bg: 'bg-purple/10',
+    text: 'text-purple',
   },
   dpo: {
-    bg: 'bg-purple-100',
-    text: 'text-purple-800',
+    bg: 'bg-purple-lt/20',
+    text: 'text-purple',
   },
   volunteer_lead: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
+    bg: 'bg-gold/15',
+    text: 'text-purple',
   },
   volunteer_senior: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
+    bg: 'bg-green/10',
+    text: 'text-green',
   },
   volunteer: {
     bg: 'bg-warm/60',
@@ -162,9 +169,8 @@ export default function TeamPage() {
 
   // Filter members
   const filteredMembers = members.filter((member) => {
-    const matchesSearch = member.full_name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = member.full_name.toLowerCase().includes(query) || (member.email || '').toLowerCase().includes(query);
     const matchesRole = selectedRole === 'all' || normalizeRole(member.role) === selectedRole;
     return matchesSearch && matchesRole;
   });
@@ -184,8 +190,8 @@ export default function TeamPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-ink mb-2 flex items-center gap-3">
-            <Users className="w-8 h-8 text-gold" />
+          <h1 className="serif-display text-4xl text-ink mb-2 flex items-center gap-3">
+            <HubIcon name="team" className="h-8 w-8 text-purple" />
             Team Directory
           </h1>
           <p className="text-muted">
@@ -194,7 +200,7 @@ export default function TeamPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-cream rounded-lg border border-border shadow-sm p-6 mb-8">
+        <div className="card mb-8">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
@@ -236,7 +242,7 @@ export default function TeamPage() {
             <div className="flex items-end">
               <div>
                 <p className="text-sm text-muted mb-2">Showing Results</p>
-                <p className="text-3xl font-bold text-gold">{filteredMembers.length}</p>
+                <p className="serif-display text-3xl text-purple">{filteredMembers.length}</p>
               </div>
             </div>
           </div>
@@ -244,7 +250,7 @@ export default function TeamPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 text-red-700">
+          <div className="record-surface mb-8 bg-rust/10 p-4 text-rust">
             {error}
           </div>
         )}
@@ -252,8 +258,8 @@ export default function TeamPage() {
         {/* Team Members Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMembers.length === 0 ? (
-            <div className="col-span-full bg-cream rounded-lg border border-border shadow-sm p-12 text-center">
-              <Users className="w-12 h-12 text-muted mx-auto mb-4" />
+            <div className="record-surface col-span-full p-12 text-center">
+              <EmptyLedger variant="ledger" className="empty-illustration mx-auto mb-4" />
               <p className="text-muted text-lg">No team members found</p>
               {searchQuery && (
                 <p className="text-muted text-sm mt-2">
@@ -264,26 +270,17 @@ export default function TeamPage() {
           ) : (
             filteredMembers.map((member) => {
               const role = normalizeRole(member.role);
+              const rosterMember = teamMembers.find(item => item.name === member.full_name);
+              const accountType = member.account_type || (member.full_name === 'Volunteers' ? 'shared' : member.full_name === 'Admin' ? 'organization' : 'person');
               return (
               <div
                 key={member.id}
-                className={`rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-6 ${
-                  roleColors[role].bg
-                } ${roleColors[role].border}`}
+                className="record-surface bg-cream p-6"
               >
                 {/* Avatar & Name */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4 flex-1">
-                    <div
-                      className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-purple flex items-center justify-center text-white font-semibold text-lg shrink-0"
-                    >
-                      {member.full_name
-                        .split(' ')
-                        .slice(0, 2)
-                        .map((n) => n[0])
-                        .join('')
-                        .toUpperCase()}
-                    </div>
+                    <div className="creator-avatar" data-color={member.display_color || 'burgundy'}>{member.display_tag || rosterMember?.avatar || member.full_name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}</div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold text-ink truncate">
                         {member.full_name}
@@ -303,7 +300,7 @@ export default function TeamPage() {
                   <div className="flex items-center gap-3 text-sm">
                     <Mail className="w-4 h-4 text-muted flex-shrink-0" />
                     <span className="text-muted truncate">
-                      {member.email || 'No email provided'}
+                      {accountType === 'shared' ? 'Shared volunteer login' : member.email || rosterMember?.email || (accountType === 'organization' ? 'Organization account' : 'Email pending profile sync')}
                     </span>
                   </div>
 
@@ -325,7 +322,7 @@ export default function TeamPage() {
                 <div className="mt-4 pt-4 border-t border-current border-opacity-10">
                   <p className="text-xs text-muted uppercase tracking-wide">Role Details</p>
                   <p className={`mt-1 text-sm font-medium ${roleColors[role].text}`}>
-                    {roleDescriptions[role]}
+                    {member.job_title || rosterMember?.title || roleDescriptions[role]}
                   </p>
                 </div>
               </div>
