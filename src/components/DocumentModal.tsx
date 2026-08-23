@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { X, FileText, Loader, AlertCircle, ExternalLink } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import CreatorTag from '@/components/CreatorTag'
+import { getDocumentAccess } from '@/lib/document-access'
 
 type Document = {
   id: string
@@ -39,7 +39,6 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const supabase = createClient()
 
   async function loadPreview(document: Document) {
     setLoading(true)
@@ -73,38 +72,21 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
       }
 
       if (isImage || isPDF || isOfficeDocument) {
-        const { data, error: err } = await supabase.storage
-          .from('documents')
-          .createSignedUrl(document.file_path, 3600)
-
-        if (err) {
-          setError(`Failed to load preview: ${err.message}`)
-          setLoading(false)
-          return
-        }
-
-        if (data?.signedUrl) {
-          setPreview({
-            kind: isImage ? 'image' : isPDF ? 'pdf' : 'office',
-            url: data.signedUrl,
-          })
-        }
+        const { signedUrl } = await getDocumentAccess(document.id)
+        setPreview({
+          kind: isImage ? 'image' : isPDF ? 'pdf' : 'office',
+          url: signedUrl,
+        })
         setLoading(false)
         return
       }
 
-      const { data, error: err } = await supabase.storage
-        .from('documents')
-        .download(document.file_path)
-
-      if (err) {
-        setError(`Failed to load preview: ${err.message}`)
-        setLoading(false)
-        return
-      }
+      const { signedUrl } = await getDocumentAccess(document.id)
+      const response = await fetch(signedUrl)
+      if (!response.ok) throw new Error('The document content could not be downloaded')
 
       if (isText) {
-        const text = await data.text()
+        const text = await response.text()
         setPreview({
           kind: 'text',
           content: text.substring(0, 5000) + (text.length > 5000 ? '\n\n[Preview truncated...]' : ''),
@@ -131,20 +113,10 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
   async function handleOpenWithApp() {
     if (!doc) return
     try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(doc.file_path, 900)
-
-      if (error) {
-        setError(`Failed to open: ${error.message}`)
-        return
-      }
-
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank')
-      }
+      const { signedUrl } = await getDocumentAccess(doc.id)
+      window.open(signedUrl, '_blank', 'noopener,noreferrer')
     } catch (err) {
-      setError(`Error opening file: ${err}`)
+      setError(`Failed to open: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 

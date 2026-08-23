@@ -10,6 +10,7 @@ import { archiveAndDeleteContent } from '@/lib/content-deletion'
 import CreatorTag from '@/components/CreatorTag'
 import { EmptyLedger } from '@/components/BrandIllustrations'
 import { volunteerContributor } from '@/lib/creator'
+import { getDocumentAccess } from '@/lib/document-access'
 
 type Document = {
   id: string
@@ -120,14 +121,10 @@ export default function DocumentsPage() {
 
   async function handleDownload(doc: Document) {
     try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(doc.file_path, 900)
-
-      if (error) { setError(`Download failed: ${error.message}`); return }
-      if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+      const { signedUrl } = await getDocumentAccess(doc.id)
+      window.open(signedUrl, '_blank', 'noopener,noreferrer')
     } catch (err) {
-      setError(`Download error: ${err}`)
+      setError(`Download failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
