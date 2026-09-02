@@ -24,7 +24,7 @@ const roster = [
   { name: 'Hamba Shabil', email: 'shabehamba@gmail.com', legacyEmail: 'hamba@the-nkfoundation.org', role: 'manager', jobTitle: 'Operations & Programs Manager', tag: 'HS', color: 'rust', accountType: 'person' },
   { name: 'Amina Yarmah', email: 'aminayarmah@gmail.com', legacyEmail: 'aminah@the-nkfoundation.org', role: 'dpo', jobTitle: 'Volunteer Rep / DPO', tag: 'AY', color: 'burgundy', accountType: 'person' },
   { name: 'Admin', email: 'admin@the-nkfoundation.org', role: 'admin', jobTitle: 'Organization administrator', tag: 'ADM', color: 'ink', accountType: 'organization', master: true },
-  { name: 'Volunteers', email: 'volunteers@the-nkfoundation.org', role: 'volunteer', jobTitle: 'Shared volunteer login', tag: 'VOL', color: 'soft-burgundy', accountType: 'shared' },
+  { name: 'Volunteers', email: 'ginanina400@gmail.com', legacyEmail: 'volunteers@the-nkfoundation.org', role: 'volunteer', jobTitle: 'Shared volunteer login', tag: 'VOL', color: 'soft-burgundy', accountType: 'shared' },
 ]
 
 const { data: existing, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
@@ -33,7 +33,12 @@ const usersByEmail = new Map(existing.users.map((user) => [user.email?.toLowerCa
 
 async function provision(member, password) {
   const email = member.email.toLowerCase()
-  let user = usersByEmail.get(email) || (member.legacyEmail ? usersByEmail.get(member.legacyEmail) : undefined)
+  const canonicalUser = usersByEmail.get(email)
+  const legacyUser = member.legacyEmail ? usersByEmail.get(member.legacyEmail) : undefined
+  if (canonicalUser && legacyUser && canonicalUser.id !== legacyUser.id) {
+    throw new Error(`Cannot migrate ${member.legacyEmail}: ${email} is already assigned to a different account.`)
+  }
+  let user = canonicalUser || legacyUser
   const metadata = {
     full_name: member.name,
     role: member.role,

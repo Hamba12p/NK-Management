@@ -22,9 +22,22 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select upper(left(coalesce(string_agg(left(part, 1), '' order by ordinal), 'NK'), 4))
-  from unnest(regexp_split_to_array(trim(coalesce(p_name, 'NK')), '\s+')) with ordinality as words(part, ordinal)
-  where ordinal <= 2;
+  with normalized as (
+    select trim(regexp_replace(coalesce(p_name, ''), '[^A-Za-z0-9]+', ' ', 'g')) as value
+  ), tag_parts as (
+    select
+      coalesce(string_agg(left(part, 1), '' order by ordinal), '') as initials,
+      regexp_replace((select value from normalized), '\s+', '', 'g') as compact_name
+    from unnest(regexp_split_to_array((select value from normalized), '\s+')) with ordinality as words(part, ordinal)
+    where part <> '' and ordinal <= 4
+  )
+  select upper(
+    case
+      when char_length(initials) >= 2 then left(initials, 4)
+      else left(coalesce(nullif(compact_name, ''), 'NK') || 'NK', 2)
+    end
+  )
+  from tag_parts;
 $$;
 
 update public.profiles as profile

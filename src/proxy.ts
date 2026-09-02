@@ -55,6 +55,13 @@ export async function proxy(request: NextRequest) {
     if (pathname === '/dashboard/advanced' || pathname === '/dashboard/analytics') return ['admin']
     if (pathname === '/dashboard/activity-log' || pathname.startsWith('/dashboard/dpo/')) return ['admin', 'dpo']
     if (pathname === '/dashboard/volunteers') return ['admin', 'manager']
+    if (pathname === '/dashboard/classes' || pathname.startsWith('/dashboard/classes/')) {
+      return ['admin', 'manager', 'volunteer', 'volunteer_senior', 'volunteer_lead']
+    }
+    if (pathname === '/dashboard/learners') return ['admin', 'manager', 'dpo']
+    if (pathname === '/dashboard/hub') {
+      return ['admin', 'manager', 'volunteer', 'volunteer_senior', 'volunteer_lead']
+    }
     if (pathname === '/dashboard/volunteer-profile' || pathname === '/dashboard/volunteer-hours') {
       return ['volunteer', 'volunteer_senior', 'volunteer_lead']
     }

@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-export type HubIconName = 'home' | 'documents' | 'announcements' | 'workspace' | 'settings' | 'meetings' | 'team' | 'volunteers' | 'activity' | 'advanced' | 'analytics' | 'dpo-register' | 'dpo-requests' | 'dpo-incidents' | 'profile' | 'hours'
+export type HubIconName = 'home' | 'documents' | 'announcements' | 'workspace' | 'settings' | 'meetings' | 'team' | 'volunteers' | 'classes' | 'learners' | 'equipment' | 'activity' | 'advanced' | 'analytics' | 'dpo-register' | 'dpo-requests' | 'dpo-incidents' | 'profile' | 'hours'
 
 const paths: Record<HubIconName, React.ReactNode> = {
   home: <><path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6"/></>,
@@ -11,6 +11,9 @@ const paths: Record<HubIconName, React.ReactNode> = {
   meetings: <><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 4.5V2.5M19.5 12h2M12 19.5v2M4.5 12h-2"/></>,
   team: <><circle cx="12" cy="7.5" r="2.3"/><circle cx="6" cy="11" r="2"/><circle cx="18" cy="11" r="2"/><path d="M8 19c.4-3 1.8-4.5 4-4.5s3.6 1.5 4 4.5M2.8 19c.2-2.6 1.3-4 3.2-4 1 0 1.8.3 2.4 1M21.2 19c-.2-2.6-1.3-4-3.2-4-1 0-1.8.3-2.4 1"/></>,
   volunteers: <><path d="M12 20c-4-2.4-7-5.2-7-9a3.7 3.7 0 0 1 6.6-2.3L12 9l.4-.3A3.7 3.7 0 0 1 19 11c0 3.8-3 6.6-7 9Z"/><path d="m9.5 12 1.5 1.5 3.5-4"/></>,
+  classes: <><path d="M4 5h16v15H4zM8 3v4M16 3v4M4 9h16"/><path d="M8 13h3M13 13h3M8 17h3"/></>,
+  learners: <><path d="m3 9 9-5 9 5-9 5z"/><path d="M7 12v4c2.5 2 7.5 2 10 0v-4M21 9v6"/></>,
+  equipment: <><rect x="4" y="4" width="16" height="11" rx="1"/><path d="M9 20h6M12 15v5"/></>,
   activity: <><path d="M3.5 12s3-5 8.5-5 8.5 5 8.5 5-3 5-8.5 5-8.5-5-8.5-5Z"/><circle cx="12" cy="12" r="2.2"/></>,
   advanced: <><path d="M5 6h14v14H5zM8 3h8v3"/><path d="M8.5 10h7M8.5 14h7M8.5 18h4"/></>,
   analytics: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></>,

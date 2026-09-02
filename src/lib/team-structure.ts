@@ -7,7 +7,7 @@ export const teamMembers = [
   { email: 'shabehamba@gmail.com', name: 'Hamba Shabil', title: 'Operations & Programs Manager', role: 'manager' as const, avatar: 'HS', color: 'var(--rust)' },
   { email: 'aminayarmah@gmail.com', name: 'Amina Yarmah', title: 'Volunteer Rep / DPO', role: 'dpo' as const, avatar: 'AY', color: 'var(--purple)' },
   { email: 'admin@the-nkfoundation.org', name: 'Admin', title: 'Organization administrator', role: 'admin' as const, avatar: 'ADM', color: 'var(--ink)' },
-  { email: 'volunteers@the-nkfoundation.org', name: 'Volunteers', title: 'Shared volunteer login', role: 'volunteer' as const, avatar: 'VOL', color: 'var(--purple-lt)' },
+  { email: 'ginanina400@gmail.com', name: 'Volunteers', title: 'Shared volunteer login', role: 'volunteer' as const, avatar: 'VOL', color: 'var(--purple-lt)' },
 ]
 
 export const rolePermissions: Record<HubRole, string[]> = {

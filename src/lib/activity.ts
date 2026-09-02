@@ -1,5 +1,6 @@
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { SHARED_VOLUNTEER_EMAIL } from '@/lib/auth-identities'
 
 type LogActivityOptions = { client?: SupabaseClient; actorId?: string }
 
@@ -15,7 +16,7 @@ export async function activityDetailsForUser(
   user?: User | null,
 ) {
   const authenticatedUser = user ?? (await supabase.auth.getUser()).data.user
-  if (authenticatedUser?.email?.toLowerCase() !== 'volunteers@the-nkfoundation.org') return details
+  if (authenticatedUser?.email?.toLowerCase() !== SHARED_VOLUNTEER_EMAIL) return details
   const volunteerName = volunteerNameFromCookie()
   return volunteerName ? { ...details, volunteer_name: volunteerName } : details
 }

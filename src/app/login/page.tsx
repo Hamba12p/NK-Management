@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import Image from 'next/image'
 import { LoginMotif } from '@/components/BrandIllustrations'
+import { SHARED_VOLUNTEER_EMAIL } from '@/lib/auth-identities'
 
 const emailSchema = z.string().email('Please enter a valid email address')
 
@@ -34,7 +35,7 @@ export default function LoginPage() {
       return
     }
 
-    if (data.user?.email?.toLowerCase() === 'volunteers@the-nkfoundation.org') {
+    if (data.user?.email?.toLowerCase() === SHARED_VOLUNTEER_EMAIL) {
       setVolunteerPrompt(true)
     } else {
       window.location.assign('/dashboard')
