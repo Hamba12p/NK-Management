@@ -133,15 +133,30 @@ button:disabled { cursor: not-allowed; }
 
 input:not([type='checkbox']):not([type='radio']), select, textarea {
   background: var(--cream);
-  border-color: var(--border);
+  border: 1px solid var(--border);
   color: var(--text);
   border-radius: .4rem;
+  min-height: 2.75rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+input:not([type='checkbox']):not([type='radio']):hover, select:hover, textarea:hover {
+  border-color: var(--purple-lt);
+}
+
+input[type='date'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] input[type='date'] {
+  color-scheme: dark;
 }
 
 input:not([type='checkbox']):not([type='radio']):focus, select:focus, textarea:focus {
   outline: 2px solid rgba(120, 38, 83, .2);
   outline-offset: 1px;
   border-color: var(--purple);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple) 8%, transparent);
 }
 
 ::selection { color: white; background: var(--purple); }
