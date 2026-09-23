@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-const required = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'NK_SHARED_INITIAL_PASSWORD', 'NK_MASTER_ADMIN_EMAIL', 'NK_MASTER_ADMIN_PASSWORD']
+const required = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'NK_SHARED_INITIAL_PASSWORD', 'NK_MASTER_ADMIN_EMAIL', 'NK_MASTER_ADMIN_PASSWORD', 'NK_ME_BOARD_EMAIL', 'NK_ME_BOARD_PASSWORD']
 const missing = required.filter((name) => !process.env[name])
 if (missing.length) throw new Error(`Missing required environment variables: ${missing.join(', ')}`)
 if (process.env.NK_SHARED_INITIAL_PASSWORD === process.env.NK_MASTER_ADMIN_PASSWORD) throw new Error('NK_MASTER_ADMIN_PASSWORD must not match NK_SHARED_INITIAL_PASSWORD')
+if (process.env.NK_ME_BOARD_PASSWORD === process.env.NK_MASTER_ADMIN_PASSWORD) throw new Error('NK_ME_BOARD_PASSWORD must not match NK_MASTER_ADMIN_PASSWORD')
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
 
@@ -24,6 +25,7 @@ const roster = [
   { name: 'Hamba Shabil', email: 'shabehamba@gmail.com', legacyEmail: 'hamba@the-nkfoundation.org', role: 'manager', jobTitle: 'Operations & Programs Manager', tag: 'HS', color: 'rust', accountType: 'person' },
   { name: 'Amina Yarmah', email: 'aminayarmah@gmail.com', legacyEmail: 'aminah@the-nkfoundation.org', role: 'dpo', jobTitle: 'Volunteer Rep / DPO', tag: 'AY', color: 'burgundy', accountType: 'person' },
   { name: 'Admin', email: 'admin@the-nkfoundation.org', role: 'admin', jobTitle: 'Organization administrator', tag: 'ADM', color: 'ink', accountType: 'organization', master: true },
+  { name: 'Yaasa Bilu', email: process.env.NK_ME_BOARD_EMAIL.toLowerCase(), role: 'board_advisor', jobTitle: 'M&E and Board Advisor', tag: 'YB', color: 'magenta', accountType: 'person', board: true },
   { name: 'Volunteers', email: 'ginanina400@gmail.com', legacyEmail: 'volunteers@the-nkfoundation.org', role: 'volunteer', jobTitle: 'Shared volunteer login', tag: 'VOL', color: 'soft-burgundy', accountType: 'shared' },
 ]
 
@@ -48,8 +50,11 @@ async function provision(member, password) {
     display_color: member.color,
   }
   if (user) {
-    // Idempotent reruns repair metadata/profiles but do not reset passwords.
-    const { data, error } = await supabase.auth.admin.updateUserById(user.id, { email, email_confirm: true, user_metadata: metadata })
+    // Idempotent reruns repair metadata/profiles. The dedicated board account
+    // also follows its configured password so the admin alias remains usable.
+    const update = { email, email_confirm: true, user_metadata: metadata }
+    if (member.board) update.password = password
+    const { data, error } = await supabase.auth.admin.updateUserById(user.id, update)
     if (error) throw error
     user = data.user
   } else {
@@ -77,6 +82,11 @@ if (process.env.NK_MASTER_ADMIN_EMAIL.toLowerCase() !== 'admin@the-nkfoundation.
 }
 
 for (const member of roster) {
-  await provision(member, member.master ? process.env.NK_MASTER_ADMIN_PASSWORD : process.env.NK_SHARED_INITIAL_PASSWORD)
+  const password = member.master
+    ? process.env.NK_MASTER_ADMIN_PASSWORD
+    : member.board
+      ? process.env.NK_ME_BOARD_PASSWORD
+      : process.env.NK_SHARED_INITIAL_PASSWORD
+  await provision(member, password)
 }
 console.log('Provisioning complete. Store the recovery password only in a password manager.')

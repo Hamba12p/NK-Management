@@ -38,7 +38,11 @@ const getNavItems = (role?: string) => {
     { href: '/dashboard/analytics', label: 'Analytics', icon: 'analytics' as const, adminOnly: true },
   ]
 
-  if (role === 'admin' || role === 'manager') return [...baseItems, ...managerItems, ...adminItems]
+  const meItems: NavItem[] = role === 'admin' || role === 'board_advisor'
+    ? [{ href: '/dashboard/me', label: 'M&E & Board', icon: 'analytics', adminOnly: false }]
+    : []
+  if (role === 'admin' || role === 'manager') return [...baseItems, ...managerItems, ...meItems, ...adminItems]
+  if (role === 'board_advisor') return [...baseItems, { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false }, ...meItems]
 
   if (role === 'dpo') {
     return [

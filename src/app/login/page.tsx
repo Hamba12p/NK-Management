@@ -28,6 +28,23 @@ export default function LoginPage() {
     }
 
     setLoading(true)
+    const boardAliasResponse = await fetch('/api/auth/board-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: result.data, password }),
+    })
+    if (boardAliasResponse.ok) {
+      const { session } = await boardAliasResponse.json()
+      const { error: sessionError } = await supabase.auth.setSession(session)
+      setLoading(false)
+      if (sessionError) {
+        setError('Unable to start the board session. Please try again.')
+        return
+      }
+      window.location.assign('/dashboard/me')
+      return
+    }
+
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email: result.data, password })
     setLoading(false)
     if (signInError) {

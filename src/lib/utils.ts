@@ -5,6 +5,7 @@
 /** Human-readable label for any role string */
 export function formatRole(role?: string | null): string {
   if (!role) return ''
+  if (role === 'board_advisor') return 'Board Advisor'
   if (role === 'volunteer_senior') return 'Senior Volunteer'
   if (role === 'volunteer_lead') return 'Volunteer Lead'
   return role.charAt(0).toUpperCase() + role.slice(1)

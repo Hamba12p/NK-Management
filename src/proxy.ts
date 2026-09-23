@@ -52,6 +52,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const protectedRoles = (() => {
+    if (pathname === '/dashboard/me' || pathname.startsWith('/dashboard/me/')) return ['admin', 'board_advisor']
     if (pathname === '/dashboard/advanced' || pathname === '/dashboard/analytics') return ['admin']
     if (pathname === '/dashboard/activity-log' || pathname.startsWith('/dashboard/dpo/')) return ['admin', 'dpo']
     if (pathname === '/dashboard/volunteers') return ['admin', 'manager']
