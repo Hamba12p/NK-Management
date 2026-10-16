@@ -8,6 +8,7 @@ import { archiveAndDeleteContent } from '@/lib/content-deletion'
 import CreatorTag from '@/components/CreatorTag'
 import { EmptyLedger } from '@/components/BrandIllustrations'
 import { volunteerContributor } from '@/lib/creator'
+import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
 
 const announcementSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -22,9 +23,11 @@ type Announcement = {
   pinned: boolean
   author_id: string
   created_at: string
+  intern_visible: boolean
+  acknowledgement_required: boolean
   contributor_name: string | null
   contributor_tag: string | null
-  profiles: { full_name: string; role: string; display_tag: string | null; display_color: string | null }
+  profiles: { full_name: string; role?: string; display_tag?: string | null; display_color?: string | null } | null
   announcement_acknowledgements: { user_id: string; acknowledged_at: string }[]
 }
 
@@ -34,7 +37,7 @@ export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [profile, setProfile] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ title: '', body: '', pinned: false })
+  const [form, setForm] = useState({ title: '', body: '', pinned: false, intern_visible: false })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -44,17 +47,18 @@ export default function AnnouncementsPage() {
 
   async function fetchAll() {
     try {
-      const [{ data: announcementsData }, { data: userData }] = await Promise.all([
+      const [{ data: announcementsData }, { data: userData }, directory] = await Promise.all([
         supabase
           .from('announcements')
-          .select('*, profiles!announcements_author_id_fkey(*), announcement_acknowledgements(user_id, acknowledged_at)')
+          .select('*, announcement_acknowledgements(user_id, acknowledged_at)')
           .order('pinned', { ascending: false })
           .order('created_at', { ascending: false }),
         supabase.auth.getUser(),
+        loadStaffDirectory(supabase),
       ])
 
       if (announcementsData) {
-        setAnnouncements(announcementsData)
+        setAnnouncements(announcementsData.map(item => ({ ...item, profiles: staffProfile(directory, item.author_id) })))
       }
 
       if (userData.user) {
@@ -66,8 +70,7 @@ export default function AnnouncementsPage() {
           .single()
         setProfile(profileData)
         if (profileData?.role === 'admin') {
-          const { data: staffData } = await supabase.from('profiles').select('id, full_name').order('full_name')
-          setStaff(staffData || [])
+          setStaff(directory)
         }
       }
     } catch (e) {
@@ -119,6 +122,7 @@ export default function AnnouncementsPage() {
       const { data: inserted, error: err } = await supabase.from('announcements').insert({
         ...result.data,
         author_id: userData.user.id,
+        intern_visible: profile?.role === 'dpo' || (profile?.role !== 'intern' && form.intern_visible),
         ...volunteerContributor(),
       }).select('id').single()
 
@@ -131,7 +135,7 @@ export default function AnnouncementsPage() {
 
       setSuccess('Announcement posted successfully')
       setShowForm(false)
-      setForm({ title: '', body: '', pinned: false })
+      setForm({ title: '', body: '', pinned: false, intern_visible: false })
     } catch (err) {
       setError(`Error: ${err}`)
     }
@@ -170,7 +174,7 @@ export default function AnnouncementsPage() {
     setSuccess('Acknowledgement recorded.'); await logActivity('announcement.acknowledge', 'announcement', id); await fetchAll()
   }
 
-  const canPost = profile && ['admin', 'manager'].includes(profile.role)
+  const canPost = profile && ['admin', 'manager', 'dpo'].includes(profile.role)
   return (
     <div>
       <div className="mb-8">
@@ -236,6 +240,8 @@ export default function AnnouncementsPage() {
             />
             <span className="text-sm text-muted">Pin this announcement (appears at top)</span>
           </label>
+
+          {profile?.role === 'dpo' ? <p className="text-sm text-muted">This announcement will be visible to interns.</p> : <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.intern_visible} onChange={e => setForm(f => ({ ...f, intern_visible: e.target.checked }))} className="h-4 w-4 rounded border-border text-gold focus:ring-gold" /><span className="text-sm text-muted">Visible to interns</span></label>}
 
           <div className="flex gap-3 pt-2">
             <button
@@ -354,7 +360,7 @@ export default function AnnouncementsPage() {
                     <p className="text-muted whitespace-pre-wrap text-sm leading-relaxed">
                       {announcement.body}
                     </p>
-                    {announcement.pinned && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div className="flex items-center gap-2 text-sm text-muted"><Users size={16} /><span>{acknowledgements.length} acknowledgement{acknowledgements.length === 1 ? '' : 's'}</span>{isAdmin && <details className="relative"><summary className="cursor-pointer font-semibold text-purple">{missing.length} pending</summary><div className="record-surface absolute right-0 z-10 mt-2 w-64 p-3"><p className="mb-2 text-xs font-bold uppercase text-muted">Not acknowledged</p>{missing.length ? missing.map(item => <p key={item.id} className="py-1 text-sm text-ink">{item.full_name}</p>) : <p className="text-sm text-muted">Everyone has acknowledged.</p>}</div></details>}</div>{hasAcknowledged ? <span className="flex items-center gap-2 text-sm font-semibold text-green"><CheckCircle2 size={16} />Acknowledged</span> : <button onClick={() => acknowledge(announcement.id)} className="btn-secondary !min-h-0 !px-3 !py-2">Acknowledge</button>}</div>}
+                    {(announcement.pinned || announcement.acknowledgement_required) && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div className="flex items-center gap-2 text-sm text-muted"><Users size={16} /><span>{acknowledgements.length} acknowledgement{acknowledgements.length === 1 ? '' : 's'}</span>{isAdmin && <details className="relative"><summary className="cursor-pointer font-semibold text-purple">{missing.length} pending</summary><div className="record-surface absolute right-0 z-10 mt-2 w-64 p-3"><p className="mb-2 text-xs font-bold uppercase text-muted">Not acknowledged</p>{missing.length ? missing.map(item => <p key={item.id} className="py-1 text-sm text-ink">{item.full_name}</p>) : <p className="text-sm text-muted">Everyone has acknowledged.</p>}</div></details>}</div>{hasAcknowledged ? <span className="flex items-center gap-2 text-sm font-semibold text-green"><CheckCircle2 size={16} />Acknowledged</span> : <button onClick={() => acknowledge(announcement.id)} className="btn-secondary !min-h-0 !px-3 !py-2">Acknowledge</button>}</div>}
                   </div>
                 </div>
               )

@@ -35,10 +35,42 @@ export async function proxy(request: NextRequest) {
   // (possibly stale/tampered) local cookie.
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
+  const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
 
-  // Redirect root/dashboard to login if not authenticated
-  if ((pathname === '/' || pathname.startsWith('/dashboard')) && !user) {
+  if ((pathname === '/' || isDashboardPath) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  let profile: { role: string; access_expires_at: string | null; must_change_password: boolean } | null = null
+  if (user && (isDashboardPath || pathname === '/change-password')) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role, access_expires_at, must_change_password')
+      .eq('id', user.id)
+      .single()
+    profile = data
+  }
+
+  if (user && profile?.role === 'intern') {
+    if (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now()) {
+      await supabase.auth.signOut()
+      const ended = NextResponse.redirect(new URL('/access-ended', request.url))
+      response.cookies.getAll().forEach(cookie => ended.cookies.set(cookie.name, cookie.value, cookie))
+      return ended
+    }
+    if (profile.must_change_password && pathname !== '/change-password') {
+      return NextResponse.redirect(new URL('/change-password', request.url))
+    }
+    if (!profile.must_change_password && pathname === '/change-password') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    if (isDashboardPath) {
+      const internPaths = ['/dashboard', '/dashboard/documents', '/dashboard/workspace', '/dashboard/meetings', '/dashboard/announcements', '/dashboard/settings', '/dashboard/feedback']
+      const teamEnabled = process.env.INTERN_TEAM_DIRECTORY_ENABLED === 'true'
+      const allowed = internPaths.some(path => pathname === path || pathname.startsWith(`${path}/`))
+        || (teamEnabled && (pathname === '/dashboard/team' || pathname.startsWith('/dashboard/team/')))
+      if (!allowed) return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   // Redirect authenticated users away from login page to dashboard
@@ -70,13 +102,8 @@ export async function proxy(request: NextRequest) {
   })()
 
   if (user && protectedRoles) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || !protectedRoles.includes(profile.role)) {
+    const { data: roleProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (!roleProfile || !protectedRoles.includes(roleProfile.role)) {
       return NextResponse.redirect(new URL('/dashboard?access=denied', request.url))
     }
   }

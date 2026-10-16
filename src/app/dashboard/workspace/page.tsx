@@ -13,10 +13,12 @@ import { EmptyLedger } from '@/components/BrandIllustrations'
 import { logActivity } from '@/lib/activity'
 import { archiveAndDeleteContent } from '@/lib/content-deletion'
 import { type CreatorProfile, volunteerContributor } from '@/lib/creator'
+import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
+import type { StaffDirectoryEntry } from '@/lib/staff-directory'
 
-type WorkspaceDoc = { id: string; title: string; content: Record<string, unknown>; author_id: string; status: 'draft' | 'final'; updated_at: string; contributor_name: string | null; contributor_tag: string | null; profiles: CreatorProfile }
+type WorkspaceDoc = { id: string; title: string; content: Record<string, unknown>; author_id: string; status: 'draft' | 'final'; updated_at: string; contributor_name: string | null; contributor_tag: string | null; profiles: CreatorProfile | null }
 type Comment = { id: string; document_id: string; body: string; author_id: string; created_at: string; profiles?: CreatorProfile }
-type Task = { id: string; title: string; assignee_label: string | null; due_date: string | null; status: string; linked_doc_id: string | null; created_by: string; contributor_name: string | null; contributor_tag: string | null; profiles: CreatorProfile }
+type Task = { id: string; title: string; assignee_id: string | null; assignee_label: string | null; due_date: string | null; status: string; linked_doc_id: string | null; created_by: string; contributor_name: string | null; contributor_tag: string | null; profiles: CreatorProfile | null }
 
 function Tool({ active = false, label, onClick, children }: { active?: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
   return <button type="button" onClick={onClick} className={`rounded border px-2.5 py-1.5 text-xs font-semibold ${active ? 'border-purple bg-warm text-purple' : 'border-transparent text-muted hover:border-border hover:bg-warm/45 hover:text-ink'}`} aria-label={label} title={label}>{children}</button>
@@ -66,34 +68,46 @@ export default function WorkspacePage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [userId, setUserId] = useState('')
   const [role, setRole] = useState('')
+  const [ownName, setOwnName] = useState('')
+  const [internStaff, setInternStaff] = useState<StaffDirectoryEntry[]>([])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [comment, setComment] = useState('')
   const [taskTitle, setTaskTitle] = useState('')
   const [taskAssignee, setTaskAssignee] = useState('Volunteers')
+  const [taskAssigneeId, setTaskAssigneeId] = useState('')
   const [taskDue, setTaskDue] = useState('')
   const [newDocTitle, setNewDocTitle] = useState('')
   const [showNewDoc, setShowNewDoc] = useState(false)
   const [myDocsOnly, setMyDocsOnly] = useState(false)
   const [myTasksOnly, setMyTasksOnly] = useState(false)
   const canManageTasks = ['admin', 'manager'].includes(role)
+  const canManageInternTasks = role === 'dpo'
 
   const loadComments = async (documentId: string) => {
-    const { data, error: queryError } = await supabase.from('workspace_comments').select('*, profiles!workspace_comments_author_id_fkey(*)').eq('document_id', documentId).order('created_at')
-    if (queryError) setError(queryError.message); else setComments(data || [])
+    const [{ data, error: queryError }, staff] = await Promise.all([
+      supabase.from('workspace_comments').select('*').eq('document_id', documentId).order('created_at'),
+      loadStaffDirectory(supabase),
+    ])
+    if (queryError) setError(queryError.message); else setComments((data || []).map(item => ({ ...item, profiles: staffProfile(staff, item.author_id) || undefined })))
   }
   const openDoc = (doc: WorkspaceDoc) => { setSelected(doc); setContent(doc.content || { type: 'doc', content: [] }); void loadComments(doc.id) }
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser(); if (!user) return
     setUserId(user.id)
-    const [docResult, taskResult, profileResult] = await Promise.all([
-      supabase.from('workspace_docs').select('*, profiles!workspace_docs_author_id_fkey(*)').order('updated_at', { ascending: false }),
-      supabase.from('tasks').select('*, profiles!tasks_created_by_fkey(*)').order('due_date', { ascending: true }),
-      supabase.from('profiles').select('role').eq('id', user.id).single(),
+    const [docResult, taskResult, profileResult, directory] = await Promise.all([
+      supabase.from('workspace_docs').select('*').order('updated_at', { ascending: false }),
+      supabase.from('tasks').select('*').order('due_date', { ascending: true }),
+      supabase.from('profiles').select('role,full_name').eq('id', user.id).single(),
+      loadStaffDirectory(supabase),
     ])
-    if (docResult.error) setError(docResult.error.message); else { setDocs(docResult.data || []); if (!selected && docResult.data?.[0]) openDoc(docResult.data[0]) }
-    if (taskResult.error) setError(taskResult.error.message); else setTasks(taskResult.data || [])
+    const docs = (docResult.data || []).map(doc => ({ ...doc, profiles: staffProfile(directory, doc.author_id) }))
+    const tasks = (taskResult.data || []).map(task => ({ ...task, profiles: staffProfile(directory, task.created_by) }))
+    if (docResult.error) setError(docResult.error.message); else { setDocs(docs); if (!selected && docs[0]) openDoc(docs[0]) }
+    if (taskResult.error) setError(taskResult.error.message); else setTasks(tasks)
     setRole(profileResult.data?.role || '')
+    setOwnName(profileResult.data?.full_name || '')
+    setInternStaff(directory.filter(member => member.role === 'intern'))
   }
   useEffect(() => {
     // Initial remote hydration intentionally updates the client workspace.
@@ -105,16 +119,17 @@ export default function WorkspacePage() {
   const createDoc = async (event: React.FormEvent) => {
     event.preventDefault(); setError(''); setMessage('')
     const { data: { user } } = await supabase.auth.getUser(); if (!user || !newDocTitle.trim()) return
-    const { data, error: insertError } = await supabase.from('workspace_docs').insert({ title: newDocTitle.trim(), content: { type: 'doc', content: [] }, author_id: user.id, ...volunteerContributor() }).select('*, profiles!workspace_docs_author_id_fkey(*)').single()
+    const { data, error: insertError } = await supabase.from('workspace_docs').insert({ title: newDocTitle.trim(), content: { type: 'doc', content: [] }, author_id: user.id, ...volunteerContributor() }).select('*').single()
     if (insertError || !data) { setError(insertError?.message || 'Unable to create document'); return }
-    setNewDocTitle(''); setShowNewDoc(false); setMessage('Document created. Start writing, then choose Save.'); await logActivity('workspace.document.create', 'workspace_doc', data.id, { title: data.title }); await load(); openDoc(data)
+    const created = { ...data, profiles: { full_name: ownName } }
+    setNewDocTitle(''); setShowNewDoc(false); setMessage('Document created. Start writing, then choose Save.'); await logActivity('workspace.document.create', 'workspace_doc', data.id, { title: data.title }); await load(); openDoc(created)
   }
   const saveDoc = async () => { if (!selected) return; const { error: saveError } = await supabase.rpc('save_workspace_document', { p_document_id: selected.id, p_content: content, p_status: selected.status }); if (saveError) setError(saveError.message); else { setError(''); setMessage('Saved. A recoverable version was recorded.'); await logActivity('workspace.document.update', 'workspace_doc', selected.id, { title: selected.title }); await load() } }
   const exportDoc = async () => { if (!selected) return; const word = new WordDocument({ sections: [{ children: [new Paragraph({ children: [new TextRun({ text: selected.title, bold: true, size: 32 })] }), ...textFromContent(content).split('\n').filter(Boolean).map(text => new Paragraph(text))] }] }); const blob = await Packer.toBlob(word); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${selected.title.replace(/[^a-z0-9]+/gi, '-') || 'workspace-document'}.docx`; link.click(); URL.revokeObjectURL(link.href) }
-  const deleteDoc = async () => { if (!selected || !confirm('Delete this document? An administrator-retained copy will be kept.')) return; try { await archiveAndDeleteContent(supabase, 'workspace_document', selected.id); setSelected(null); setComments([]); await load() } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to delete document') } }
+  const deleteDoc = async () => { if (!selected || !confirm('Delete this document? An administrator-retained copy will be kept.')) return; try { if (role === 'intern') { const { error } = await supabase.from('workspace_docs').update({ deleted_at: new Date().toISOString(), deleted_by: userId }).eq('id', selected.id); if (error) throw error } else await archiveAndDeleteContent(supabase, 'workspace_document', selected.id); setSelected(null); setComments([]); await load() } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to delete document') } }
   const addComment = async (event: React.FormEvent) => { event.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (!user || !selected || !comment.trim()) return; const { error: insertError } = await supabase.from('workspace_comments').insert({ document_id: selected.id, body: comment.trim(), author_id: user.id }); if (insertError) setError(insertError.message); else { setComment(''); setMessage('Comment posted.'); await logActivity('workspace.comment.create', 'workspace_doc', selected.id) } }
-  const deleteComment = async (id: string) => { if (!confirm('Delete this comment? An archived copy will be kept.')) return; await archiveAndDeleteContent(supabase, 'workspace_comment', id); if (selected) await loadComments(selected.id) }
-  const addTask = async (event: React.FormEvent) => { event.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (!user || !taskTitle.trim()) return; const { data, error: insertError } = await supabase.from('tasks').insert({ title: taskTitle.trim(), assignee_label: taskAssignee.trim() || 'Volunteers', due_date: taskDue || null, linked_doc_id: selected?.id || null, created_by: user.id, ...volunteerContributor() }).select('id').single(); if (insertError) setError(insertError.message); else { setTaskTitle(''); setTaskDue(''); setMessage('Task added. Use its status menu to move the work forward.'); await load(); await logActivity('task.create', 'task', data?.id, { title: taskTitle }) } }
+  const deleteComment = async (id: string) => { if (!confirm('Delete this comment? An archived copy will be kept.')) return; if (role === 'intern') { await supabase.from('workspace_comments').update({ deleted_at: new Date().toISOString(), deleted_by: userId }).eq('id', id) } else await archiveAndDeleteContent(supabase, 'workspace_comment', id); if (selected) await loadComments(selected.id) }
+  const addTask = async (event: React.FormEvent) => { event.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (!user || !taskTitle.trim()) return; if (role === 'dpo' && !internStaff.some(member => member.id === taskAssigneeId)) { setError('Choose an intern for this task.'); return } const assigneeId = role === 'intern' ? user.id : role === 'dpo' ? taskAssigneeId : null; const assigneeName = role === 'intern' ? ownName : role === 'dpo' ? internStaff.find(member => member.id === taskAssigneeId)?.full_name : taskAssignee.trim() || 'Volunteers'; const { data, error: insertError } = await supabase.from('tasks').insert({ title: taskTitle.trim(), assignee_id: assigneeId, assignee_label: assigneeName || null, due_date: taskDue || null, linked_doc_id: selected?.id || null, created_by: user.id, ...volunteerContributor() }).select('id').single(); if (insertError) setError(insertError.message); else { setTaskTitle(''); setTaskDue(''); setTaskAssigneeId(''); setMessage('Task added. Use its status menu to move the work forward.'); await load(); await logActivity('task.create', 'task', data?.id, { title: taskTitle }) } }
   const setTaskStatus = async (task: Task, status: string) => { const { error: updateError } = await supabase.from('tasks').update({ status }).eq('id', task.id); if (updateError) setError(updateError.message); else { setMessage(`Task moved to ${status.replace('_', ' ')}.`); await load() } }
   const deleteTask = async (id: string) => { if (!confirm('Delete this task? An archived copy will be kept.')) return; await archiveAndDeleteContent(supabase, 'task', id); await load() }
   const visibleDocs = myDocsOnly ? docs.filter(doc => doc.author_id === userId) : docs
@@ -133,8 +148,8 @@ export default function WorkspacePage() {
           <div className="card"><h2 className="font-semibold text-ink">Comments</h2><div className="mt-3 space-y-3">{comments.length ? comments.map(item => <div key={item.id} className="rounded border border-border bg-cream p-3 text-sm"><div className="flex items-start justify-between gap-3"><p>{item.body}</p>{item.author_id === userId && <button onClick={() => deleteComment(item.id)} className="shrink-0 text-xs font-semibold text-rust">Delete</button>}</div><div className="mt-2"><CreatorTag profile={item.profiles} showName /> <span className="text-xs text-muted">· {new Date(item.created_at).toLocaleString()}</span></div></div>) : <p className="text-sm text-muted">No comments yet. Add context or a decision below.</p>}</div><form onSubmit={addComment} className="mt-4 flex gap-2"><input value={comment} onChange={event => setComment(event.target.value)} required maxLength={4000} placeholder="Add context or record a decision" className="min-w-0 flex-1 px-3 py-2 text-sm" /><button className="btn-secondary !min-h-0 !px-3 !py-2">Post comment</button></form></div></>
           : <div className="card py-10 text-center"><EmptyLedger className="empty-illustration mx-auto" /><p className="mt-3 font-semibold text-ink">Open a document to start writing.</p><p className="mt-1 text-sm text-muted">Or choose New document to create the first record.</p></div>}
         <div className="card"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold text-ink">Tasks</h2><p className="mt-1 text-xs text-muted">Turn a decision into an owned next step.</p></div><label className="flex items-center gap-2 text-xs font-semibold text-muted"><input type="checkbox" checked={myTasksOnly} onChange={event => setMyTasksOnly(event.target.checked)} /> Created by me</label></div>
-          {canManageTasks && <form onSubmit={addTask} className="mt-4 grid gap-2 md:grid-cols-4"><input value={taskTitle} onChange={event => setTaskTitle(event.target.value)} required placeholder="Task title" className="px-3 py-2 text-sm" /><input value={taskAssignee} onChange={event => setTaskAssignee(event.target.value)} placeholder="Assignee or Volunteers" className="px-3 py-2 text-sm" /><input type="date" value={taskDue} onChange={event => setTaskDue(event.target.value)} className="px-3 py-2 text-sm" /><button className="btn-primary !min-h-0 !px-3 !py-2">Add task</button></form>}
-          <div className="mt-4 space-y-2">{visibleTasks.length ? visibleTasks.map(task => <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 rounded border border-border bg-cream p-3 text-sm"><div><div className="flex items-center gap-2"><p className="font-medium text-ink">{task.title}</p><CreatorTag profile={task.profiles} contributorName={task.contributor_name} contributorTag={task.contributor_tag} /></div><p className="mt-1 text-xs text-muted">{task.assignee_label || 'Unassigned'}{task.due_date ? ` · due ${task.due_date}` : ''}</p></div><div className="flex items-center gap-3">{canManageTasks ? <select value={task.status} onChange={event => setTaskStatus(task, event.target.value)} className="border border-border bg-cream px-2 py-1 text-xs"><option value="todo">To do</option><option value="in_progress">In progress</option><option value="done">Done</option></select> : <span className="text-xs capitalize text-muted">{task.status.replace('_', ' ')}</span>}{task.created_by === userId && <button onClick={() => deleteTask(task.id)} className="text-xs font-semibold text-rust">Delete</button>}</div></div>) : <div className="py-6 text-center"><EmptyLedger variant="tasks" className="mx-auto w-36" /><p className="mt-2 text-sm font-semibold text-ink">{myTasksOnly ? 'You have not created a task.' : 'No open task records yet.'}</p><p className="mt-1 text-xs text-muted">{canManageTasks ? 'Use the form above to assign the first next step.' : 'A manager will add tasks here when work is assigned.'}</p></div>}</div>
+          {(canManageTasks || canManageInternTasks || role === 'intern') && <form onSubmit={addTask} className="mt-4 grid gap-2 md:grid-cols-4"><input value={taskTitle} onChange={event => setTaskTitle(event.target.value)} required placeholder="Task title" className="px-3 py-2 text-sm" />{role === 'dpo' ? <select required value={taskAssigneeId} onChange={event => setTaskAssigneeId(event.target.value)} className="px-3 py-2 text-sm"><option value="">Choose an intern</option>{internStaff.map(member => <option key={member.id} value={member.id}>{member.full_name}</option>)}</select> : role === 'intern' ? null : <input value={taskAssignee} onChange={event => setTaskAssignee(event.target.value)} placeholder="Assignee or Volunteers" className="px-3 py-2 text-sm" />}<input type="date" value={taskDue} onChange={event => setTaskDue(event.target.value)} className="px-3 py-2 text-sm" /><button className="btn-primary !min-h-0 !px-3 !py-2">Add task</button></form>}
+          <div className="mt-4 space-y-2">{visibleTasks.length ? visibleTasks.map(task => <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 rounded border border-border bg-cream p-3 text-sm"><div><div className="flex items-center gap-2"><p className="font-medium text-ink">{task.title}</p><CreatorTag profile={task.profiles} contributorName={task.contributor_name} contributorTag={task.contributor_tag} /></div><p className="mt-1 text-xs text-muted">{task.assignee_label || (task.assignee_id === userId ? ownName : 'Unassigned')}{task.due_date ? ` · due ${task.due_date}` : ''}</p></div><div className="flex items-center gap-3">{canManageTasks || (canManageInternTasks && internStaff.some(member => member.id === task.assignee_id)) || (role === 'intern' && task.assignee_id === userId) ? <select value={task.status} onChange={event => setTaskStatus(task, event.target.value)} className="border border-border bg-cream px-2 py-1 text-xs"><option value="todo">To do</option><option value="in_progress">In progress</option><option value="done">Done</option></select> : <span className="text-xs capitalize text-muted">{task.status.replace('_', ' ')}</span>}{role !== 'intern' && task.created_by === userId && <button onClick={() => deleteTask(task.id)} className="text-xs font-semibold text-rust">Delete</button>}</div></div>) : <div className="py-6 text-center"><EmptyLedger variant="tasks" className="mx-auto w-36" /><p className="mt-2 text-sm font-semibold text-ink">{myTasksOnly ? 'You have not created a task.' : 'No open task records yet.'}</p><p className="mt-1 text-xs text-muted">{canManageTasks || canManageInternTasks ? 'Use the form above to assign the first next step.' : 'A supervisor will add tasks here when work is assigned.'}</p></div>}</div>
         </div>
       </section>
     </div>

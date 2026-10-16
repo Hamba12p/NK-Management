@@ -8,6 +8,7 @@ import { archiveAndDeleteContent } from '@/lib/content-deletion'
 import CreatorTag from '@/components/CreatorTag'
 import { EmptyLedger } from '@/components/BrandIllustrations'
 import { volunteerContributor } from '@/lib/creator'
+import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
 
 const meetingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -25,11 +26,13 @@ type Meeting = {
   duration_min: number
   location: string
   status: string
+  intern_visible: boolean
+  intern_check_in: boolean
   created_by: string | null
   created_at: string
   contributor_name: string | null
   contributor_tag: string | null
-  profiles: { full_name: string; role: string; display_tag: string | null; display_color: string | null }
+  profiles: { full_name: string; role?: string; display_tag?: string | null; display_color?: string | null } | null
   agenda_items: AgendaItem[]
 }
 
@@ -57,25 +60,29 @@ export default function MeetingsPage() {
     scheduled_at: '',
     duration_min: '60',
     location: '',
+    intern_visible: false,
+    intern_check_in: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const supabase = useMemo(() => createClient(), [])
 
   const fetchAll = useCallback(async () => {
     try {
-      const [{ data: meetingsData }, { data: userData }] = await Promise.all([
+      const [{ data: meetingsData }, { data: userData }, directory] = await Promise.all([
         supabase
           .from('meetings')
-          .select('*, profiles!meetings_created_by_fkey(*), agenda_items(*)')
+          .select('*, agenda_items(*)')
           .gte('scheduled_at', new Date(Date.now() - 7 * 86400000).toISOString())
           .order('scheduled_at', { ascending: true }),
         supabase.auth.getUser(),
+        loadStaffDirectory(supabase),
       ])
 
       if (meetingsData) {
         const sorted = meetingsData
           .map(m => ({
             ...m,
+            profiles: staffProfile(directory, m.created_by),
             agenda_items: (m.agenda_items || []).sort((a: AgendaItem, b: AgendaItem) => a.order_index - b.order_index),
           }))
           .sort((a: Meeting, b: Meeting) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
@@ -85,7 +92,7 @@ export default function MeetingsPage() {
       if (userData.user) {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id,role,full_name')
           .eq('id', userData.user.id)
           .single()
         setProfile(profileData)
@@ -138,6 +145,8 @@ export default function MeetingsPage() {
       const { data: inserted, error } = await supabase.from('meetings').insert({
         ...result.data,
         created_by: userData.user.id,
+        intern_visible: profile?.role === 'dpo' || (profile?.role !== 'intern' && form.intern_visible),
+        intern_check_in: profile?.role === 'dpo' || (profile?.role !== 'intern' && form.intern_check_in),
         ...volunteerContributor(),
       }).select('id').single()
 
@@ -149,7 +158,7 @@ export default function MeetingsPage() {
       logActivity('meeting.create', 'meeting', inserted?.id, { title: result.data.title })
 
       setShowForm(false)
-      setForm({ title: '', description: '', scheduled_at: '', duration_min: '60', location: '' })
+      setForm({ title: '', description: '', scheduled_at: '', duration_min: '60', location: '', intern_visible: false, intern_check_in: false })
     } catch (err) {
       setErrors({ general: `Error: ${err}` })
     }
@@ -292,6 +301,7 @@ export default function MeetingsPage() {
   const canEditMeeting = (meeting: Meeting) => {
     return profile?.role === 'admin' || profile?.role === 'manager' || profile?.id === meeting.created_by
   }
+  const canAddAgendaItem = (meeting: Meeting) => canEditMeeting(meeting) || (profile?.role === 'intern' && meeting.intern_visible && meeting.intern_check_in)
 
   const canDeleteMeeting = (meeting: Meeting) => profile?.role === 'admin' || profile?.id === meeting.created_by
   const canDeleteAgendaItem = (item: AgendaItem) => profile?.role === 'admin' || profile?.id === item.created_by
@@ -304,7 +314,7 @@ export default function MeetingsPage() {
       </div>
 
       {/* Create Meeting Button */}
-      {(profile?.role === 'admin' || profile?.role === 'manager') && (
+      {(profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'dpo') && (
         <div className="mb-6">
           <button
             onClick={() => setShowForm(!showForm)}
@@ -386,6 +396,8 @@ export default function MeetingsPage() {
               placeholder="Meeting objectives and context..."
             />
           </div>
+
+          {profile?.role === 'dpo' ? <p className="text-sm text-muted">This check-in will be visible to interns.</p> : profile?.role !== 'intern' && <div className="space-y-2"><label className="flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={form.intern_visible} onChange={e => setForm(f => ({ ...f, intern_visible: e.target.checked, intern_check_in: e.target.checked ? f.intern_check_in : false }))} />Visible to interns</label>{form.intern_visible && <label className="flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={form.intern_check_in} onChange={e => setForm(f => ({ ...f, intern_check_in: e.target.checked }))} />Intern check-in with agenda contribution</label>}</div>}
 
           <div className="flex gap-3 pt-2">
             <button
@@ -521,16 +533,14 @@ export default function MeetingsPage() {
                                   key={item.id}
                                   className="flex items-start gap-2 p-2 bg-cream rounded border border-border hover:border-border transition-colors"
                                 >
-                                  <button
-                                    onClick={() => handleToggleAgendaItem(item.id, item.done)}
-                                    className="mt-0.5 shrink-0"
-                                  >
+                                  {(canEditMeeting(meeting) || (profile?.role === 'intern' && item.created_by === profile?.id)) ? <button
+                                    onClick={() => handleToggleAgendaItem(item.id, item.done)} className="mt-0.5 shrink-0">
                                     {item.done ? (
                                       <Check size={16} className="text-green-600" />
                                     ) : (
                                       <X size={16} className="text-muted" />
                                     )}
-                                  </button>
+                                  </button> : <span className="mt-0.5 shrink-0" aria-hidden="true">{item.done ? <Check size={16} className="text-green-600" /> : <X size={16} className="text-muted" />}</span>}
                                   <span
                                     className={`flex-1 text-sm ${
                                       item.done ? 'line-through text-muted' : 'text-muted'
@@ -558,7 +568,7 @@ export default function MeetingsPage() {
                           )}
 
                           {/* Add Agenda Item */}
-                          <div className="flex gap-2">
+                          {canAddAgendaItem(meeting) && <div className="flex gap-2">
                             <input
                               type="text"
                               value={newAgendaItem[meeting.id] || ''}
@@ -578,7 +588,7 @@ export default function MeetingsPage() {
                             >
                               Add
                             </button>
-                          </div>
+                          </div>}
                           {agendaError[meeting.id] && (
                             <p className="text-rust text-xs mt-1">{agendaError[meeting.id]}</p>
                           )}

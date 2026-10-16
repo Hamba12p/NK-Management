@@ -20,10 +20,14 @@ export default async function DashboardLayout({
     .select('*')
     .eq('id', user.id)
     .single()
+  const sidebarProfile = profile ? {
+    ...profile,
+    intern_team_directory_enabled: process.env.INTERN_TEAM_DIRECTORY_ENABLED === 'true',
+  } : profile
 
   return (
     <div className="app-shell flex min-h-screen">
-      <Sidebar profile={profile} />
+      <Sidebar profile={sidebarProfile} />
       <main className="app-content flex min-h-screen flex-1 flex-col">
         <DashboardTopbar profile={profile} />
         <div className="flex-1 pt-14 md:pt-0">

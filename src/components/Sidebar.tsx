@@ -14,7 +14,7 @@ type NavItem = { href: string; label: string; icon: HubIconName; adminOnly: bool
 
 const SIDEBAR_STORAGE_KEY = 'nk_sidebar_collapsed'
 
-const getNavItems = (role?: string) => {
+const getNavItems = (role?: string, teamDirectoryEnabled = false) => {
   const baseItems: NavItem[] = [
     { href: '/dashboard', label: 'Home', icon: 'home', adminOnly: false },
     { href: '/dashboard/documents', label: 'Documents', icon: 'documents', adminOnly: false },
@@ -41,6 +41,11 @@ const getNavItems = (role?: string) => {
   const meItems: NavItem[] = role === 'admin' || role === 'board_advisor'
     ? [{ href: '/dashboard/me', label: 'M&E & Board', icon: 'analytics', adminOnly: false }]
     : []
+  if (role === 'intern') return [
+    ...baseItems,
+    { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings', adminOnly: false },
+    ...(teamDirectoryEnabled ? [{ href: '/dashboard/team', label: 'Team', icon: 'team' as const, adminOnly: false }] : []),
+  ]
   if (role === 'admin' || role === 'manager') return [...baseItems, ...managerItems, ...meItems, ...adminItems]
   if (role === 'board_advisor') return [...baseItems, { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false }, ...meItems]
 
@@ -110,7 +115,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
       </div>
 
       <nav className={`no-scrollbar flex-1 space-y-1 overflow-y-auto ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
-        {getNavItems(profile?.role).map(({ href, label, icon, adminOnly }) => {
+        {getNavItems(profile?.role, profile?.intern_team_directory_enabled === true).map(({ href, label, icon, adminOnly }) => {
           if (adminOnly && profile?.role !== 'admin') return null
           const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
           return (

@@ -13,9 +13,24 @@ export async function GET(
     return Response.json({ error: 'Authentication required' }, { status: 401 })
   }
 
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, access_expires_at, must_change_password')
+    .eq('id', user.id)
+    .single()
+  if (profileError || !profile) {
+    return Response.json({ error: 'Unable to verify account access' }, { status: 403 })
+  }
+  if (profile.role === 'intern' && (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now())) {
+    return Response.json({ error: 'Your access has ended' }, { status: 403 })
+  }
+  if (profile.role === 'intern' && profile.must_change_password) {
+    return Response.json({ error: 'Change your password before accessing documents' }, { status: 403 })
+  }
+
   const { data: document, error: documentError } = await supabase
     .from('documents')
-    .select('id,name,file_path,mime_type')
+    .select('id,name,file_path,mime_type,uploaded_by,intern_visible,visibility,deleted_at')
     .eq('id', id)
     .maybeSingle()
 
@@ -26,6 +41,13 @@ export async function GET(
 
   if (!document) {
     return Response.json({ error: 'Document not found' }, { status: 404 })
+  }
+  if (profile.role === 'intern') {
+    const ownUpload = document.uploaded_by === user.id && document.file_path.startsWith(`interns/${user.id}/`)
+    const flaggedDocument = document.intern_visible && document.visibility === 'standard' && document.deleted_at === null
+    if (!ownUpload && !flaggedDocument) {
+      return Response.json({ error: 'Document not found' }, { status: 404 })
+    }
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
