@@ -6,6 +6,7 @@ import { z } from 'zod'
 import Image from 'next/image'
 import { LoginMotif } from '@/components/BrandIllustrations'
 import { SHARED_VOLUNTEER_EMAIL } from '@/lib/auth-identities'
+import { InstallAppButton } from '@/components/InstallAppButton'
 
 const emailSchema = z.string().email('Please enter a valid email address')
 
@@ -89,6 +90,7 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Sign in'}</button>
         </div>
         <p className="text-center text-xs text-muted mt-6 font-medium">Only registered staff can access the Hub</p>
+        <InstallAppButton />
       </form>
       {volunteerPrompt && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/55 px-4">

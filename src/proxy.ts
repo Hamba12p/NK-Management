@@ -90,9 +90,10 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
+     * - manifest.webmanifest, icons, and apple-touch-icon.png (public PWA files)
      * - favicon.ico (favicon file)
      * - api (API routes - optional, can be handled separately)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest\\.webmanifest|icons(?:/.*)?|apple-touch-icon\\.png|api).*)',
   ],
 }
