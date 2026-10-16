@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import Image from 'next/image'
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [volunteerPrompt, setVolunteerPrompt] = useState(false)
   const [volunteerName, setVolunteerName] = useState('')
+  const router = useRouter()
   const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
@@ -42,7 +44,7 @@ export default function LoginPage() {
         setError('Unable to start the board session. Please try again.')
         return
       }
-      window.location.assign('/dashboard/me')
+      router.replace('/dashboard/me')
       return
     }
 
@@ -56,7 +58,7 @@ export default function LoginPage() {
     if (data.user?.email?.toLowerCase() === SHARED_VOLUNTEER_EMAIL) {
       setVolunteerPrompt(true)
     } else {
-      window.location.assign('/dashboard')
+      router.replace('/dashboard')
     }
   }
 
@@ -66,7 +68,7 @@ export default function LoginPage() {
     if (!name) return
     // No Max-Age means this browser cookie expires with the browser session.
     document.cookie = `nk_volunteer_name=${encodeURIComponent(name)}; Path=/; SameSite=Lax`
-    window.location.assign('/dashboard')
+    router.replace('/dashboard')
   }
 
   return (
