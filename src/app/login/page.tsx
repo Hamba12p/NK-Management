@@ -8,6 +8,8 @@ import Image from 'next/image'
 import { LoginMotif } from '@/components/BrandIllustrations'
 import { SHARED_VOLUNTEER_EMAIL } from '@/lib/auth-identities'
 import { InstallAppButton } from '@/components/InstallAppButton'
+import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 
 const emailSchema = z.string().email('Please enter a valid email address')
 
@@ -92,6 +94,7 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Sign in'}</button>
         </div>
         <p className="text-center text-xs text-muted mt-6 font-medium">Only registered staff can access the Hub</p>
+        <Link href="/obx" className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded border border-purple px-4 py-3 text-sm font-bold text-purple transition-colors hover:bg-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple"><Sparkles size={18} aria-hidden="true" />New volunteer? Start OBX</Link>
         <InstallAppButton />
       </form>
       {volunteerPrompt && (

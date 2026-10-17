@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --conditions=react-server --experimental-strip-types --test tests/*.test.mjs",
+    "seed:obx": "node --env-file-if-exists=.env.local scripts/seed-obx.mjs",
+    "test": "node --conditions=react-server --experimental-strip-types --test tests/*.test.mjs",
     "seed:users": "node --env-file-if-exists=.env.local scripts/seed-users.mjs"
   },
   "dependencies": {

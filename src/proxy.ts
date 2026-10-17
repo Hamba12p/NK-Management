@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+  // The volunteer passport uses its own signed cookie and has no hub login.
+  if (pathname === '/obx' || pathname.startsWith('/obx/')) {
+    return NextResponse.next()
+  }
   // Start from a response tied to the incoming request so cookie reads
   // inside getAll() stay in sync with what we write in setAll() below.
   let response = NextResponse.next({ request })
@@ -34,7 +39,6 @@ export async function proxy(request: NextRequest) {
   // every request — don't swap this for getSession(), which only reads the
   // (possibly stale/tampered) local cookie.
   const { data: { user } } = await supabase.auth.getUser()
-  const pathname = request.nextUrl.pathname
 
   // Redirect root/dashboard to login if not authenticated
   if ((pathname === '/' || pathname.startsWith('/dashboard')) && !user) {
@@ -66,6 +70,7 @@ export async function proxy(request: NextRequest) {
     if (pathname === '/dashboard/volunteer-profile' || pathname === '/dashboard/volunteer-hours') {
       return ['volunteer', 'volunteer_senior', 'volunteer_lead']
     }
+    if (pathname === '/dashboard/onboarding' || pathname.startsWith('/dashboard/onboarding/')) return ['admin', 'manager', 'dpo']
     return null
   })()
 

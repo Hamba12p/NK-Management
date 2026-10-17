@@ -24,6 +24,17 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   ])
 
   const profile = profileResult.data
+  const canViewOnboarding = ['admin', 'manager', 'dpo'].includes(profile?.role || '')
+  const onboardingResults = canViewOnboarding ? await Promise.all([
+    supabase.from('volunteer_roster').select('id', { count: 'exact', head: true }),
+    supabase.from('obx_progress').select('roster_id, status, cycle').order('cycle', { ascending: false }),
+  ]) : null
+  const obxProgress = onboardingResults?.[1].data || []
+  const latestObx = new Map<string, string>()
+  for (const item of obxProgress) if (!latestObx.has(item.roster_id)) latestObx.set(item.roster_id, item.status)
+  const obxComplete = Array.from(latestObx.values()).filter((status) => status === 'completed').length
+  const obxInProgress = Array.from(latestObx.values()).filter((status) => status === 'in_progress').length
+  const obxNotStarted = Math.max(0, (onboardingResults?.[0].count || 0) - latestObx.size)
   // This server-rendered request needs one stable timestamp for all date comparisons.
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now()
@@ -86,6 +97,8 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
           </Link>
         ))}
       </section>
+
+      {canViewOnboarding && <section className="card"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Volunteer learning</p><h2 className="serif-display mt-1 text-2xl text-ink">Onboarding</h2></div><Link href="/dashboard/onboarding" className="text-sm font-bold text-purple underline">Open roster</Link></div>{onboardingResults?.some((result) => result.error) ? <p className="mt-4 text-sm text-muted">Onboarding counts are unavailable. Check the OBX migration state.</p> : <div className="mt-5 grid grid-cols-3 gap-3"><div><p className="serif-display text-2xl text-ink">{obxComplete}</p><p className="text-xs text-muted">Complete</p></div><div><p className="serif-display text-2xl text-ink">{obxInProgress}</p><p className="text-xs text-muted">In progress</p></div><div><p className="serif-display text-2xl text-ink">{obxNotStarted}</p><p className="text-xs text-muted">Not started</p></div></div>}</section>}
 
       <section className="card !p-0 overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-6 py-5"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Personal queue</p><h2 className="serif-display mt-1 text-2xl text-ink">My Work</h2></div><span className="text-sm text-muted">{myWork.length} open item{myWork.length === 1 ? '' : 's'}</span></div>

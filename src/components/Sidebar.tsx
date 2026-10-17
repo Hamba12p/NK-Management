@@ -24,6 +24,7 @@ const getNavItems = (role?: string) => {
   ]
 
   const managerItems = [
+    { href: '/dashboard/onboarding', label: 'Onboarding', icon: 'volunteers' as const, adminOnly: false },
     { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false },
     { href: '/dashboard/team', label: 'Team', icon: 'team' as const, adminOnly: false },
     { href: '/dashboard/volunteers', label: 'Volunteers', icon: 'volunteers' as const, adminOnly: false },
@@ -42,11 +43,10 @@ const getNavItems = (role?: string) => {
     ? [{ href: '/dashboard/me', label: 'M&E & Board', icon: 'analytics', adminOnly: false }]
     : []
   if (role === 'admin' || role === 'manager') return [...baseItems, ...managerItems, ...meItems, ...adminItems]
-  if (role === 'board_advisor') return [...baseItems, { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false }, ...meItems]
-
   if (role === 'dpo') {
     return [
       ...baseItems,
+      { href: '/dashboard/onboarding', label: 'Onboarding', icon: 'volunteers' as const, adminOnly: false },
       { href: '/dashboard/dpo/register', label: 'Processing Register', icon: 'dpo-register' as const, adminOnly: false },
       { href: '/dashboard/dpo/requests', label: 'Data Requests', icon: 'dpo-requests' as const, adminOnly: false },
       { href: '/dashboard/dpo/incidents', label: 'Incident Log', icon: 'dpo-incidents' as const, adminOnly: false },
@@ -54,6 +54,7 @@ const getNavItems = (role?: string) => {
       { href: '/dashboard/activity-log', label: 'Activity Log', icon: 'activity' as const, adminOnly: false },
     ]
   }
+  if (role === 'board_advisor') return [...baseItems, { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false }, ...meItems]
 
   if (role === 'volunteer' || role === 'volunteer_senior' || role === 'volunteer_lead') {
     return [
