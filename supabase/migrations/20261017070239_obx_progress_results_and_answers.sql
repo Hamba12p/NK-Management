@@ -1,4 +1,4 @@
-﻿-- OBX course state and append-only answer history.
+-- OBX course state and append-only answer history.
 create table public.obx_progress (
   id uuid primary key default gen_random_uuid(),
   roster_id uuid not null references public.volunteer_roster(id) on delete restrict,

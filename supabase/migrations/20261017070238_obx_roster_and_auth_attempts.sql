@@ -1,4 +1,4 @@
-﻿-- OBX roster and rate-limit storage. Access is restricted to trusted server handlers
+-- OBX roster and rate-limit storage. Access is restricted to trusted server handlers
 -- and management readers. No email address or volunteer number is stored in logs.
 create table public.volunteer_roster (
   id uuid primary key default gen_random_uuid(),
