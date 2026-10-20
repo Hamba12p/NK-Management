@@ -5,7 +5,7 @@ export type CreatorProfile = {
 }
 
 export function initials(value: string, limit = 2) {
-  return value
+  const initials = value
     .trim()
     .split(/\s+/)
     .filter(Boolean)
@@ -14,6 +14,8 @@ export function initials(value: string, limit = 2) {
     .join('')
     .toUpperCase()
     .slice(0, 4) || 'NK'
+  if (initials.length >= 2) return initials
+  return `${value.replace(/[^A-Za-z0-9]/g, '')}NK`.slice(0, 2).toUpperCase()
 }
 
 export function volunteerContributor() {
