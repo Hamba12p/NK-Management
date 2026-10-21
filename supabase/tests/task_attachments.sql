@@ -1,6 +1,7 @@
 -- Run only in an empty disposable PostgreSQL database:
 -- psql -X -v ON_ERROR_STOP=1 -f supabase/tests/task_attachments.sql
 create role authenticated nologin;
+create role anon nologin;
 create schema auth;
 create schema storage;
 create function auth.uid() returns uuid language sql stable as
@@ -10,7 +11,9 @@ create table public.tasks (
   id uuid primary key,
   created_by uuid not null,
   assignee_id uuid,
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  status text not null default 'todo',
+  updated_at timestamptz not null default now()
 );
 create table storage.objects (bucket_id text, name text);
 
@@ -34,10 +37,22 @@ grant usage on schema public, auth, storage to authenticated;
 grant select on public.profiles, public.tasks, storage.objects to authenticated;
 
 \ir ../migrations/20261020230000_task_attachments.sql
+\ir ../migrations/20261021000000_task_completion_submissions.sql
 
 begin;
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000002', true);
 set local role authenticated;
+do $$
+begin
+  perform public.complete_assigned_task('10000000-0000-4000-8000-000000000001');
+  raise exception 'Expected completion to require a submission';
+exception
+  when raise_exception then
+    if sqlerrm <> 'Upload work before marking the task complete' then
+      raise;
+    end if;
+end;
+$$;
 insert into public.task_attachments (
   task_id, file_name, file_path, file_size, mime_type, uploaded_by
 ) values (
@@ -56,6 +71,10 @@ select 1 / case when count(*) = 1 then 1 else 0 end as assignee_can_read
 from public.task_attachments;
 select 1 / case when count(*) = 1 then 1 else 0 end as assignee_can_read_storage
 from storage.objects;
+select public.complete_assigned_task('10000000-0000-4000-8000-000000000001');
+select 1 / case when status = 'done' then 1 else 0 end as assignee_can_complete_after_submission
+from public.tasks
+where id = '10000000-0000-4000-8000-000000000001';
 reset role;
 
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000001', true);
@@ -64,10 +83,25 @@ select 1 / case when count(*) = 1 then 1 else 0 end as assigner_can_read
 from public.task_attachments;
 select 1 / case when count(*) = 1 then 1 else 0 end as assigner_can_read_storage
 from storage.objects;
+select 1 / case when count(*) = 1 then 1 else 0 end as assigner_sees_completed_task
+from public.tasks
+where id = '10000000-0000-4000-8000-000000000001'
+  and status = 'done';
 reset role;
 
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000003', true);
 set local role authenticated;
+do $$
+begin
+  perform public.complete_assigned_task('10000000-0000-4000-8000-000000000001');
+  raise exception 'Expected only the assigned volunteer to complete the task';
+exception
+  when raise_exception then
+    if sqlerrm <> 'Task is not assigned to the current user' then
+      raise;
+    end if;
+end;
+$$;
 select 1 / case when count(*) = 0 then 1 else 0 end as unrelated_user_cannot_read
 from public.task_attachments;
 select 1 / case when count(*) = 0 then 1 else 0 end as unrelated_user_cannot_read_storage
@@ -75,4 +109,4 @@ from storage.objects;
 reset role;
 rollback;
 
-select 'PASS: assignee upload, assignee/assigner access, unrelated user denied' as result;
+select 'PASS: submission required, assignee completion, assigner access, unrelated user denied' as result;
