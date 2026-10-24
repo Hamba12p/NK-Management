@@ -14,7 +14,14 @@ Review `src/content/obx/config.ts` before launch. It contains the course and MOU
 
 ## Failure response
 
-Public handlers return a generic connection message when the service key or database is unavailable. Check server environment configuration, Supabase availability and migration state. Never include a volunteer email or number in support logs or URLs.
+Public handlers return a generic connection message when configuration or the database is unavailable. For `/api/obx/request-link`, the server logs a stage and Supabase error code without logging contact data or secret values. Check the matching Vercel function log:
+
+- `configuration missing or invalid`: configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and an `OBX_IP_SALT` of at least 32 characters in the production environment, then redeploy.
+- `rate-limit lookup` or `rate-limit attempt logging`: apply the OBX database migrations in the documented order and verify service-role grants.
+- `roster lookup`: apply the phone-and-random-number migration, which adds the `phone` column, and confirm the roster table is available.
+- `Supabase Auth user provisioning` or `Supabase verification delivery`: check Supabase Auth configuration, email SMTP and redirect allow-list, or the SMS provider, using the logged error code.
+
+If the existing deployment does not have stage-specific logs, deploy the diagnostic endpoint before retrying. Never include a volunteer email, phone, or number in support logs or URLs, and never paste secret values into tickets.
 
 Roster editing/import, CSV export, progress summary, nudge list, administrator reset, badge image download, print certificate and Pocket Card are available from the Onboarding dashboard and badge page. The roster import accepts `Name` or `Full name`, `Email`, and optional `Phone`; it can be used with the `Name`, `Phone`, `Email`, `No.` columns in `NK_Udada_Volunteers.xlsx` after saving a local CSV copy. The spreadsheet's `No.` values are ignored because they are not NKV IDs. Missing volunteer numbers are randomly assigned from `NKV-100` through `NKV-9999` by the database. Check import errors and duplicates before sending invites. Keep volunteer contact spreadsheets out of source control and do not include contact data in logs or support messages.
 

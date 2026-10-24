@@ -21,5 +21,8 @@ export async function getObxRoster() {
 }
 
 export function unavailable() {
-  return NextResponse.json({ error: 'The passport is having a little trouble connecting. Please try again shortly.' }, { status: 503 })
+  return NextResponse.json(
+    { error: 'The passport is having a little trouble connecting. Please try again shortly.' },
+    { status: 503, headers: { 'Cache-Control': 'no-store' } }
+  )
 }
