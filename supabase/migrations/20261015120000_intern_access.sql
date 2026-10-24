@@ -240,7 +240,7 @@ create policy intern_agenda_update on public.agenda_items as restrictive for upd
   using (not public.is_intern() or (public.intern_access_active() and created_by = (select auth.uid()) and deleted_at is null and exists (
     select 1 from public.meetings m where m.id = meeting_id and m.intern_visible and m.intern_check_in)))
   with check (not public.is_intern() or (public.intern_access_active() and created_by = (select auth.uid()) and exists (
-    select 1 from public.meetings m where m.id = meeting_id and m.intern_visible and m.intern_check_in))));
+    select 1 from public.meetings m where m.id = meeting_id and m.intern_visible and m.intern_check_in)));
 create policy intern_agenda_delete on public.agenda_items as restrictive for delete to authenticated
   using (not public.is_intern() or (public.intern_access_active() and created_by = (select auth.uid())));
 
