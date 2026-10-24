@@ -9,7 +9,7 @@ export default async function OnboardingPage() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (!profile || !['admin', 'manager', 'dpo'].includes(profile.role)) redirect('/dashboard?access=denied')
   const [roster, progress] = await Promise.all([
-    supabase.from('volunteer_roster').select('id, volunteer_number, full_name, email, status, is_founding').order('volunteer_number'),
+    supabase.from('volunteer_roster').select('id, volunteer_number, full_name, email, phone, status, is_founding').order('volunteer_number'),
     supabase.from('obx_progress').select('roster_id, cycle, status, current_stop, overall_score, last_active_at, completed_at').order('last_active_at', { ascending: false }),
   ])
   const latest = new Map<string, NonNullable<typeof progress.data>[number]>()

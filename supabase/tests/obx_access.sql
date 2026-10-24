@@ -18,6 +18,14 @@ begin
       raise exception 'anon unexpectedly has SELECT on public.%', table_name;
     end if;
   end loop;
+
+  if has_function_privilege('anon', 'public.issue_next_volunteer_number()', 'EXECUTE')
+    or has_function_privilege('authenticated', 'public.issue_next_volunteer_number()', 'EXECUTE') then
+    raise exception 'untrusted database roles can call the volunteer number allocator';
+  end if;
+  if not has_function_privilege('service_role', 'public.issue_next_volunteer_number()', 'EXECUTE') then
+    raise exception 'service_role cannot allocate volunteer numbers';
+  end if;
 end $$;
 
 select set_config('request.jwt.claims', json_build_object('sub', current_setting('obx.test_volunteer_id'), 'role', 'authenticated')::text, true);

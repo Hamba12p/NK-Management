@@ -30,6 +30,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# volunteer contact list
+/NK_Udada_Volunteers.xlsx
+
 # vercel
 .vercel
 

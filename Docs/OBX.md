@@ -12,7 +12,7 @@ Change `OBX_CONFIG.passMarks.keepingChildrenSafe` in `src/content/obx/config.ts`
 
 ## Roster and numbers
 
-Issue a unique `NKV-###` number for each volunteer. The format supports four digits after 999. Never reuse a number. Add the volunteer's name and email to `volunteer_roster`; sign-in requires both details to match the same active row. Store email in lower case. Use the management dashboard once roster editing is implemented, or insert through a trusted administrative database workflow. Do not add roster data to source control.
+Issue each volunteer a unique random `NKV-###` number from 100 through 9999. Never reuse a number. Add the volunteer's name, email, and phone (if available) to `volunteer_roster`. Passport sign-in verifies either the rostered email or phone through Supabase Auth before revealing the assigned number. Store email in lower case and phone in international E.164 format. Do not add roster data to source control.
 
 The fake seed script is for local or isolated test projects only:
 
@@ -43,8 +43,11 @@ Apply the following SQL files in order in the Supabase SQL Editor, or through yo
 1. `supabase/migrations/20261017070238_obx_roster_and_auth_attempts.sql`
 2. `supabase/migrations/20261017070239_obx_progress_results_and_answers.sql`
 3. `supabase/migrations/20261017070240_obx_management_read_policies.sql`
+4. `supabase/migrations/20261024145000_obx_volunteer_phone_and_random_numbers.sql`
 
-The migrations are additive. Each enables RLS, removes direct access for `anon` and ordinary authenticated users, and grants only management reads plus trusted server access. After applying, run `supabase/tests/obx_access.sql` as a database owner and verify management access with real admin, manager and DPO accounts in a staging project. The migrations have not been applied to the hosted project in this implementation.
+The roster and progress migrations enable RLS, restrict direct access for `anon` and ordinary authenticated users, and grant only management reads plus trusted server access. The volunteer-number migration grants number allocation to `service_role` only. After applying, run `supabase/tests/obx_access.sql` as a database owner and verify management access with real admin, manager and DPO accounts in a staging project. The migrations have not been applied to the hosted project in this implementation.
+
+The public passport accepts an email magic link or an SMS code from Supabase Auth. The contact must already exist on an active roster row. Configure email SMTP/magic-link delivery, allow `/obx/verify` as a Supabase Auth redirect URL, and enable an SMS provider for phone verification. Volunteers receive a randomly selected, unique `NKV-100` through `NKV-9999` number only after successful contact verification. The number is allocated when an admin adds/imports the roster entry and displayed after verification.
 
 ## Content and launch review checklist
 

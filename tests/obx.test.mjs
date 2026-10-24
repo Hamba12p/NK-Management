@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 
 process.env.OBX_SESSION_SECRET = 'test-secret-for-obx-session-signing-0000000000000000'
 
-const [{ normaliseVolunteerNumber, normaliseEmail }, { signSession, verifySession }, { scorePercent, meetsPassMark, isRateLimited }] = await Promise.all([
+const [{ normaliseVolunteerNumber, normaliseEmail }, { normaliseObxContact }, { signSession, verifySession }, { scorePercent, meetsPassMark, isRateLimited }] = await Promise.all([
   import('../src/lib/obx/normalise.ts'),
+  import('../src/lib/obx/contact.ts'),
   import('../src/lib/obx/session-core.ts'),
   import('../src/lib/obx/logic.ts'),
 ])
@@ -15,6 +16,13 @@ test('volunteer numbers normalise accepted forms and reject malformed input', ()
   assert.equal(normaliseVolunteerNumber('nkv-0037'), 'NKV-0037')
   assert.equal(normaliseVolunteerNumber('NKV-12345'), null)
   assert.equal(normaliseEmail('  TEAM@Example.ORG '), 'team@example.org')
+})
+
+test('passport contact input normalises email and international phone numbers', () => {
+  assert.deepEqual(normaliseObxContact('  TEAM@Example.ORG '), { channel: 'email', value: 'team@example.org' })
+  assert.deepEqual(normaliseObxContact('0776 866 921'), { channel: 'phone', value: '+256776866921' })
+  assert.deepEqual(normaliseObxContact('256776866921'), { channel: 'phone', value: '+256776866921' })
+  assert.equal(normaliseObxContact('not-an-email-or-phone'), null)
 })
 
 test('scoring uses bounded first try percentages and applies threshold', () => {
