@@ -7,7 +7,7 @@ import HubIcon from '@/components/HubIcon';
 import { EmptyLedger } from '@/components/BrandIllustrations';
 import { teamMembers } from '@/lib/team-structure';
 
-type ProfileRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead';
+type ProfileRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead' | 'board_advisor' | 'intern';
 
 interface TeamMember {
   id: string;
@@ -43,6 +43,8 @@ const roleColors: Record<ProfileRole, { bg: string; text: string; border: string
     text: 'text-purple',
     border: 'border-gold/30',
   },
+  board_advisor: { bg: 'bg-purple-lt/15', text: 'text-purple', border: 'border-purple-lt/35' },
+  intern: { bg: 'bg-gold/10', text: 'text-ink', border: 'border-gold/30' },
   volunteer_senior: {
     bg: 'bg-green/10',
     text: 'text-green',
@@ -72,6 +74,8 @@ const roleBadgeColors: Record<ProfileRole, { bg: string; text: string }> = {
     bg: 'bg-gold/15',
     text: 'text-purple',
   },
+  board_advisor: { bg: 'bg-purple-lt/20', text: 'text-purple' },
+  intern: { bg: 'bg-gold/15', text: 'text-ink' },
   volunteer_senior: {
     bg: 'bg-green/10',
     text: 'text-green',
@@ -87,6 +91,8 @@ const roleLabels: Record<ProfileRole, string> = {
   manager: 'Manager',
   dpo: 'DPO',
   volunteer_lead: 'Volunteer Lead',
+  board_advisor: 'Board Advisor',
+  intern: 'Intern',
   volunteer_senior: 'Senior Volunteer',
   volunteer: 'Volunteer',
 };
@@ -96,6 +102,8 @@ const roleDescriptions: Record<ProfileRole, string> = {
   manager: 'Can create meetings and post announcements',
   dpo: 'Manages data protection processing activities and requests',
   volunteer_lead: 'Coordinates volunteers and can view team activity',
+  board_advisor: 'Supports monitoring, evaluation and board reporting',
+  intern: 'Temporary documentation and monitoring support',
   volunteer_senior: 'Elevated volunteer with additional hour-tracking access',
   volunteer: 'Can view and download documents',
 };
@@ -112,18 +120,23 @@ export default function TeamPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<'all' | ProfileRole>('all');
   const [totalCount, setTotalCount] = useState(0);
+  const [isIntern, setIsIntern] = useState<boolean | null>(null);
 
   async function fetchMembers() {
     try {
-      const { data, error: err } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: auth } = await supabase.auth.getUser();
+      const { data: ownProfile } = auth.user
+        ? await supabase.from('profiles').select('role').eq('id', auth.user.id).single()
+        : { data: null };
+      const { data, error: err } = ownProfile?.role === 'intern'
+        ? await supabase.rpc('staff_directory')
+        : await supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
       if (err) throw err;
 
       setMembers(data || []);
       setTotalCount(data?.length || 0);
+      setIsIntern(ownProfile?.role === 'intern');
       setError(null);
     } catch (err) {
       console.error('Failed to fetch team members:', err);
@@ -141,6 +154,7 @@ export default function TeamPage() {
 
   // Subscribe to real-time changes
   useEffect(() => {
+    if (isIntern !== false) return;
     const channel = supabase
       .channel('profiles-realtime')
       .on(
@@ -165,7 +179,7 @@ export default function TeamPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isIntern, supabase]);
 
   // Filter members
   const filteredMembers = members.filter((member) => {
@@ -232,9 +246,11 @@ export default function TeamPage() {
                 <option value="admin">Admins</option>
                 <option value="manager">Managers</option>
                 <option value="dpo">DPOs</option>
+                <option value="board_advisor">Board Advisors</option>
                 <option value="volunteer_lead">Volunteer Leads</option>
                 <option value="volunteer_senior">Senior Volunteers</option>
                 <option value="volunteer">Volunteers</option>
+                <option value="intern">Interns</option>
               </select>
             </div>
 
@@ -270,7 +286,7 @@ export default function TeamPage() {
           ) : (
             filteredMembers.map((member) => {
               const role = normalizeRole(member.role);
-              const rosterMember = teamMembers.find(item => item.name === member.full_name);
+              const rosterMember = isIntern ? undefined : teamMembers.find(item => item.name === member.full_name);
               const accountType = member.account_type || (member.full_name === 'Volunteers' ? 'shared' : member.full_name === 'Admin' ? 'organization' : 'person');
               return (
               <div
@@ -296,7 +312,7 @@ export default function TeamPage() {
                 </div>
 
                 {/* Contact Info */}
-                <div className="space-y-3 pt-4 border-t border-current border-opacity-10">
+                {!isIntern && <div className="space-y-3 pt-4 border-t border-current border-opacity-10">
                   <div className="flex items-center gap-3 text-sm">
                     <Mail className="w-4 h-4 text-muted flex-shrink-0" />
                     <span className="text-muted truncate">
@@ -316,15 +332,15 @@ export default function TeamPage() {
                       </span>
                     </div>
                   )}
-                </div>
+                </div>}
 
                 {/* Role Badge (larger, for reference) */}
-                <div className="mt-4 pt-4 border-t border-current border-opacity-10">
+                {!isIntern && <div className="mt-4 pt-4 border-t border-current border-opacity-10">
                   <p className="text-xs text-muted uppercase tracking-wide">Role Details</p>
                   <p className={`mt-1 text-sm font-medium ${roleColors[role].text}`}>
                     {member.job_title || rosterMember?.title || roleDescriptions[role]}
                   </p>
-                </div>
+                </div>}
               </div>
               )
             })

@@ -1,4 +1,4 @@
-export type HubRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead'
+export type HubRole = 'admin' | 'manager' | 'dpo' | 'volunteer' | 'volunteer_senior' | 'volunteer_lead' | 'board_advisor' | 'intern'
 
 export const teamMembers = [
   { email: 'nkateregga003@gmail.com', name: 'Naira Kateregga', title: 'Founder & Coordinator', role: 'admin' as const, avatar: 'NK', color: 'var(--purple)' },
@@ -17,4 +17,6 @@ export const rolePermissions: Record<HubRole, string[]> = {
   volunteer: ['workspace_write', 'view_announcements', 'update_own_profile'],
   volunteer_senior: ['workspace_write', 'view_announcements', 'update_own_profile', 'mentor_volunteers'],
   volunteer_lead: ['workspace_write', 'view_announcements', 'update_own_profile', 'organize_volunteer_events'],
+  board_advisor: ['me_read', 'me_write', 'view_meetings'],
+  intern: ['own_workspace_write', 'own_task_status', 'intern_visible_read'],
 }

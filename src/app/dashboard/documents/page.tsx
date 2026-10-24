@@ -11,6 +11,7 @@ import CreatorTag from '@/components/CreatorTag'
 import { EmptyLedger } from '@/components/BrandIllustrations'
 import { volunteerContributor } from '@/lib/creator'
 import { getDocumentAccess } from '@/lib/document-access'
+import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
 
 type Document = {
   id: string
@@ -38,18 +39,24 @@ export default function DocumentsPage() {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [currentUserId, setCurrentUserId] = useState('')
   const [createdByMe, setCreatedByMe] = useState(false)
+  const [currentRole, setCurrentRole] = useState('')
   const supabase = createClient()
 
   async function fetchDocs() {
     try {
       const [{ data, error: err }, { data: authData }] = await Promise.all([supabase
         .from('documents')
-        .select('*, profiles!documents_uploaded_by_fkey(*)')
+        .select('*')
         .order('created_at', { ascending: false }), supabase.auth.getUser()])
 
       if (err) { console.error('Error fetching documents:', err); return }
-      setDocs(data || [])
+      const staff = await loadStaffDirectory(supabase)
+      setDocs((data || []).map(doc => ({ ...doc, profiles: staffProfile(staff, doc.uploaded_by) })))
       setCurrentUserId(authData.user?.id || '')
+      const { data: ownProfile } = authData.user
+        ? await supabase.from('profiles').select('role').eq('id', authData.user.id).single()
+        : { data: null }
+      setCurrentRole(ownProfile?.role || '')
     } catch (e) {
       console.error('Fetch error:', e)
     }
@@ -88,7 +95,7 @@ export default function DocumentsPage() {
       if (!user) { setError('Not authenticated'); setUploading(false); return }
 
       const sanitizedFileName = file.name.replace(/[^a-z0-9.\-_]/gi, '_')
-      const filePath = `${user.id}/${Date.now()}-${sanitizedFileName}`
+      const filePath = `${currentRole === 'intern' ? `interns/${user.id}` : user.id}/${Date.now()}-${sanitizedFileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -131,7 +138,13 @@ export default function DocumentsPage() {
   async function handleDelete(doc: Document) {
     try {
       setError('')
-      await archiveAndDeleteContent(supabase, 'document', doc.id)
+      if (currentRole === 'intern') {
+        const { error: deleteError } = await supabase.from('documents').update({ deleted_at: new Date().toISOString(), deleted_by: currentUserId }).eq('id', doc.id)
+        if (deleteError) throw deleteError
+        setDocs(items => items.filter(item => item.id !== doc.id))
+      } else {
+        await archiveAndDeleteContent(supabase, 'document', doc.id)
+      }
 
       setSuccess(`"${doc.name}" was removed from the shared hub and retained for administrator review.`)
       setDeletingDocId(null)
@@ -145,6 +158,7 @@ export default function DocumentsPage() {
 
     try {
       setError('')
+      if (currentRole === 'intern' && selectedDoc.uploaded_by !== currentUserId) throw new Error('You can only edit your own uploads.')
       const { error: err } = await supabase
         .from('documents')
         .update({
