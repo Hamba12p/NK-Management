@@ -93,7 +93,14 @@ export async function POST(request: NextRequest) {
             options: { shouldCreateUser: false, emailRedirectTo: new URL('/obx/verify', request.url).toString() },
           })
           : await auth.auth.signInWithOtp({ phone: contact.value, options: { shouldCreateUser: false } })
-        if (error) console.error(`[OBX request-link] ${stage} failed (${error.code || 'unknown'})`)
+        const deliveryResult = {
+          channel: contact.channel,
+          status: error?.status || 200,
+          code: error?.code || null,
+          name: error?.name || null,
+        }
+        if (error) console.error('[OBX request-link] Supabase verification request failed', deliveryResult)
+        else console.info('[OBX request-link] Supabase accepted verification request', deliveryResult)
         sent = !error
       }
     }

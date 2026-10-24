@@ -47,8 +47,8 @@ export default function ObxWelcomePage() {
       setContact(parsed)
       setCode('')
       setMessage(parsed.channel === 'email'
-        ? 'If this email is on the approved volunteer list, a secure sign-in link will arrive shortly. Open it on this device, and check your spam folder if needed.'
-        : 'If this phone is on the approved volunteer list, an SMS code will arrive shortly.')
+        ? 'If this email is on the approved volunteer list and email delivery is configured, a secure sign-in link will arrive shortly. Open it on this device, and check your spam folder if needed.'
+        : 'If this phone is on the approved volunteer list and SMS delivery is configured, a one-time code will arrive shortly.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Verification is temporarily unavailable.')
     } finally {
@@ -96,7 +96,7 @@ export default function ObxWelcomePage() {
         </li>
       </ol>
       {!contact ? <>
-        <p className="text-sm leading-6 text-muted">Enter the email address or phone number your coordinator added to the approved volunteer list. Your assigned volunteer number will be shown after verification.</p>
+        <p className="text-sm leading-6 text-muted">Enter the email address or phone number your coordinator added to the approved volunteer list. Your assigned volunteer number will be shown after verification. If no message arrives after a minute, check spam or ask your coordinator to confirm the contact and delivery setup.</p>
         <form onSubmit={requestVerification} className="space-y-5">
           <label className="block text-sm font-semibold">Rostered email or phone number<input required autoComplete="off" inputMode="text" type="text" value={contactInput} onChange={(event) => { setContactInput(event.target.value); setError('') }} placeholder="you@example.org or +256…" className="mt-2 w-full px-4 py-3" /></label>
           <button disabled={loading} className="min-h-12 w-full rounded bg-[#782653] px-5 py-3 font-bold text-white disabled:opacity-60">{loading ? 'Sending verification…' : 'Send verification link or code'}</button>
