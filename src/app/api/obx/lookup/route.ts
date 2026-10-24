@@ -10,6 +10,10 @@ const notFound = () => NextResponse.json(
   { error: 'We could not find an active volunteer with those details. Ask your coordinator to confirm your record is imported and active, and that both details match the roster.' },
   { status: 404, headers: { 'Cache-Control': 'no-store' } }
 )
+const rateLimited = () => NextResponse.json(
+  { error: 'Too many lookup attempts. Please wait 15 minutes before trying again.' },
+  { status: 429, headers: { 'Cache-Control': 'no-store', 'Retry-After': '900' } }
+)
 
 export async function POST(request: NextRequest) {
   if (!originAllowed(request)) return NextResponse.json({ error: 'Request could not be verified.' }, { status: 403 })
@@ -56,22 +60,20 @@ export async function POST(request: NextRequest) {
     }
 
     const limited = (ipAttempts.count || 0) >= 10 || (pairAttempts.count || 0) >= 5
-    const blockedUntil = limited ? new Date(now.getTime() + 15 * 60 * 1000).toISOString() : null
-    let volunteer: { id: string; full_name: string; volunteer_number: string } | null = null
+    if (limited) {
+      return rateLimited()
+    }
 
-    if (!limited) {
-      stage = 'active volunteer lookup'
-      const { data, error } = await admin.from('volunteer_roster')
-        .select('id, full_name, volunteer_number')
-        .eq('email', email.value)
-        .eq('phone', phone.value)
-        .eq('status', 'active')
-        .maybeSingle()
-      if (error) {
-        console.error(`[OBX lookup] ${stage} failed (${error.code || 'unknown'})`)
-        return unavailable()
-      }
-      volunteer = data
+    stage = 'active volunteer lookup'
+    const { data: volunteer, error: lookupError } = await admin.from('volunteer_roster')
+      .select('id, full_name, volunteer_number')
+      .eq('email', email.value)
+      .eq('phone', phone.value)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (lookupError) {
+      console.error(`[OBX lookup] ${stage} failed (${lookupError.code || 'unknown'})`)
+      return unavailable()
     }
 
     stage = 'lookup attempt logging'
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
       ip_hash: ipHash,
       volunteer_number_hash: pairHash,
       success: !!volunteer,
-      blocked_until: blockedUntil,
+      blocked_until: null,
     })
     if (logError) {
       console.error(`[OBX lookup] ${stage} failed (${logError.code || 'unknown'})`)
