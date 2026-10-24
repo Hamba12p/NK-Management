@@ -24,7 +24,7 @@ type Document = {
   uploaded_by: string
   contributor_name: string | null
   contributor_tag: string | null
-  profiles: { full_name: string; display_tag: string | null; display_color: string | null }
+  profiles: { full_name: string; display_tag?: string | null; display_color?: string | null } | null
 }
 
 export default function DocumentsPage() {
