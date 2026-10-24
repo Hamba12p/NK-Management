@@ -26,6 +26,7 @@ Never include a volunteer email, phone, or number in support logs or URLs, and n
 ## Public volunteer lookup
 
 The public passport sends no email or SMS. It matches the supplied email and phone against an active roster row, returns only the volunteer's name and number, and sets a five-minute signed, HTTP-only pending cookie. The user must then click **Start my OBX** to exchange that short-lived lookup state for an eight-hour passport session. Lookup requests are rate-limited by IP and a keyed hash of the contact pair; raw contact details are not written to the attempt log.
+The former `/api/obx/request-link` endpoint is retained only as a `410 Gone` response; it does not send email or SMS.
 
 This does not prove that the person entering those details owns the email account or phone. A match intentionally reveals the name and volunteer number and allows passport access. Do not reuse this lookup as authentication for unrelated sensitive operations.
 
