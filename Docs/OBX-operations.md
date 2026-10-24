@@ -14,32 +14,23 @@ Review `src/content/obx/config.ts` before launch. It contains the course and MOU
 
 ## Failure response
 
-Public handlers return a generic connection message when configuration or the database is unavailable. For `/api/obx/request-link`, the server logs a stage and Supabase error code without logging contact data or secret values. Check the matching Vercel function log:
+Public handlers return a generic connection message when configuration or the database is unavailable. For `/api/obx/lookup`, the server logs a stage and database error code without logging contact data or secret values. Check the matching Vercel function log:
 
-- `configuration missing or invalid`: configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and an `OBX_IP_SALT` of at least 32 characters in the production environment, then redeploy.
-- `rate-limit lookup` or `rate-limit attempt logging`: apply the OBX database migrations in the documented order and verify service-role grants.
-- `roster lookup`: apply the phone-and-random-number migration, which adds the `phone` column, and confirm the roster table is available.
-- `Supabase Auth user provisioning` or `Supabase verification delivery`: check Supabase Auth configuration, email SMTP and redirect allow-list, or the SMS provider, using the logged error code.
+- `Required server configuration is missing or invalid`: configure `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OBX_SESSION_SECRET`, and `OBX_IP_SALT` (each secret at least 32 characters) in the production environment, then redeploy.
+- `lookup rate-limit check` or `lookup attempt logging`: apply the OBX database migrations in the documented order and verify service-role grants.
+- `active volunteer lookup`: confirm the volunteer has an active roster row with the matching email and phone.
+- `Volunteer session start failed`: check the matching OBX progress schema and database error code.
 
-If the existing deployment does not have stage-specific logs, deploy the diagnostic endpoint before retrying. Never include a volunteer email, phone, or number in support logs or URLs, and never paste secret values into tickets.
+Never include a volunteer email, phone, or number in support logs or URLs, and never paste secret values into tickets.
 
-## Verification messages not arriving
+## Public volunteer lookup
 
-An HTTP `202` from `/api/obx/request-link` is deliberately generic to prevent contact enumeration. It does **not** confirm that the contact was on the roster or that a message reached the inbox/device. Check the Vercel function logs for either `Supabase accepted verification request` or `Supabase verification request failed`; these records include only the channel, status, and safe error identifiers, never the contact.
+The public passport sends no email or SMS. It matches the supplied email and phone against an active roster row, returns only the volunteer's name and number, and sets a five-minute signed, HTTP-only pending cookie. The user must then click **Start my OBX** to exchange that short-lived lookup state for an eight-hour passport session. Lookup requests are rate-limited by IP and a keyed hash of the contact pair; raw contact details are not written to the attempt log.
 
-If Supabase accepted the request but nothing arrives:
+This does not prove that the person entering those details owns the email account or phone. A match intentionally reveals the name and volunteer number and allows passport access. Do not reuse this lookup as authentication for unrelated sensitive operations.
 
-1. In the Supabase Dashboard, inspect **Logs → Auth** at the time of the request. Supabase API acceptance means it attempted/queued delivery, not that an email reached an inbox or an SMS reached a handset.
-2. For email, configure a production SMTP provider under **Authentication → SMTP Settings**. Supabase's built-in sender is for testing: it only sends to project-team addresses and is rate-limited (currently 2 emails/hour). Configure a verified sender/domain and SPF/DKIM/DMARC with that provider. Check its delivery, bounce, and suppression logs. Confirm the Magic Link template contains `{{ .ConfirmationURL }}`.
-3. In **Authentication → URL Configuration**, set the Site URL to `https://staffhub.the-nkfoundation.org` and allow `https://staffhub.the-nkfoundation.org/obx/verify` as a redirect URL.
-4. For SMS, enable phone authentication and configure a supported SMS provider in **Authentication → Providers → Phone**. Check provider credentials, account balance/trial restrictions, Uganda (`+256`) destination permissions, sender configuration, and delivery logs. Confirm the SMS template contains `{{ .Code }}`.
-5. Check Supabase Auth rate limits and the provider's own rate limits. The app also applies a request limit; wait for its 15-minute window if repeated attempts were made.
-6. After changing Auth settings, test one approved contact on an inbox/phone you control. Do not repeatedly resend during troubleshooting.
+Roster editing/import, CSV export, progress summary, nudge list, administrator reset, badge image download, print certificate and Pocket Card are available from the Onboarding dashboard and badge page. The roster import requires `Name` or `Full name`, `Email`, and `Phone`; both contacts are required for public OBX lookup. It can be used with the `Name`, `Phone`, `Email`, `No.` columns in `NK_Udada_Volunteers.xlsx` after saving a local CSV copy. The spreadsheet's `No.` values are ignored because they are not NKV IDs. Missing volunteer numbers are randomly assigned from `NKV-100` through `NKV-9999` by the database. Check import errors and duplicates. Keep volunteer contact spreadsheets out of source control and do not include contact data in logs or support messages.
 
-Supabase setup references: [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [phone sign-in and SMS providers](https://supabase.com/docs/guides/auth/phone-login), and [email OTP/magic-link behavior](https://supabase.com/docs/reference/javascript/auth-signinwithotp).
-
-Roster editing/import, CSV export, progress summary, nudge list, administrator reset, badge image download, print certificate and Pocket Card are available from the Onboarding dashboard and badge page. The roster import accepts `Name` or `Full name`, `Email`, and optional `Phone`; it can be used with the `Name`, `Phone`, `Email`, `No.` columns in `NK_Udada_Volunteers.xlsx` after saving a local CSV copy. The spreadsheet's `No.` values are ignored because they are not NKV IDs. Missing volunteer numbers are randomly assigned from `NKV-100` through `NKV-9999` by the database. Check import errors and duplicates before sending invites. Keep volunteer contact spreadsheets out of source control and do not include contact data in logs or support messages.
-
-Generated numbers use a database transaction lock so simultaneous admin imports do not allocate the same number. Apply `supabase/migrations/20261024145000_obx_volunteer_phone_and_random_numbers.sql` before deploying this version of roster import. Volunteers enter an approved roster email or phone on `/obx`; Supabase sends an email magic link or SMS code. After verification, the server displays the assigned volunteer number and starts the passport session. Set up Supabase email SMTP, allow `/obx/verify` in the Auth redirect URL list, and configure an SMS provider before enabling phone sign-in.
+Generated numbers use a database transaction lock so simultaneous admin imports do not allocate the same number. Apply `supabase/migrations/20261024145000_obx_volunteer_phone_and_random_numbers.sql` before deploying this version of roster import. Volunteers enter their rostered email and phone on `/obx`; an exact active-row match displays their name and number, then the volunteer can choose **Start my OBX**. No Auth email or SMS provider is required for this flow.
 
 The dashboard uses copyable invite messages and displays nudge text for inactive volunteers. Activity entries are written for roster additions, deactivations, resets and completions. Content approval and live database migration remain launch prerequisites.

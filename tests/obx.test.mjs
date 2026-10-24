@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 process.env.OBX_SESSION_SECRET = 'test-secret-for-obx-session-signing-0000000000000000'
 
-const [{ normaliseVolunteerNumber, normaliseEmail }, { normaliseObxContact }, { signSession, verifySession }, { scorePercent, meetsPassMark, isRateLimited }] = await Promise.all([
+const [{ normaliseVolunteerNumber, normaliseEmail }, { normaliseObxContact }, { signSession, verifySession, signPendingLookup, verifyPendingLookup }, { scorePercent, meetsPassMark, isRateLimited }] = await Promise.all([
   import('../src/lib/obx/normalise.ts'),
   import('../src/lib/obx/contact.ts'),
   import('../src/lib/obx/session-core.ts'),
@@ -18,7 +18,7 @@ test('volunteer numbers normalise accepted forms and reject malformed input', ()
   assert.equal(normaliseEmail('  TEAM@Example.ORG '), 'team@example.org')
 })
 
-test('passport contact input normalises email and international phone numbers', () => {
+test('roster contact normalisation accepts email and international phone numbers', () => {
   assert.deepEqual(normaliseObxContact('  TEAM@Example.ORG '), { channel: 'email', value: 'team@example.org' })
   assert.deepEqual(normaliseObxContact('0776 866 921'), { channel: 'phone', value: '+256776866921' })
   assert.deepEqual(normaliseObxContact('256776866921'), { channel: 'phone', value: '+256776866921' })
@@ -37,6 +37,13 @@ test('signed sessions reject tampering and expiry', () => {
   assert.equal(verifySession(token, 1_000_001)?.rosterId, '00000000-0000-4000-8000-000000000000')
   assert.equal(verifySession(`${token}x`, 1_000_001), null)
   assert.equal(verifySession(token, 1_000_000 + 8 * 60 * 60 * 1000), null)
+})
+
+test('pending volunteer lookups expire after five minutes and reject tampering', () => {
+  const token = signPendingLookup('00000000-0000-4000-8000-000000000000', 1_000_000)
+  assert.equal(verifyPendingLookup(token, 1_000_001)?.rosterId, '00000000-0000-4000-8000-000000000000')
+  assert.equal(verifyPendingLookup(`${token}x`, 1_000_001), null)
+  assert.equal(verifyPendingLookup(token, 1_000_000 + 5 * 60 * 1000), null)
 })
 
 test('rate limit engages at eight failures by either key', () => {

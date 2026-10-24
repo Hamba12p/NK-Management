@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       const nameIndex = header.indexOf('full name') >= 0 ? header.indexOf('full name') : header.indexOf('name')
       const emailIndex = header.indexOf('email')
       const phoneIndex = header.indexOf('phone')
-      if (nameIndex < 0 || (emailIndex < 0 && phoneIndex < 0)) return NextResponse.json({ error: 'CSV must include Name (or Full name) and at least one contact column: Email or Phone.' }, { status: 400 })
+      if (nameIndex < 0 || emailIndex < 0 || phoneIndex < 0) return NextResponse.json({ error: 'CSV must include Name (or Full name), Email, and Phone columns.' }, { status: 400 })
       const admin = createObxAdminClient()
       const imported: Array<{ id: string; volunteer_number: string; full_name: string; email: string; phone: string | null; status: string; is_founding: boolean }> = []
       const errors: string[] = []
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         const phoneContact = rawPhone ? normaliseObxContact(rawPhone) : null
         const phone = phoneContact?.channel === 'phone' ? phoneContact.value : null
         const number = numberIndex >= 0 && row[numberIndex] ? normaliseNumber(row[numberIndex]) : null
-        if (fullName.length < 2 || fullName.length > 160 || (!email && !phone) || (email && (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || (rawPhone && !phone) || (row[numberIndex] && !number)) { errors.push(`Row ${offset + 2}: check the name, email, phone and volunteer number.`); continue }
+        if (fullName.length < 2 || fullName.length > 160 || !email || email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !phone || !rawPhone || (row[numberIndex] && !number)) { errors.push(`Row ${offset + 2}: check the name, email, phone and volunteer number.`); continue }
         let assignedNumber = number
         if (!assignedNumber) {
           try {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const phoneContact = rawPhone ? normaliseObxContact(rawPhone) : null
     const phone = phoneContact?.channel === 'phone' ? phoneContact.value : null
     const number = body.volunteerNumber ? normaliseNumber(body.volunteerNumber) : null
-    if (fullName.length < 2 || fullName.length > 160 || (!email && !phone) || (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320)) || (rawPhone && !phone) || (body.volunteerNumber && !number)) return NextResponse.json({ error: 'Check the name, email, phone and volunteer number.' }, { status: 400 })
+    if (fullName.length < 2 || fullName.length > 160 || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320 || !phone || !rawPhone || (body.volunteerNumber && !number)) return NextResponse.json({ error: 'Check the name, email, phone and volunteer number.' }, { status: 400 })
     const admin = createObxAdminClient()
     let assignedNumber = number
     if (!assignedNumber) {
@@ -130,13 +130,14 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.fullName === 'string' && body.fullName.trim().length >= 2 && body.fullName.trim().length <= 160) updates.full_name = body.fullName.trim()
     if (typeof body.email === 'string') {
       const email = body.email.trim().toLowerCase()
-      if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320)) return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 })
-      updates.email = email || null
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320) return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 })
+      updates.email = email
     }
     if (typeof body.phone === 'string') {
       const phone = body.phone.trim() ? normaliseObxContact(body.phone) : null
       if (body.phone.trim() && phone?.channel !== 'phone') return NextResponse.json({ error: 'Enter a valid phone number.' }, { status: 400 })
-      updates.phone = phone?.channel === 'phone' ? phone.value : null
+      if (phone?.channel !== 'phone') return NextResponse.json({ error: 'Enter a valid phone number.' }, { status: 400 })
+      updates.phone = phone.value
     }
     if (typeof body.status === 'string' && ['active', 'inactive'].includes(body.status)) updates.status = body.status
     if (typeof body.isFounding === 'boolean') updates.is_founding = body.isFounding

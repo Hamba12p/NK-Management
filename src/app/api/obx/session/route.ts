@@ -1,43 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createObxAdminClient } from '@/lib/obx/supabase-admin'
-import { OBX_COOKIE, signSession } from '@/lib/obx/session'
+import { OBX_COOKIE, OBX_PENDING_COOKIE, signSession, verifyPendingLookup } from '@/lib/obx/session'
 import { originAllowed, unavailable } from '@/lib/obx/http'
 import { OBX_CONFIG } from '@/content/obx/config'
 
-const genericError = 'We could not verify this volunteer contact. Please request a new link or code.'
+const genericError = 'Your volunteer lookup expired. Please enter your roster details again.'
+
+function expiredLookup(status = 401) {
+  const response = NextResponse.json({ error: genericError }, { status, headers: { 'Cache-Control': 'no-store' } })
+  response.cookies.set(OBX_PENDING_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/obx', maxAge: 0 })
+  return response
+}
 
 export async function POST(request: NextRequest) {
-  if (!originAllowed(request)) return NextResponse.json({ error: genericError }, { status: 403 })
+  if (!originAllowed(request)) return expiredLookup(403)
 
-  const auth = await createServerSupabaseClient()
+  const pendingToken = request.cookies.get(OBX_PENDING_COOKIE)?.value
+  const pending = pendingToken ? verifyPendingLookup(pendingToken) : null
+  if (!pending) return expiredLookup()
+
   try {
-    const { data: { user } } = await auth.auth.getUser()
-    const email = user?.email_confirmed_at ? user.email?.trim().toLowerCase() : null
-    const phone = user?.phone_confirmed_at ? user.phone : null
-    if (!user || (!email && !phone)) {
-      await auth.auth.signOut({ scope: 'local' })
-      return NextResponse.json({ error: genericError }, { status: 401 })
-    }
-
     const admin = createObxAdminClient()
-    let roster: { id: string; volunteer_number: string } | null = null
-    if (email) {
-      const { data, error } = await admin.from('volunteer_roster')
-        .select('id, volunteer_number').eq('email', email).eq('status', 'active').maybeSingle()
-      if (error) throw error
-      roster = data
-    }
-    if (!roster && phone) {
-      const { data, error } = await admin.from('volunteer_roster')
-        .select('id, volunteer_number').eq('phone', phone).eq('status', 'active').maybeSingle()
-      if (error) throw error
-      roster = data
-    }
-    if (!roster) {
-      await auth.auth.signOut({ scope: 'local' })
-      return NextResponse.json({ error: genericError }, { status: 401 })
-    }
+    const { data: roster, error: rosterError } = await admin.from('volunteer_roster')
+      .select('id, volunteer_number').eq('id', pending.rosterId).eq('status', 'active').maybeSingle()
+    if (rosterError) throw rosterError
+    if (!roster) return expiredLookup()
 
     const { data: currentProgress, error: readProgressError } = await admin.from('obx_progress')
       .select('cycle').eq('roster_id', roster.id).order('cycle', { ascending: false }).limit(1).maybeSingle()
@@ -51,12 +38,15 @@ export async function POST(request: NextRequest) {
     }
 
     const token = signSession(roster.id)
-    await auth.auth.signOut({ scope: 'local' })
-    const response = NextResponse.json({ ok: true, volunteerNumber: roster.volunteer_number })
-    response.cookies.set(OBX_COOKIE, token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/obx', maxAge: 8 * 60 * 60 })
-    return response
-  } catch {
-    await auth.auth.signOut({ scope: 'local' })
+    const sessionResponse = NextResponse.json({ ok: true, volunteerNumber: roster.volunteer_number })
+    sessionResponse.cookies.set(OBX_PENDING_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/obx', maxAge: 0 })
+    sessionResponse.cookies.set(OBX_COOKIE, token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/obx', maxAge: 8 * 60 * 60 })
+    return sessionResponse
+  } catch (error) {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String(error.code)
+      : error instanceof Error ? error.name : 'unknown'
+    console.error(`[OBX session] Volunteer session start failed (${code})`)
     return unavailable()
   }
 }

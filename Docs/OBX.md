@@ -12,7 +12,7 @@ Change `OBX_CONFIG.passMarks.keepingChildrenSafe` in `src/content/obx/config.ts`
 
 ## Roster and numbers
 
-Issue each volunteer a unique random `NKV-###` number from 100 through 9999. Never reuse a number. Add the volunteer's name, email, and phone (if available) to `volunteer_roster`. Passport sign-in verifies either the rostered email or phone through Supabase Auth before revealing the assigned number. Store email in lower case and phone in international E.164 format. Do not add roster data to source control.
+Issue each volunteer a unique random `NKV-###` number from 100 through 9999. Never reuse a number. Add the volunteer's name, email, and phone to `volunteer_roster`; public passport lookup requires both email and phone. Numbers are assigned by the database when an administrator adds/imports a roster record, or may be supplied explicitly during import. Keep roster data and personal contact details in Supabase, not source control. Store email in lower case and phone in international E.164 format.
 
 The fake seed script is for local or isolated test projects only:
 
@@ -47,7 +47,7 @@ Apply the following SQL files in order in the Supabase SQL Editor, or through yo
 
 The roster and progress migrations enable RLS, restrict direct access for `anon` and ordinary authenticated users, and grant only management reads plus trusted server access. The volunteer-number migration grants number allocation to `service_role` only. After applying, run `supabase/tests/obx_access.sql` as a database owner and verify management access with real admin, manager and DPO accounts in a staging project. The migrations have not been applied to the hosted project in this implementation.
 
-The public passport accepts an email magic link or an SMS code from Supabase Auth. The contact must already exist on an active roster row. Configure email SMTP/magic-link delivery, allow `/obx/verify` as a Supabase Auth redirect URL, and enable an SMS provider for phone verification. Volunteers receive a randomly selected, unique `NKV-100` through `NKV-9999` number only after successful contact verification. The number is allocated when an admin adds/imports the roster entry and displayed after verification.
+The public passport does not send verification messages. Volunteers enter the email and phone recorded on their active roster entry. An exact match displays the rostered name and assigned number, then offers a separate button to start OBX. This is a roster lookup, not identity verification: anyone who knows both contact details can view that name/number and start the passport. Keep roster contacts current and do not treat this flow as proof of identity for other services.
 
 ## Content and launch review checklist
 
