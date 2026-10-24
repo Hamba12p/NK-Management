@@ -2,6 +2,7 @@
 // Refreshes the Supabase session on every request and redirects based on auth state
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { internHasStarted } from '@/lib/intern-access'
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -45,17 +46,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  let profile: { role: string; access_expires_at: string | null; must_change_password: boolean } | null = null
+  let profile: { role: string; access_starts_on: string | null; access_expires_at: string | null; must_change_password: boolean } | null = null
   if (user && (isDashboardPath || pathname === '/change-password')) {
     const { data } = await supabase
       .from('profiles')
-      .select('role, access_expires_at, must_change_password')
+      .select('role, access_starts_on, access_expires_at, must_change_password')
       .eq('id', user.id)
       .single()
     profile = data
   }
 
   if (user && profile?.role === 'intern') {
+    if (!internHasStarted(profile.access_starts_on)) {
+      if (pathname !== '/access-not-started') return NextResponse.redirect(new URL('/access-not-started', request.url))
+      return response
+    }
     if (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now()) {
       await supabase.auth.signOut()
       const ended = NextResponse.redirect(new URL('/access-ended', request.url))

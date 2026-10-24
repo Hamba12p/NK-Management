@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { internHasStarted } from '@/lib/intern-access'
 
 export async function GET(
   _request: Request,
@@ -15,11 +16,14 @@ export async function GET(
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, access_expires_at, must_change_password')
+    .select('role, access_starts_on, access_expires_at, must_change_password')
     .eq('id', user.id)
     .single()
   if (profileError || !profile) {
     return Response.json({ error: 'Unable to verify account access' }, { status: 403 })
+  }
+  if (profile.role === 'intern' && !internHasStarted(profile.access_starts_on)) {
+    return Response.json({ error: 'Your access has not started' }, { status: 403 })
   }
   if (profile.role === 'intern' && (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now())) {
     return Response.json({ error: 'Your access has ended' }, { status: 403 })

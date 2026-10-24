@@ -5,7 +5,7 @@ insert into auth.users (id,email,raw_user_meta_data) values
 ('10000000-0000-0000-0000-000000000101','intern-test@example.invalid','{"full_name":"Test Intern","role":"intern"}'),
 ('10000000-0000-0000-0000-000000000102','dpo-test@example.invalid','{"full_name":"Test DPO","role":"dpo"}'),
 ('10000000-0000-0000-0000-000000000103','manager-test@example.invalid','{"full_name":"Test Manager","role":"manager"}');
-update public.profiles set access_expires_at=now()+interval '14 days',must_change_password=false where id='10000000-0000-0000-0000-000000000101';
+update public.profiles set access_starts_on=(now() at time zone 'Africa/Nairobi')::date,access_expires_at=now()+interval '14 days',must_change_password=false where id='10000000-0000-0000-0000-000000000101';
 
 insert into public.documents(id,name,file_path,file_size,mime_type,category,uploaded_by,visibility,intern_visible) values
 ('20000000-0000-0000-0000-000000000101','Flagged','shared/flagged.pdf',100,'application/pdf','template','10000000-0000-0000-0000-000000000102','standard',true),
@@ -39,6 +39,16 @@ insert into public.announcement_acknowledgements(announcement_id,user_id) values
 
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000101',true);
 select set_config('request.jwt.claims','{"sub":"10000000-0000-0000-0000-000000000101","role":"authenticated"}',true);
+update public.profiles set access_starts_on=(now() at time zone 'Africa/Nairobi')::date + 1 where id='10000000-0000-0000-0000-000000000101';
+set local role authenticated;
+do $$
+begin
+ if public.intern_access_active() then raise exception 'Future-start intern is active'; end if;
+ if exists(select from public.documents) or exists(select from public.tasks) then raise exception 'Future-start intern can access workspace data'; end if;
+ if (select count(*) from public.profiles) <> 1 then raise exception 'Future-start intern cannot read own access status'; end if;
+end $$;
+reset role;
+update public.profiles set access_starts_on=(now() at time zone 'Africa/Nairobi')::date where id='10000000-0000-0000-0000-000000000101';
 set local role authenticated;
 do $$
 declare n integer; blocked boolean;
@@ -125,7 +135,8 @@ begin
  if public.intern_access_active() then raise exception 'Expired intern remains active'; end if;
  if exists(select from public.documents) or exists(select from storage.objects) or exists(select from public.tasks)
   or exists(select from public.meetings) or exists(select from public.announcements) or exists(select from public.staff_directory())
-  or exists(select from public.profiles) then raise exception 'Expired intern retained access'; end if;
+  then raise exception 'Expired intern retained access'; end if;
+ if (select count(*) from public.profiles) <> 1 then raise exception 'Intern must retain read access to own profile status'; end if;
 end $$;
 reset role;
 rollback;

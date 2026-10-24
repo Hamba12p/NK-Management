@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ComponentProps } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import InlineConfirm from '@/components/InlineConfirm'
@@ -13,20 +13,7 @@ import { volunteerContributor } from '@/lib/creator'
 import { getDocumentAccess } from '@/lib/document-access'
 import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
 
-type Document = {
-  id: string
-  name: string
-  description: string
-  file_path: string
-  file_size: number
-  mime_type: string
-  category: string
-  created_at: string
-  uploaded_by: string
-  contributor_name: string | null
-  contributor_tag: string | null
-  profiles: { full_name: string; display_tag?: string | null; display_color?: string | null } | null
-}
+type Document = NonNullable<ComponentProps<typeof DocumentModal>['doc']>
 
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<Document[]>([])

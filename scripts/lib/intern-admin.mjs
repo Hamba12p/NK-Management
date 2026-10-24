@@ -3,12 +3,13 @@ import { createHash } from 'node:crypto'
 
 export function parseArgs(allowed) {
   const values = { apply: false }
+  const booleanFlags = new Set(['apply', ...(allowed.includes('show-password') ? ['show-password'] : [])])
   for (let index = 2; index < process.argv.length; index += 1) {
     const token = process.argv[index]
     if (!token.startsWith('--')) throw new Error(`Unexpected argument: ${token}`)
     const [name, inlineValue] = token.slice(2).split('=', 2)
-    if (!allowed.includes(name) && name !== 'apply') throw new Error(`Unknown option: --${name}`)
-    if (name === 'apply') { values.apply = true; continue }
+    if (!allowed.includes(name) && !booleanFlags.has(name)) throw new Error(`Unknown option: --${name}`)
+    if (booleanFlags.has(name)) { values[name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = true; continue }
     const value = inlineValue ?? process.argv[++index]
     if (!value || value.startsWith('--')) throw new Error(`Missing value for --${name}`)
     values[name] = value
@@ -35,8 +36,18 @@ export function addWeeks(value, weeks) {
   return date.toISOString()
 }
 
+export function addMonths(value, months) {
+  const date = new Date(`${value}T00:00:00.000Z`)
+  const day = date.getUTCDate()
+  date.setUTCDate(1)
+  date.setUTCMonth(date.getUTCMonth() + months)
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
+  date.setUTCDate(Math.min(day, lastDay))
+  return date.toISOString()
+}
+
 export async function profileForEmail(client, email) {
-  const { data, error } = await client.from('profiles').select('id,full_name,email,role,access_expires_at,must_change_password,display_tag').ilike('email', email).maybeSingle()
+  const { data, error } = await client.from('profiles').select('id,full_name,email,role,access_starts_on,access_expires_at,must_change_password,display_tag').ilike('email', email).maybeSingle()
   if (error) throw new Error(`Profile lookup failed: ${error.message}`)
   return data
 }
