@@ -7,7 +7,7 @@ import { originAllowed, unavailable } from '@/lib/obx/http'
 
 const hash = (value: string, salt: string) => createHmac('sha256', salt).update(value).digest('hex')
 const notFound = () => NextResponse.json(
-  { error: 'We could not find an active volunteer with those details. Please check them or ask your coordinator.' },
+  { error: 'We could not find an active volunteer with those details. Ask your coordinator to confirm your record is imported and active, and that both details match the roster.' },
   { status: 404, headers: { 'Cache-Control': 'no-store' } }
 )
 

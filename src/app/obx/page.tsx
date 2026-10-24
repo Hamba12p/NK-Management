@@ -91,7 +91,7 @@ export default function ObxWelcomePage() {
     <div className="record-surface space-y-5 p-6 md:p-8">
       <h2 className="serif-display text-2xl text-[#782653]">{volunteer ? 'Your volunteer record' : 'Find your volunteer record'}</h2>
       {!volunteer ? <>
-        <p className="text-sm leading-6 text-muted">Enter both the email and phone number recorded by your coordinator. No verification message will be sent. Anyone who knows both details can look up this volunteer record, so use a private device.</p>
+        <p className="text-sm leading-6 text-muted">Enter both the email and phone number recorded by your coordinator. Your record must be imported into the live roster and marked active. No verification message will be sent. Anyone who knows both details can look up this volunteer record, so use a private device.</p>
         <form onSubmit={lookupVolunteer} className="space-y-5">
           <label className="block text-sm font-semibold">Rostered email address<input required autoComplete="email" inputMode="email" type="email" value={emailInput} onChange={(event) => setEmailInput(event.target.value)} placeholder="you@example.org" className="mt-2 w-full px-4 py-3" /></label>
           <label className="block text-sm font-semibold">Rostered phone number<input required autoComplete="tel" inputMode="tel" type="tel" value={phoneInput} onChange={(event) => setPhoneInput(event.target.value)} placeholder="+256…" className="mt-2 w-full px-4 py-3" /></label>
