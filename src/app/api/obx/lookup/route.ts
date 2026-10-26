@@ -8,8 +8,12 @@ import { isLikelyObxBot } from '@/lib/obx/anti-abuse'
 
 const hash = (value: string, salt: string) => createHmac('sha256', salt).update(value).digest('hex')
 const notFound = () => NextResponse.json(
-  { error: 'We could not find an active volunteer with those details. Please check them or ask your coordinator.' },
+  { error: 'We could not continue with those details. Please check them or contact your coordinator for help.' },
   { status: 404, headers: { 'Cache-Control': 'no-store' } }
+)
+const rateLimited = () => NextResponse.json(
+  { error: 'Too many lookup attempts. Please wait 15 minutes before trying again.' },
+  { status: 429, headers: { 'Cache-Control': 'no-store', 'Retry-After': '900' } }
 )
 
 type RegisteredVolunteer = {
@@ -99,9 +103,23 @@ export async function POST(request: NextRequest) {
     }
 
     const limited = (ipAttempts.count || 0) >= 10 || (pairAttempts.count || 0) >= 5
-    const blockedUntil = limited ? new Date(now.getTime() + 15 * 60 * 1000).toISOString() : null
+    if (limited) {
+      stage = 'rate-limit attempt logging'
+      const { error: rateLimitLogError } = await admin.from('obx_auth_attempts').insert({
+        ip_hash: ipHash,
+        contact_pair_hash: pairHash,
+        success: false,
+        blocked_until: new Date(now.getTime() + 15 * 60 * 1000).toISOString(),
+      })
+      if (rateLimitLogError) {
+        console.error(`[OBX lookup] ${stage} failed (${rateLimitLogError.code || 'unknown'})`)
+        return unavailable()
+      }
+      return rateLimited()
+    }
+
     let volunteer: RegisteredVolunteer | null = null
-    if (!limited && !isBot) {
+    if (!isBot) {
       stage = 'volunteer registration or lookup'
       const { data: registered, error: registrationError } = await admin
         .rpc('register_obx_volunteer', {
@@ -120,7 +138,7 @@ export async function POST(request: NextRequest) {
             ip_hash: ipHash,
             contact_pair_hash: pairHash,
             success: false,
-            blocked_until: blockedUntil,
+            blocked_until: null,
           })
           if (conflictLogError) {
             console.error(`[OBX lookup] ${stage} failed (${conflictLogError.code || 'unknown'})`)
@@ -141,7 +159,7 @@ export async function POST(request: NextRequest) {
       ip_hash: ipHash,
       contact_pair_hash: pairHash,
       success: !!volunteer,
-      blocked_until: blockedUntil,
+      blocked_until: null,
     })
     if (logError) {
       console.error(`[OBX lookup] ${stage} failed (${logError.code || 'unknown'})`)
