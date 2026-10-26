@@ -19,12 +19,19 @@ begin
     end if;
   end loop;
 
-  if has_function_privilege('anon', 'public.issue_next_volunteer_number()', 'EXECUTE')
-    or has_function_privilege('authenticated', 'public.issue_next_volunteer_number()', 'EXECUTE') then
+  if has_function_privilege('anon', 'public.issue_next_volunteer_number(boolean)', 'EXECUTE')
+    or has_function_privilege('authenticated', 'public.issue_next_volunteer_number(boolean)', 'EXECUTE') then
     raise exception 'untrusted database roles can call the volunteer number allocator';
   end if;
-  if not has_function_privilege('service_role', 'public.issue_next_volunteer_number()', 'EXECUTE') then
+  if has_function_privilege('anon', 'public.register_obx_volunteer(text,text,text,uuid,boolean,uuid)', 'EXECUTE')
+    or has_function_privilege('authenticated', 'public.register_obx_volunteer(text,text,text,uuid,boolean,uuid)', 'EXECUTE') then
+    raise exception 'untrusted database roles can call the volunteer registration function';
+  end if;
+  if not has_function_privilege('service_role', 'public.issue_next_volunteer_number(boolean)', 'EXECUTE') then
     raise exception 'service_role cannot allocate volunteer numbers';
+  end if;
+  if not has_function_privilege('service_role', 'public.register_obx_volunteer(text,text,text,uuid,boolean,uuid)', 'EXECUTE') then
+    raise exception 'service_role cannot register volunteers';
   end if;
 end $$;
 

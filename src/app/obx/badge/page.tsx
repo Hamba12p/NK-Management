@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { OBX_CONFIG } from '@/content/obx/config'
+import LegalConsentStep from '@/components/obx/LegalConsentStep'
 
-type BadgeData = { roster: { full_name: string; volunteer_number: string; is_founding: boolean }; progress: { status: string; completed_at: string | null; overall_score: number | null } }
+type BadgeData = { roster: { full_name: string; volunteer_number: string; is_founding: boolean }; progress: { status: string; completed_at: string | null; overall_score: number | null }; legalConsent: { current: boolean } }
 
 function badgeSvg(data: BadgeData, date: string) {
   const ribbon = data.roster.is_founding ? '<text x="540" y="1010" text-anchor="middle" fill="#782653" font-size="32" font-weight="700">FOUNDING VOLUNTEER</text>' : ''
@@ -15,7 +15,8 @@ export default function ObxBadgePage() {
   const [data, setData] = useState<BadgeData | null>(null)
   const [error, setError] = useState('')
   const cardRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { fetch('/api/obx/me').then(async (response) => { if (!response.ok) throw new Error('Please sign in again to view your passport.'); return response.json() }).then((value) => { if (value.progress.status !== 'completed') { window.location.replace('/obx/trail'); return } setData(value) }).catch((cause) => setError(cause instanceof Error ? cause.message : 'Your badge is unavailable.')) }, [])
+  const [needsLegalConsent, setNeedsLegalConsent] = useState(false)
+  useEffect(() => { fetch('/api/obx/me').then(async (response) => { if (!response.ok) throw new Error('Please sign in again to view your passport.'); return response.json() }).then((value) => { if (value.progress?.status !== 'completed') { window.location.replace('/obx/trail'); return } setData(value); setNeedsLegalConsent(!value.legalConsent.current) }).catch((cause) => setError(cause instanceof Error ? cause.message : 'Your badge is unavailable.')) }, [])
   const completionDate = useMemo(() => data?.progress.completed_at ? new Date(data.progress.completed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '', [data])
 
   async function downloadBadge() {
@@ -35,6 +36,7 @@ export default function ObxBadgePage() {
   if (error) return <div className="mx-auto max-w-xl px-4 py-12"><p role="alert" className="rounded bg-[#efe3e7] p-5">{error}</p><Link href="/obx" className="mt-4 inline-block underline">Return to sign in</Link></div>
   if (!data) return <p className="mx-auto max-w-xl px-4 py-12 text-center" aria-live="polite">Finding your badge…</p>
   return <div className="mx-auto max-w-3xl px-4 py-8 text-center md:py-12">
+    {needsLegalConsent && <LegalConsentStep onAccepted={() => setNeedsLegalConsent(false)} />}
     <p className="text-sm font-bold uppercase tracking-widest text-[#a85d88]">Your Udada Passport</p>
     <h1 className="serif-display mt-3 text-4xl text-[#782653]">You did it, {data.roster.full_name.split(' ')[0]}!</h1>
     <div ref={cardRef} className="mx-auto mt-8 max-w-lg rounded-2xl border border-[#a85d88] bg-white p-8 shadow-sm" role="img" aria-label={`Volunteer badge for ${data.roster.full_name}, ${data.roster.volunteer_number}, completed ${completionDate}`}>
@@ -44,7 +46,6 @@ export default function ObxBadgePage() {
       <p className="mt-5 text-sm text-[#6e646a]">Completed {completionDate}</p>
     </div>
     <div className="mt-6 flex flex-wrap justify-center gap-3"><button onClick={downloadBadge} className="btn-primary">Download badge</button><button onClick={shareBadge} className="btn-secondary">Share badge</button><button onClick={() => window.print()} className="btn-secondary">Print certificate</button></div>
-    {OBX_CONFIG.pocketCardEnabled && <section className="mx-auto mt-8 max-w-lg rounded-xl border border-[#dccfd6] bg-white p-6 text-left"><h2 className="serif-display text-2xl text-[#782653]">Your Pocket Card</h2><p className="mt-3 text-sm font-semibold">Five golden rules</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm"><li>Communicate early and treat people with respect.</li><li>Protect children and report concerns the same day.</li><li>Keep personal information private and secure.</li><li>Use official channels and approved accounts.</li><li>Declare conflicts and ask when you are unsure.</li></ul><p className="mt-4 text-sm font-semibold">Safeguarding: Listen, Reassure, Record, Report</p><p className="mt-1 text-sm text-[#6e646a]">Safeguarding: {OBX_CONFIG.safeguardingContact}. Data: {OBX_CONFIG.dpoContact}. General help: {OBX_CONFIG.generalContact}.</p><button onClick={() => window.print()} className="btn-secondary mt-4">Print Pocket Card</button></section>}
     <p className="mt-5 text-sm text-[#6e646a]">Your passport is complete. You can return to this badge any time.</p>
   </div>
 }

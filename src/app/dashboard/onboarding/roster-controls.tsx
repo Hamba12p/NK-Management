@@ -2,7 +2,17 @@
 
 import { useState } from 'react'
 
-type Person = { id: string; volunteer_number: string; full_name: string; email: string | null; phone: string | null; status: string; is_founding: boolean }
+type Person = {
+  id: string
+  volunteer_number: string
+  full_name: string
+  email: string | null
+  phone: string | null
+  status: string
+  is_founding: boolean
+  hub_profile_id?: string | null
+  staffhub_profile?: { full_name: string; role: string }[] | null
+}
 
 export default function RosterControls({ initialRoster, canReset }: { initialRoster: Person[]; canReset: boolean }) {
   const [roster, setRoster] = useState(initialRoster)
@@ -19,7 +29,7 @@ export default function RosterControls({ initialRoster, canReset }: { initialRos
       const response = await fetch('/api/onboarding/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, email, phone }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error)
-      setRoster((items) => [...items, result.volunteer].sort((a, b) => a.volunteer_number.localeCompare(b.volunteer_number)))
+      setRoster((items) => [...items, { ...result.volunteer, hub_profile_id: null, staffhub_profile: null }].sort((a, b) => a.volunteer_number.localeCompare(b.volunteer_number)))
       setFullName(''); setEmail(''); setPhone(''); setMessage(`${result.volunteer.volunteer_number} added to the roster.`)
     } catch (cause) { setMessage(cause instanceof Error ? cause.message : 'The volunteer could not be added.') }
     finally { setBusy(false) }
@@ -61,13 +71,13 @@ export default function RosterControls({ initialRoster, canReset }: { initialRos
 
   return <>
     <form onSubmit={add} className="card grid gap-3 md:grid-cols-4 md:items-end">
-      <div><p className="text-xs font-bold uppercase tracking-wider text-purple">Add a volunteer</p><p className="mt-1 text-sm text-muted">A random NKV number from 100 upward will be assigned.</p><label className="mt-3 block text-sm font-semibold">Full name<input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-2 w-full px-3 py-2" /></label></div>
-      <label className="block text-sm font-semibold">Email<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 w-full px-3 py-2" /></label>
-      <label className="block text-sm font-semibold">Phone<input required value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+256…" className="mt-2 w-full px-3 py-2" /></label>
+      <div><p className="text-xs font-bold uppercase tracking-wider text-purple">Add a volunteer</p><p className="mt-1 text-sm text-muted">Enter any two of name, email and phone. A random number will be assigned.</p><label className="mt-3 block text-sm font-semibold">Full name <span className="font-normal text-muted">(optional)</span><input value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-2 w-full px-3 py-2" /></label></div>
+      <label className="block text-sm font-semibold">Email <span className="font-normal text-muted">(optional)</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 w-full px-3 py-2" /></label>
+      <label className="block text-sm font-semibold">Phone <span className="font-normal text-muted">(optional)</span><input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+256…" className="mt-2 w-full px-3 py-2" /></label>
       <button disabled={busy} className="btn-primary">{busy ? 'Adding…' : 'Add to roster'}</button>
       {message && <p role="status" aria-live="polite" className="text-sm text-muted md:col-span-4">{message}</p>}
     </form>
-    <section className="table-surface"><table className="w-full text-left text-sm"><thead><tr><th className="p-3">Volunteer</th><th className="p-3">Email</th><th className="p-3">Phone</th><th className="p-3">Status</th><th className="p-3">Founding</th><th className="p-3">Actions</th></tr></thead><tbody>{roster.map((person) => <tr key={person.id} className="border-t border-border"><td className="p-3"><b>{person.volunteer_number}</b><br />{person.full_name}</td><td className="p-3">{person.email}</td><td className="p-3">{person.phone || '—'}</td><td className="p-3 capitalize">{person.status}</td><td className="p-3"><button className="rounded border px-3 py-2" onClick={() => update(person, { isFounding: !person.is_founding })} aria-pressed={person.is_founding}>{person.is_founding ? 'Founding volunteer' : 'Not founding'}</button></td><td className="p-3"><div className="flex flex-wrap gap-2"><button className="btn-secondary" onClick={() => invite(person)}>Copy invite</button>{person.status === 'active' && <button className="btn-secondary" onClick={() => update(person, { status: 'inactive' })}>Deactivate</button>}{canReset && <button className="btn-secondary" onClick={() => reset(person)}>Reset</button>}</div></td></tr>)}</tbody></table>{!roster.length && <p className="p-8 text-center text-muted">The roster is empty.</p>}</section>
-    <section className="card"><h2 className="font-semibold text-ink">Import existing volunteers</h2><p className="mt-1 text-sm text-muted">Paste CSV with Name (or Full name), Email, and Phone columns. Both contact fields are needed for the public OBX lookup. Volunteer numbers are randomly assigned when omitted. The No. column is ignored.</p><textarea value={csv} onChange={(event) => setCsv(event.target.value)} placeholder="No.,Name,Phone,Email" className="mt-3 min-h-28 w-full p-3 font-mono text-sm" /><button disabled={busy || !csv.trim()} onClick={importCsv} className="btn-secondary mt-3">Import CSV</button></section>
+    <section className="table-surface"><table className="w-full text-left text-sm"><thead><tr><th className="p-3">Volunteer</th><th className="p-3">Email</th><th className="p-3">Phone</th><th className="p-3">StaffHub profile</th><th className="p-3">Status</th><th className="p-3">Founding</th><th className="p-3">Actions</th></tr></thead><tbody>{roster.map((person) => { const profile = person.staffhub_profile?.[0]; return <tr key={person.id} className="border-t border-border"><td className="p-3"><b>{person.volunteer_number}</b><br />{person.full_name}</td><td className="p-3">{person.email || '—'}</td><td className="p-3">{person.phone || '—'}</td><td className="p-3">{profile ? <>{profile.full_name}<br /><span className="text-xs capitalize text-muted">{profile.role.replaceAll('_', ' ')}</span></> : 'Not linked'}</td><td className="p-3 capitalize">{person.status}</td><td className="p-3"><button className="rounded border px-3 py-2" onClick={() => update(person, { isFounding: !person.is_founding })} aria-pressed={person.is_founding}>{person.is_founding ? 'Founding volunteer' : 'Not founding'}</button></td><td className="p-3"><div className="flex flex-wrap gap-2"><button className="btn-secondary" onClick={() => invite(person)}>Copy invite</button>{person.status === 'active' && <button className="btn-secondary" onClick={() => update(person, { status: 'inactive' })}>Deactivate</button>}{canReset && <button className="btn-secondary" onClick={() => reset(person)}>Reset</button>}</div></td></tr> })}</tbody></table>{!roster.length && <p className="p-8 text-center text-muted">The roster is empty.</p>}</section>
+    <section className="card"><h2 className="font-semibold text-ink">Import existing volunteers</h2><p className="mt-1 text-sm text-muted">Paste CSV with any two of Name (or Full name), Email, and Phone columns. Volunteer numbers are randomly assigned when omitted. The No. column is ignored.</p><textarea value={csv} onChange={(event) => setCsv(event.target.value)} placeholder="Name,Phone,Email" className="mt-3 min-h-28 w-full p-3 font-mono text-sm" /><button disabled={busy || !csv.trim()} onClick={importCsv} className="btn-secondary mt-3">Import CSV</button></section>
   </>
 }

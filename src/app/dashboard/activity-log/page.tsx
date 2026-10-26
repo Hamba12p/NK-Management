@@ -38,6 +38,8 @@ const actionIcons: Record<string, React.ReactNode> = {
   announcement_delete: <Trash2 className="w-4 h-4 text-rust" />,
   login: <LogIn className="w-4 h-4 text-green" />,
   logout: <LogOut className="w-4 h-4 text-muted" />,
+  'obx.started': <LogIn className="w-4 h-4 text-purple" />,
+  'obx.completed': <Eye className="w-4 h-4 text-green" />,
 };
 
 const actionLabels: Record<string, string> = {
@@ -59,6 +61,8 @@ const actionLabels: Record<string, string> = {
   user_invite: 'Invited User',
   user_role_change: 'Changed User Role',
   settings_update: 'Updated Settings',
+  'obx.started': 'Started OBX',
+  'obx.completed': 'Completed OBX',
 };
 
 function formatActionLabel(actionType: string, details?: Record<string, unknown>): string {

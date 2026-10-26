@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getObxRoster, originAllowed, unavailable } from '@/lib/obx/http'
+import { getObxRoster, hasCurrentLegalConsent, legalConsentRequired, originAllowed, unavailable } from '@/lib/obx/http'
 import { OBX_CONFIG } from '@/content/obx/config'
 import { obxStops } from '@/content/obx/en/stops'
 
@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getObxRoster()
     if (!session) return NextResponse.json({ error: 'Please sign in again to continue your passport.' }, { status: 401 })
+    if (!await hasCurrentLegalConsent(session.roster.id, session.admin)) return legalConsentRequired()
     const body = await request.json()
     if (body.agree !== true || typeof body.typedName !== 'string' || body.typedName.trim().length < 2 || body.typedName.trim().length > 160) return NextResponse.json({ error: 'Please confirm the agreement and enter your full name.' }, { status: 400 })
     const { data: progress, error } = await session.admin.from('obx_progress').select('cycle, status').eq('roster_id', session.roster.id).order('cycle', { ascending: false }).limit(1).single()
@@ -22,8 +23,15 @@ export async function POST(request: NextRequest) {
     const overallScore = scores.length ? Math.round((scores.reduce((sum, item) => sum + item, 0) / scores.length) * 100) / 100 : 0
     const { error: saveError } = await session.admin.from('obx_progress').update({ status: 'completed', completed_at: now, overall_score: overallScore, mou_typed_name: body.typedName.trim(), mou_accepted_at: now, mou_version: OBX_CONFIG.mouVersion, last_active_at: now }).eq('roster_id', session.roster.id).eq('cycle', progress.cycle)
     if (saveError) return unavailable()
-    // Anonymous completion has no authenticated hub actor. Keep the canonical activity log contract and leave user_id null.
-    await session.admin.from('activity_log').insert({ user_id: null, action_type: 'obx.completed', resource_type: 'volunteer_roster', resource_id: session.roster.id, details: { cycle: progress.cycle, course_version: OBX_CONFIG.courseVersion, completed_at: now } })
+    const { error: rosterNameError } = await session.admin.from('volunteer_roster').update({ full_name: body.typedName.trim() }).eq('id', session.roster.id)
+    if (rosterNameError) return unavailable()
+    const { data: linkedRoster, error: linkedRosterError } = await session.admin.from('volunteer_roster')
+      .select('hub_profile_id')
+      .eq('id', session.roster.id)
+      .single()
+    if (linkedRosterError) return unavailable()
+    const { error: activityError } = await session.admin.from('activity_log').insert({ user_id: linkedRoster.hub_profile_id, action_type: 'obx.completed', resource_type: 'volunteer_roster', resource_id: session.roster.id, details: { cycle: progress.cycle, course_version: OBX_CONFIG.courseVersion, completed_at: now } })
+    if (activityError) console.error(`[OBX completion] Activity logging failed (${activityError.code || 'unknown'})`)
     return NextResponse.json({ ok: true, badge: { fullName: session.roster.full_name, typedName: body.typedName.trim(), volunteerNumber: session.roster.volunteer_number, isFounding: session.roster.is_founding, completedAt: now } })
   } catch { return unavailable() }
 }

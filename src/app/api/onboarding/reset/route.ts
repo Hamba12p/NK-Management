@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createObxAdminClient } from '@/lib/obx/supabase-admin'
-import { originAllowed } from '@/lib/obx/http'
+import { hasCurrentLegalConsent, originAllowed } from '@/lib/obx/http'
 import { OBX_CONFIG } from '@/content/obx/config'
 
 export async function POST(request: NextRequest) {
@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
     const { rosterId } = await request.json()
     if (typeof rosterId !== 'string') return NextResponse.json({ error: 'Choose a volunteer to reset.' }, { status: 400 })
     const admin = createObxAdminClient()
+    if (!await hasCurrentLegalConsent(rosterId, admin)) {
+      return NextResponse.json({ error: 'The volunteer must accept the current Privacy Notice and Volunteer MOU before their passport can be reset.' }, { status: 409 })
+    }
     const { data: current, error: findError } = await admin.from('obx_progress').select('cycle').eq('roster_id', rosterId).order('cycle', { ascending: false }).limit(1).maybeSingle()
     if (findError) throw findError
     const cycle = (current?.cycle || 0) + 1

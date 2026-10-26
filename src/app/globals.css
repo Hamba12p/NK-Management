@@ -22,6 +22,65 @@
   --foreground: #392f35;
 }
 
+.obx-checkmark-path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.is-checked .obx-checkmark-path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 260ms ease-out;
+}
+
+.obx-consent-seal {
+  animation: obx-seal 360ms cubic-bezier(.2, 1.5, .5, 1) both;
+}
+
+.obx-consent-start:not(:disabled) {
+  animation: obx-ready 420ms ease-out both;
+}
+
+@keyframes obx-seal {
+  from { opacity: 0; transform: scale(.65) rotate(-8deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes obx-ready {
+  from { transform: scale(.98); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obx-consent-prompt *,
+  .obx-consent-prompt *::before,
+  .obx-consent-prompt *::after {
+    animation: none;
+    transition: none;
+    scroll-behavior: auto;
+  }
+}
+
+@media print {
+  .obx-consent-prompt button,
+  .obx-consent-prompt input,
+  .obx-consent-prompt .obx-consent-choice,
+  .obx-consent-prompt > div > p:first-child {
+    display: none !important;
+  }
+  .obx-consent-prompt,
+  .obx-consent-prompt > div {
+    max-width: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .obx-consent-prompt [id^='obx-legal-'] {
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
 :root[data-theme='dark'] {
   --ink: #fff8f5;
   --cream: #4b1c38;

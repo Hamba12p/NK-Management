@@ -2,11 +2,20 @@ export type ObxContact =
   | { channel: 'email'; value: string }
   | { channel: 'phone'; value: string }
 
+export function hasTwoObxIdentifiers(name: string, email: string | null, phone: string | null): boolean {
+  return [name.trim(), email, phone].filter(Boolean).length >= 2
+}
+
+export function normaliseObxEmail(value: string): string | null {
+  const email = value.trim().toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320 ? email : null
+}
+
 export function normaliseObxContact(value: string): ObxContact | null {
   const input = value.trim()
   if (input.includes('@')) {
-    const email = input.toLowerCase()
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320
+    const email = normaliseObxEmail(input)
+    return email
       ? { channel: 'email', value: email }
       : null
   }

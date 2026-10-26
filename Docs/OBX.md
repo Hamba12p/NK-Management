@@ -2,7 +2,7 @@
 
 ## Current implementation status
 
-The public sign-in, signed volunteer session, answer recording, six-stop draft course, safeguarding pass logic, sign-off, management roster tools, CSV import/export, progress summary, nudge list, reset workflow, badge download/share and Pocket Card are implemented. Safeguarding and organisation content remain draft and must be reviewed before launch.
+The OBX app supports public registration using any two of name, email, and phone; a honeypot, minimum form time, hashed IP/contact rate limits; StaffHub-authenticated sessions; signed passport sessions; answer recording; sign-off; management roster tools; CSV import/export; progress summaries; nudge list; reset workflow; and badge download/share. The Pocket Card is not exposed because approved safeguarding and privacy contacts are not configured.
 
 ## Editing content and pass marks
 
@@ -12,7 +12,7 @@ Change `OBX_CONFIG.passMarks.keepingChildrenSafe` in `src/content/obx/config.ts`
 
 ## Roster and numbers
 
-Issue each volunteer a unique random `NKV-###` number from 100 through 9999. Never reuse a number. Add the volunteer's name, email, and phone to `volunteer_roster`; public passport lookup requires both email and phone. Numbers are assigned by the database when an administrator adds/imports a roster record, or may be supplied explicitly during import. Keep roster data and personal contact details in Supabase, not source control. Store email in lower case and phone in international E.164 format.
+Issue each volunteer a unique random NKV number. Volunteers and interns use `NKV-100` through `NKV-9999`; management roles use `NKV-001` through `NKV-099`. The allocator is serialized in the database and will not reuse a number while it remains in the roster. New StaffHub users are linked to a roster row the first time they continue with their authenticated StaffHub account. Public registration accepts any two of name, email, and phone and stores provided contact information in `volunteer_roster`. Details are not verified: this is an OBX onboarding route, not authentication for sensitive services. Keep roster data and personal contact details in Supabase, not source control.
 
 The fake seed script is for local or isolated test projects only:
 
@@ -44,21 +44,27 @@ Apply the following SQL files in order in the Supabase SQL Editor, or through yo
 2. `supabase/migrations/20261017070239_obx_progress_results_and_answers.sql`
 3. `supabase/migrations/20261017070240_obx_management_read_policies.sql`
 4. `supabase/migrations/20261024145000_obx_volunteer_phone_and_random_numbers.sql`
+5. `supabase/migrations/20261026090000_obx_open_registration.sql`
+6. `supabase/migrations/20261026103300_obx_staffhub_identity_and_flexible_registration.sql`
+7. `supabase/migrations/20261026105800_obx_legal_consent.sql`
+8. `supabase/migrations/20261026115500_obx_profile_link_schema.sql`
 
-The roster and progress migrations enable RLS, restrict direct access for `anon` and ordinary authenticated users, and grant only management reads plus trusted server access. The volunteer-number migration grants number allocation to `service_role` only. After applying, run `supabase/tests/obx_access.sql` as a database owner and verify management access with real admin, manager and DPO accounts in a staging project. The migrations have not been applied to the hosted project in this implementation.
+The roster and progress migrations enable RLS, restrict direct access for `anon` and ordinary authenticated users, and grant management reads plus trusted server access. Number allocation and registration functions are restricted to `service_role`. Migration 6 adds a unique StaffHub profile link, flexible two-field registration, the management number range, and Nakitto Reges (`regesnakitto@gmail.com`) to the active roster; if her intern profile already exists, it links it. Migration 7 adds the versioned legal-consent table with management-only reads and trusted server writes. Apply these migrations to staging first, run `supabase/tests/obx_access.sql`, `supabase/tests/intern_access.sql`, and `supabase/tests/obx_legal_consent.sql`, and verify with admin, manager, DPO, volunteer, and intern accounts.
+Migration 8 adds a unique StaffHub profile link and links Hamba Shabil's existing active OBX row to his verified manager profile without changing his volunteer number or StaffHub role. Volunteer, senior-volunteer and volunteer-lead roles are restricted to OBX routes; the volunteer representative exception requires setting the server-only `STAFFHUB_VOLUNTEER_REP_EMAIL` to the verified representative's exact StaffHub email.
+The StaffHub dashboard shows an OBX passport card for staff accounts, linking to the public onboarding flow.
 
-The public passport does not send verification messages. Volunteers enter the email and phone recorded on their active roster entry. An exact match displays the rostered name and assigned number, then offers a separate button to start OBX. This is a roster lookup, not identity verification: anyone who knows both contact details can view that name/number and start the passport. Keep roster contacts current and do not treat this flow as proof of identity for other services.
+The public passport does not send verification messages. A successful registration immediately creates or matches an active roster entry and issues a number. The volunteer must read and accept the current in-page Privacy Notice and Volunteer MOU before course progress is created or resumed. Any two of name/email/phone can match an existing record; entries are not verified. Prefer the StaffHub account button for existing staff. Do not treat public OBX registration as proof of identity for other services.
 
 ## Content and launch review checklist
 
 - [ ] Safeguarding lead reviews every scenario, the pass flow, definitions, response steps, reporting timeline, and the designated safeguarding contact.
 - [ ] Management verifies the 2024 founding date, Kampala base, youth-led description, mission wording, beneficiaries, SDG references, and five-pillar descriptions.
-- [ ] Management verifies the MOU summary, version and public MOU URL.
-- [ ] Add and verify the privacy notice URL and confirm the notice accurately describes access, retention and purpose.
-- [ ] Set and verify coordinator, safeguarding, DPO and general help contacts.
+- [ ] Management verifies the in-page MOU summary and legal version.
+- [ ] Verify the safeguarding escalation route and coordinator contacts outside the app; only expose a pocket card after these are approved and configured.
+- [ ] Review the in-page Privacy Notice and Volunteer MOU in `src/lib/obx/legal-content.ts` for organisational approval and ensure consent version `2026-10-26` is correct.
 - [ ] Confirm whether the optional story video is used. If so, review its URL, captions, consent and accessibility.
 - [ ] Legal/DPO review the data handling text and Uganda Data Protection and Privacy Act 2019 reference.
-- [ ] Review every draft answer, explanation, recap and interaction with programme leads.
+- [ ] Review every answer, explanation, recap, interaction, and organisation fact with programme leads and safeguarding leadership.
 - [ ] Test mobile, keyboard, reduced motion, session expiry, resume, simultaneous sessions and database outage states.
 - [ ] Apply migrations to staging, verify access policies, then apply to production in the listed order.
 

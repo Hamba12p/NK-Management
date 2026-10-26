@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getObxRoster, originAllowed, unavailable } from '@/lib/obx/http'
+import { getObxRoster, hasCurrentLegalConsent, legalConsentRequired, originAllowed, unavailable } from '@/lib/obx/http'
 
 const roles = ['Community Facilitator', 'Curriculum and Training Lead', 'Communities and Impact Volunteer', 'Monitoring and Evaluation Officer', 'Not sure yet']
 
@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getObxRoster()
     if (!session) return NextResponse.json({ error: 'Please sign in again to continue your passport.' }, { status: 401 })
+    if (!await hasCurrentLegalConsent(session.roster.id, session.admin)) return legalConsentRequired()
     const body = await request.json()
     if (!Array.isArray(body.roleInterest) || body.roleInterest.some((role: unknown) => typeof role !== 'string' || !roles.includes(role))) return NextResponse.json({ error: 'Choose a role from the list.' }, { status: 400 })
     if (typeof body.hopeText !== 'string' || body.hopeText.length > 140 || !Array.isArray(body.firstWeekChecklist)) return NextResponse.json({ error: 'Please check your answers and try again.' }, { status: 400 })

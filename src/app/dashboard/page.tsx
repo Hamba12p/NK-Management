@@ -27,15 +27,18 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   const profile = profileResult.data
   const canViewOnboarding = ['admin', 'manager', 'dpo'].includes(profile?.role || '')
   const onboardingResults = canViewOnboarding ? await Promise.all([
-    supabase.from('volunteer_roster').select('id', { count: 'exact', head: true }),
+    supabase.from('volunteer_roster').select('id').eq('status', 'active'),
+    supabase.from('volunteer_roster').select('id', { count: 'exact', head: true }).not('hub_profile_id', 'is', null).eq('status', 'active'),
     supabase.from('obx_progress').select('roster_id, status, cycle').order('cycle', { ascending: false }),
   ]) : null
-  const obxProgress = onboardingResults?.[1].data || []
+  const obxProgress = onboardingResults?.[2].data || []
+  const activeRosterIds = new Set((onboardingResults?.[0].data || []).map((item) => item.id))
   const latestObx = new Map<string, string>()
-  for (const item of obxProgress) if (!latestObx.has(item.roster_id)) latestObx.set(item.roster_id, item.status)
+  for (const item of obxProgress) if (activeRosterIds.has(item.roster_id) && !latestObx.has(item.roster_id)) latestObx.set(item.roster_id, item.status)
   const obxComplete = Array.from(latestObx.values()).filter((status) => status === 'completed').length
   const obxInProgress = Array.from(latestObx.values()).filter((status) => status === 'in_progress').length
-  const obxNotStarted = Math.max(0, (onboardingResults?.[0].count || 0) - latestObx.size)
+  const obxNotStarted = Math.max(0, activeRosterIds.size - latestObx.size)
+  const obxStaffHubLinked = onboardingResults?.[1].count || 0
   // This server-rendered request needs one stable timestamp for all date comparisons.
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now()
@@ -90,6 +93,14 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         </div>
       </section>
 
+      <Link href="/obx" className="group flex flex-col gap-4 rounded-xl border border-purple-lt/30 bg-cream p-5 shadow-sm transition hover:border-purple-lt hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex items-center gap-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-purple text-cream"><ShieldCheck size={24} /></span>
+          <div><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Volunteer onboarding</p><h2 className="serif-display mt-1 text-2xl text-ink">Your Udada Passport</h2><p className="mt-1 text-sm text-muted">Start or continue OBX at any time, and keep your progress and badge together.</p></div>
+        </div>
+        <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded bg-purple px-5 py-3 text-sm font-bold text-white transition group-hover:bg-purple-lt">Open OBX <ArrowRight size={16} /></span>
+      </Link>
+
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, href, tint }) => (
           <Link key={label} href={href} className="record-surface group p-5">
@@ -99,7 +110,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         ))}
       </section>
 
-      {canViewOnboarding && <section className="card"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Volunteer learning</p><h2 className="serif-display mt-1 text-2xl text-ink">Onboarding</h2></div><Link href="/dashboard/onboarding" className="text-sm font-bold text-purple underline">Open roster</Link></div>{onboardingResults?.some((result) => result.error) ? <p className="mt-4 text-sm text-muted">Onboarding counts are unavailable. Check the OBX migration state.</p> : <div className="mt-5 grid grid-cols-3 gap-3"><div><p className="serif-display text-2xl text-ink">{obxComplete}</p><p className="text-xs text-muted">Complete</p></div><div><p className="serif-display text-2xl text-ink">{obxInProgress}</p><p className="text-xs text-muted">In progress</p></div><div><p className="serif-display text-2xl text-ink">{obxNotStarted}</p><p className="text-xs text-muted">Not started</p></div></div>}</section>}
+      {canViewOnboarding && <section className="card"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Volunteer learning</p><h2 className="serif-display mt-1 text-2xl text-ink">Onboarding</h2></div><Link href="/dashboard/onboarding" className="text-sm font-bold text-purple underline">Open roster</Link></div>{onboardingResults?.some((result) => result.error) ? <p className="mt-4 text-sm text-muted">Onboarding counts are unavailable. Check the OBX migration state.</p> : <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><div><p className="serif-display text-2xl text-ink">{obxComplete}</p><p className="text-xs text-muted">Complete</p></div><div><p className="serif-display text-2xl text-ink">{obxInProgress}</p><p className="text-xs text-muted">In progress</p></div><div><p className="serif-display text-2xl text-ink">{obxNotStarted}</p><p className="text-xs text-muted">Not started</p></div><div><p className="serif-display text-2xl text-ink">{obxStaffHubLinked}</p><p className="text-xs text-muted">StaffHub linked</p></div></div>}</section>}
 
       <section className="card !p-0 overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-6 py-5"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Personal queue</p><h2 className="serif-display mt-1 text-2xl text-ink">My Work</h2></div><span className="text-sm text-muted">{myWork.length} open item{myWork.length === 1 ? '' : 's'}</span></div>
@@ -120,7 +131,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         </div>
 
         <aside className="space-y-6">
-          <div className="card"><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Quick actions</p><h2 className="serif-display mt-1 text-2xl text-ink">Keep work moving</h2><div className="mt-5 space-y-2"><Link href="/dashboard/workspace" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><Plus size={17} className="text-gold" />Draft a report</span><ArrowRight size={16} /></Link><Link href="/dashboard/documents" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><FileText size={17} className="text-purple" />Browse files</span><ArrowRight size={16} /></Link>{(profile?.role !== 'intern' || process.env.INTERN_TEAM_DIRECTORY_ENABLED === 'true') && <Link href="/dashboard/team" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><Users size={17} className="text-green" />Team directory</span><ArrowRight size={16} /></Link>}</div></div>
+          <div className="card"><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Quick actions</p><h2 className="serif-display mt-1 text-2xl text-ink">Keep work moving</h2><div className="mt-5 space-y-2"><Link href="/obx" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><ShieldCheck size={17} className="text-purple" />Open your Udada Passport</span><ArrowRight size={16} /></Link><Link href="/dashboard/workspace" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><Plus size={17} className="text-gold" />Draft a report</span><ArrowRight size={16} /></Link><Link href="/dashboard/documents" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><FileText size={17} className="text-purple" />Browse files</span><ArrowRight size={16} /></Link>{(profile?.role !== 'intern' || process.env.INTERN_TEAM_DIRECTORY_ENABLED === 'true') && <Link href="/dashboard/team" className="flex items-center justify-between rounded bg-warm px-4 py-3 text-sm font-bold text-ink transition hover:bg-purple/10"><span className="flex items-center gap-3"><Users size={17} className="text-green" />Team directory</span><ArrowRight size={16} /></Link>}</div></div>
           <div className="record-surface p-5"><p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Your access</p><p className="serif-display mt-2 text-xl text-ink capitalize">{profile?.role || 'Team member'}</p><p className="mt-1 text-sm leading-5 text-muted">Your permissions are applied automatically to the tools in the sidebar.</p></div>
         </aside>
       </section>

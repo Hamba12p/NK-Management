@@ -3,10 +3,12 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { internHasStarted } from '@/lib/intern-access'
+import { canVolunteerAccessApi, isObxOnlyVolunteerRole } from '@/lib/staffhub-access'
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
+  const isApiPath = pathname.startsWith('/api/')
   // The volunteer passport uses its own signed cookie and has no hub login.
   if (pathname === '/obx' || pathname.startsWith('/obx/')) {
     return NextResponse.next()
@@ -46,11 +48,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  let profile: { role: string; access_starts_on: string | null; access_expires_at: string | null; must_change_password: boolean } | null = null
-  if (user && (isDashboardPath || pathname === '/change-password')) {
+  let profile: { role: string; email: string | null; access_starts_on: string | null; access_expires_at: string | null; must_change_password: boolean } | null = null
+  if (user && (isDashboardPath || pathname === '/change-password' || isApiPath || pathname === '/' || pathname === '/login')) {
     const { data } = await supabase
       .from('profiles')
-      .select('role, access_starts_on, access_expires_at, must_change_password')
+      .select('role, email, access_starts_on, access_expires_at, must_change_password')
       .eq('id', user.id)
       .single()
     profile = data
@@ -84,12 +86,29 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from login page to dashboard
   if (user && pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL(
+      isObxOnlyVolunteerRole(profile?.role, profile?.email) ? '/obx' : '/dashboard',
+      request.url
+    ))
   }
 
   // Redirect authenticated users from root to dashboard
   if (user && pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL(
+      isObxOnlyVolunteerRole(profile?.role, profile?.email) ? '/obx' : '/dashboard',
+      request.url
+    ))
+  }
+
+  const representativeEmail = process.env.STAFFHUB_VOLUNTEER_REP_EMAIL
+  const obxOnlyVolunteer = isObxOnlyVolunteerRole(profile?.role, profile?.email, representativeEmail)
+  if (user && obxOnlyVolunteer) {
+    if (isDashboardPath) return NextResponse.redirect(new URL('/obx', request.url))
+    if (isApiPath && !canVolunteerAccessApi(profile?.role, pathname, profile?.email, representativeEmail)) {
+      const denied = NextResponse.json({ error: 'Volunteer StaffHub accounts can access OBX only.' }, { status: 403 })
+      response.cookies.getAll().forEach(cookie => denied.cookies.set(cookie.name, cookie.value, cookie))
+      return denied
+    }
   }
 
   const protectedRoles = (() => {
@@ -132,5 +151,6 @@ export const config = {
      * - api (API routes - optional, can be handled separately)
      */
     '/((?!_next/static|_next/image|favicon.ico|manifest\\.webmanifest|icons(?:/.*)?|apple-touch-icon\\.png|api).*)',
+    '/api/:path*',
   ],
 }

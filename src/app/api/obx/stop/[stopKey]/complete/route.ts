@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getObxRoster, originAllowed, unavailable } from '@/lib/obx/http'
+import { getObxRoster, hasCurrentLegalConsent, legalConsentRequired, originAllowed, unavailable } from '@/lib/obx/http'
 import { obxStops } from '@/content/obx/en/stops'
 import { OBX_CONFIG } from '@/content/obx/config'
 import { meetsPassMark, scorePercent } from '@/lib/obx/logic'
@@ -9,6 +9,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ st
   try {
     const session = await getObxRoster()
     if (!session) return NextResponse.json({ error: 'Please sign in again to continue your passport.' }, { status: 401 })
+    if (!await hasCurrentLegalConsent(session.roster.id, session.admin)) return legalConsentRequired()
     const { stopKey } = await context.params
     const stop = obxStops.find((item) => item.id === stopKey)
     if (!stop) return NextResponse.json({ error: 'That stop could not be found.' }, { status: 404 })
