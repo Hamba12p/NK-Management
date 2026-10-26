@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
+import NextImage from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalConsentStep from '@/components/obx/LegalConsentStep'
 
@@ -40,7 +40,7 @@ export default function ObxBadgePage() {
     {needsLegalConsent && <LegalConsentStep onAccepted={() => setNeedsLegalConsent(false)} />}
     <p className="text-sm font-bold uppercase tracking-widest text-[#a85d88]">Your Udada Passport</p>
     <h1 className="serif-display mt-3 text-4xl text-[#782653]">You did it, {data.roster.full_name.split(' ')[0]}!</h1>
-    <Image src="/spark-obx/cutouts/spark-celebrate.png" alt="" aria-hidden="true" width={260} height={256} className="mx-auto mt-3 h-32 w-36 object-contain sm:h-40 sm:w-44" />
+    <NextImage src="/spark-obx/cutouts/spark-celebrate.png" alt="" aria-hidden="true" width={260} height={256} className="mx-auto mt-3 h-32 w-36 object-contain sm:h-40 sm:w-44" />
     <div ref={cardRef} className="mx-auto mt-8 max-w-lg rounded-2xl border border-[#a85d88] bg-white p-8 shadow-sm" role="img" aria-label={`Volunteer badge for ${data.roster.full_name}, ${data.roster.volunteer_number}, completed ${completionDate}`}>
       <p className="text-xs font-bold uppercase tracking-[.25em] text-[#a85d88]">NK Udada</p><div className="mx-auto my-5 grid h-20 w-20 place-items-center rounded-full bg-[#efe3e7] text-4xl text-[#ea519d]">✦</div>
       <p className="text-sm font-semibold uppercase tracking-widest text-[#782653]">Volunteer</p><h2 className="serif-display mt-2 text-3xl text-[#782653]">{data.roster.full_name}</h2>
