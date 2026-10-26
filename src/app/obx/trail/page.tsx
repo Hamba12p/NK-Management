@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { meetNkUdadaStory, obxStops } from '@/content/obx/en/stops'
 import LegalConsentStep from '@/components/obx/LegalConsentStep'
@@ -26,6 +27,7 @@ export default function ObxTrailPage() {
   const stop = obxStops[stopIndex]
   const question = stop?.questions[questionIndex]
   const showStory = stopIndex === 0 && storyIndex < meetNkUdadaStory.length
+  const sparkPose = feedback?.correct ? 'spark-cheer' : showStory ? 'spark-reading' : ['spark-wave', 'spark-point', 'spark-thinking', 'spark-reading', 'spark-encourage', 'spark-celebrate'][stopIndex] || 'spark-wave'
   const completed = useMemo(() => new Set(me?.results.filter((item) => item.completed_at).map((item) => item.stop_key) || []), [me])
 
   useEffect(() => {
@@ -119,9 +121,14 @@ export default function ObxTrailPage() {
     <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#efe3e7]"><div className="h-full bg-[#ea519d] transition-all" style={{ width: `${(stopIndex / 6) * 100}%` }} /></div>
     <nav aria-label="Passport stops" className="my-7 grid grid-cols-6 gap-2">{obxStops.map((item, index) => <button key={item.id} onClick={() => { if (index <= stopIndex && !progress.status.includes('completed')) { setStopIndex(index); setQuestionIndex(0); setFeedback(null); setSelected('') } }} disabled={index > stopIndex || progress.status === 'completed'} aria-label={`${item.title}${completed.has(item.id) ? ', complete' : ''}`} className={`aspect-square rounded-full border text-xs font-bold ${index === stopIndex ? 'border-[#ea519d] bg-white ring-4 ring-[#ea519d]/25' : completed.has(item.id) ? 'border-[#782653] bg-[#782653] text-white' : 'border-[#a85d88] bg-white text-[#782653]'}`}>{completed.has(item.id) ? '✓' : index + 1}</button>)}</nav>
     <section className="record-surface p-5 md:p-8">
-      <p className="text-sm font-semibold text-[#a85d88]">Your guide, Spark ✦</p>
-      <h1 className="serif-display mt-2 text-3xl text-[#782653]">{stop.title}</h1>
-      <p className="mt-3 leading-7">{stop.intro}</p>
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[#a85d88]">Your guide, Spark ✦</p>
+          <h1 className="serif-display mt-2 text-3xl text-[#782653]">{stop.title}</h1>
+          <p className="mt-3 leading-7">{stop.intro}</p>
+        </div>
+        <Image key={sparkPose} src={`/spark-obx/cutouts/${sparkPose}.png`} alt="" aria-hidden="true" width={238} height={280} className="h-28 w-24 shrink-0 object-contain sm:h-36 sm:w-32" />
+      </div>
       {showStory ? <div className="mt-7 rounded-xl bg-white p-6"><p className="text-xs font-bold uppercase tracking-widest text-[#a85d88]">Our story, {storyIndex + 1} of {meetNkUdadaStory.length}</p><p className="serif-display mt-4 text-2xl text-[#782653]">{meetNkUdadaStory[storyIndex]}</p><button onClick={() => setStoryIndex((value) => value + 1)} className="btn-primary mt-6 w-full">{storyIndex === meetNkUdadaStory.length - 1 ? 'Try a quick question' : 'Next story'}</button></div> : question ? <div className="mt-7"><p className="text-lg font-semibold">{question.prompt}</p><div className="mt-4 grid gap-3">{question.choices.map((choice) => <button key={choice.id} onClick={() => setSelected(choice.id)} disabled={!!feedback} aria-pressed={selected === choice.id} className={`min-h-12 rounded border px-4 py-3 text-left ${selected === choice.id ? 'border-[#782653] bg-[#efe3e7]' : 'border-[#dccfd6] bg-white'}`}>{choice.label}</button>)}</div>
       {feedback && <div role="status" aria-live="polite" className={`mt-4 rounded p-4 ${feedback.correct ? 'bg-[#efe3e7] text-[#782653]' : 'bg-[#b84c1a]/10 text-[#8f3915]'}`}><p className="font-semibold">{feedback.correct ? 'Nice one.' : 'Not quite, here is why.'}</p><p className="mt-1">{feedback.explanation}</p><button onClick={feedback.correct ? next : () => { setFeedback(null); setSelected('') }} className="btn-secondary mt-3">{feedback.correct ? 'Continue' : 'Try again'}</button></div>}
       {!feedback && <button onClick={submit} disabled={!selected || busy} className="btn-primary mt-5 w-full">{busy ? 'Saving your answer…' : 'Check my answer'}</button>}</div> : <div className="mt-7">

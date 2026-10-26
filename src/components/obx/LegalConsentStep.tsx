@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import Image from 'next/image'
 import {
   LEGAL_VERSION,
   PRIVACY_NOTICE,
@@ -108,8 +109,13 @@ export default function LegalConsentStep({ onAccepted }: { onAccepted: () => voi
 
   return <section className="obx-consent-prompt mx-auto max-w-3xl px-4 py-6 md:py-10" aria-labelledby="obx-consent-title">
     <div className="rounded-2xl border border-[#eadce3] bg-[#F8F4F1] p-5 shadow-sm md:p-8">
-      <p className="text-sm font-semibold text-[#782653]">Before you begin</p>
-      <h1 id="obx-consent-title" className="serif-display mt-2 text-3xl text-[#782653]">Two thoughtful promises</h1>
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[#782653]">Before you begin</p>
+          <h1 id="obx-consent-title" className="serif-display mt-2 text-3xl text-[#782653]">Two thoughtful promises</h1>
+        </div>
+        <Image src="/spark-obx/cutouts/spark-encourage.png" alt="" aria-hidden="true" width={189} height={261} className="h-24 w-20 shrink-0 object-contain sm:h-32 sm:w-24" />
+      </div>
       <p className="mt-3 leading-7 text-[#4e454a]">Please read both documents and make each promise before starting or continuing your passport.</p>
       <form onSubmit={saveConsent} className="mt-6 space-y-5">
         {AGREEMENTS.map(({ id, document, label }) => (

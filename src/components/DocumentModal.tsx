@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { X, FileText, Loader, AlertCircle, ExternalLink } from 'lucide-react'
 import CreatorTag from '@/components/CreatorTag'
 import { getDocumentAccess } from '@/lib/document-access'
+import DocumentAssigneePicker from '@/components/DocumentAssigneePicker'
+import type { StaffDirectoryEntry } from '@/lib/staff-directory'
 
 type Document = {
   id: string
@@ -16,6 +18,7 @@ type Document = {
   uploaded_by: string
   contributor_name: string | null
   contributor_tag: string | null
+  assigned_to: string[]
   profiles: { full_name: string; display_tag?: string | null; display_color?: string | null } | null
 }
 
@@ -23,6 +26,7 @@ type DocumentModalProps = {
   doc: Document | null
   onClose: () => void
   onSave: (updates: Partial<Document>) => Promise<void>
+  assignees?: StaffDirectoryEntry[]
 }
 
 type Preview =
@@ -30,11 +34,12 @@ type Preview =
   | { kind: 'image' | 'pdf' | 'office'; url: string }
   | { kind: 'unavailable'; content: string }
 
-export default function DocumentModal({ doc, onClose, onSave }: DocumentModalProps) {
+export default function DocumentModal({ doc, onClose, onSave, assignees }: DocumentModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [editedCategory, setEditedCategory] = useState('')
+  const [editedAssigneeIds, setEditedAssigneeIds] = useState<string[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -106,6 +111,7 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
       setEditedName(doc.name)
       setEditedDescription(doc.description || '')
       setEditedCategory(doc.category)
+      setEditedAssigneeIds(doc.assigned_to || [])
       loadPreview(doc)
     }
   }, [doc])
@@ -124,11 +130,13 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
     if (!doc) return
     setIsSaving(true)
     try {
-      await onSave({
+      const updates: Partial<Document> = {
         name: editedName,
         description: editedDescription,
-        category: editedCategory as any,
-      })
+        category: editedCategory,
+      }
+      if (assignees) updates.assigned_to = editedAssigneeIds
+      await onSave(updates)
       setIsEditing(false)
     } catch (err) {
       setError(`Failed to save: ${err}`)
@@ -200,6 +208,14 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
                   <option value="meeting">Meeting</option>
                 </select>
               </div>
+              {assignees && (
+                <DocumentAssigneePicker
+                  assignees={assignees}
+                  selectedIds={editedAssigneeIds}
+                  onChange={setEditedAssigneeIds}
+                  disabled={isSaving}
+                />
+              )}
             </div>
           )}
 
@@ -211,6 +227,13 @@ export default function DocumentModal({ doc, onClose, onSave }: DocumentModalPro
                 <p className="font-medium capitalize text-ink">{doc.category}</p>
               )}
             </div>
+            {!isEditing && (
+              <p className="text-sm text-muted">
+                {doc.assigned_to?.length
+                  ? `Shared with ${doc.assigned_to.length} individual${doc.assigned_to.length === 1 ? '' : 's'}`
+                  : 'Available to everyone'}
+              </p>
+            )}
             <div>
               <p className="text-muted mb-1">Size</p>
               <p className="font-medium text-ink">

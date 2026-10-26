@@ -12,6 +12,7 @@ create function auth.jwt() returns jsonb language sql stable as
 create table public.profiles (id uuid primary key, role text);
 create table public.documents (
   id uuid primary key default gen_random_uuid(), name text,
+  intern_visible boolean not null default false,
   file_path text, deleted_at timestamptz, uploaded_by uuid
 );
 create table storage.objects (id uuid default gen_random_uuid(), bucket_id text, name text);
@@ -28,6 +29,10 @@ create policy documents_update_active on public.documents for update to authenti
 create policy storage_authenticated_read_documents on storage.objects for select to authenticated
   using (bucket_id = 'documents' and auth.uid() is not null
     and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+create function public.is_intern() returns boolean language sql stable as
+  $$ select coalesce((select role from public.profiles where id = auth.uid()) = 'intern', false) $$;
+create function public.intern_access_active() returns boolean language sql stable as
+  $$ select true $$;
 grant usage on schema public, auth, storage to authenticated, anon;
 grant select on public.profiles, public.documents, storage.objects to authenticated, anon;
 insert into public.documents (name, file_path) values ('Existing document', 'standard.pdf');
@@ -36,6 +41,7 @@ create temp table original_write_policies as
   where schemaname = 'public' and tablename = 'documents' and cmd <> 'SELECT';
 
 \ir ../migrations/20260922170751_restrict_document_visibility.sql
+\ir ../migrations/20261026140000_document_individual_assignments.sql
 
 do $$ begin
   if (select visibility from public.documents where file_path = 'standard.pdf') <> 'standard' then
@@ -96,4 +102,74 @@ begin
   end if;
   reset role;
 end $$;
-select 'PASS: visibility defaults/constraints, unchanged write policies, all roles, soft deletion, orphan files, bucket isolation, anonymous access' as result;
+
+insert into public.profiles values
+  ('00000000-0000-0000-0000-000000000002', 'volunteer'),
+  ('00000000-0000-0000-0000-000000000003', 'volunteer'),
+  ('00000000-0000-0000-0000-000000000004', 'intern');
+insert into public.documents (name, file_path, uploaded_by, assigned_to) values
+  ('Assigned document', 'assigned.pdf', '00000000-0000-0000-0000-000000000001',
+   array['00000000-0000-0000-0000-000000000002'::uuid]),
+  ('Assigned intern document', 'assigned-intern.pdf', '00000000-0000-0000-0000-000000000001',
+   array['00000000-0000-0000-0000-000000000004'::uuid]),
+  ('Assigned restricted document', 'assigned-restricted.pdf', '00000000-0000-0000-0000-000000000001',
+   array['00000000-0000-0000-0000-000000000002'::uuid]);
+update public.documents set visibility = 'restricted' where file_path = 'assigned-restricted.pdf';
+insert into storage.objects (bucket_id, name) values
+  ('documents', 'assigned.pdf'), ('documents', 'assigned-intern.pdf'), ('documents', 'assigned-restricted.pdf');
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+set role authenticated;
+do $$ begin
+  if not exists (select from public.documents where file_path = 'assigned.pdf') then
+    raise exception 'Assigned individual cannot read assigned document';
+  end if;
+  if not exists (select from storage.objects where name = 'assigned.pdf') then
+    raise exception 'Assigned individual cannot read assigned file';
+  end if;
+  if not exists (select from public.documents where file_path = 'assigned-restricted.pdf')
+    or not exists (select from storage.objects where name = 'assigned-restricted.pdf') then
+    raise exception 'Assigned individual cannot read assigned restricted evidence';
+  end if;
+  if exists (select from public.documents where file_path = 'assigned-intern.pdf') then
+    raise exception 'Unassigned individual can read another person''s document';
+  end if;
+end $$;
+reset role;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', false);
+set role authenticated;
+do $$ begin
+  if exists (select from public.documents where file_path = 'assigned.pdf')
+    or exists (select from storage.objects where name = 'assigned.pdf')
+    or exists (select from public.documents where file_path = 'assigned-restricted.pdf')
+    or exists (select from storage.objects where name = 'assigned-restricted.pdf') then
+    raise exception 'Unassigned individual can read assigned document or file';
+  end if;
+  if not exists (select from public.documents where file_path = 'standard.pdf') then
+    raise exception 'Unassigned document is not available to everyone';
+  end if;
+end $$;
+reset role;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', false);
+set role authenticated;
+do $$ begin
+  if not exists (select from public.documents where file_path = 'assigned-intern.pdf')
+    or not exists (select from storage.objects where name = 'assigned-intern.pdf') then
+    raise exception 'Assigned intern cannot read assigned document and file';
+  end if;
+end $$;
+reset role;
+
+do $$ begin
+  begin
+    insert into public.documents (name, file_path, assigned_to)
+    values ('Invalid assignee', 'invalid-assignee.pdf', array['ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid]);
+    raise exception 'Invalid document assignee accepted';
+  exception when raise_exception then
+    if sqlerrm = 'Invalid document assignee accepted' then raise; end if;
+  end;
+end $$;
+
+select 'PASS: assignments, unassigned access, restricted assignees, intern access, visibility constraints, soft deletion, and storage access' as result;

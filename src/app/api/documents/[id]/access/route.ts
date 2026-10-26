@@ -34,7 +34,7 @@ export async function GET(
 
   const { data: document, error: documentError } = await supabase
     .from('documents')
-    .select('id,name,file_path,mime_type,uploaded_by,intern_visible,visibility,deleted_at')
+    .select('id,name,file_path,mime_type,uploaded_by,intern_visible,visibility,assigned_to,deleted_at')
     .eq('id', id)
     .maybeSingle()
 
@@ -49,9 +49,20 @@ export async function GET(
   if (profile.role === 'intern') {
     const ownUpload = document.uploaded_by === user.id && document.file_path.startsWith(`interns/${user.id}/`)
     const flaggedDocument = document.intern_visible && document.visibility === 'standard' && document.deleted_at === null
-    if (!ownUpload && !flaggedDocument) {
+    const assignedToUser = Array.isArray(document.assigned_to) && document.assigned_to.includes(user.id)
+    if (!ownUpload && !flaggedDocument && !assignedToUser) {
       return Response.json({ error: 'Document not found' }, { status: 404 })
     }
+  }
+
+  if (
+    Array.isArray(document.assigned_to)
+    && document.assigned_to.length > 0
+    && !document.assigned_to.includes(user.id)
+    && document.uploaded_by !== user.id
+    && !['admin', 'board_advisor'].includes(profile.role)
+  ) {
+    return Response.json({ error: 'Document not found' }, { status: 404 })
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

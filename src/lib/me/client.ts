@@ -64,7 +64,7 @@ export async function softDelete(client: SupabaseClient, table: string, id: stri
   checkResults(result)
   await logActivity('delete', table, id, { soft_delete: true }, { client, actorId: actor })
 }
-export async function uploadRestrictedDocument(client: SupabaseClient, actor: string, file: File, category = 'general') {
+export async function uploadRestrictedDocument(client: SupabaseClient, actor: string, file: File, category = 'general', assignedTo: string[] = []) {
   if (file.size > 50 * 1024 * 1024) throw new Error('File too large. Maximum 50MB.')
   const id = crypto.randomUUID()
   const path = `${actor}/me/${id}/${file.name.replace(/[^a-z0-9.\-_]/gi, '_')}`
@@ -72,7 +72,7 @@ export async function uploadRestrictedDocument(client: SupabaseClient, actor: st
   const result = await client.from('documents').insert({
     id, name: file.name, file_path: path, file_size: file.size,
     mime_type: file.type || 'application/octet-stream', category,
-    uploaded_by: actor, visibility: 'restricted', ...volunteerContributor(),
+    uploaded_by: actor, visibility: 'restricted', assigned_to: assignedTo, ...volunteerContributor(),
   }).select('id').single()
   // An upload with no document row is unreadable under Storage RLS. Never
   // loosen access or fall back to a standard document when persistence fails.

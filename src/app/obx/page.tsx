@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { hasTwoObxIdentifiers, normaliseObxContact, normaliseObxEmail } from '@/lib/obx/contact'
@@ -114,11 +115,14 @@ export default function ObxWelcomePage() {
   }
 
   return <div className="mx-auto grid max-w-5xl gap-10 px-4 pb-12 pt-8 md:grid-cols-2 md:items-center md:py-16">
-    <section>
-      <div className="mb-5 inline-flex rounded-full bg-[#efe3e7] px-4 py-2 text-sm font-semibold text-[#782653]">Meet Spark, your guide</div>
-      <h1 className="serif-display text-4xl leading-tight text-[#782653] md:text-5xl">Your Udada Passport</h1>
-      <p className="mt-5 max-w-xl text-lg leading-8">Welcome to the team. Register to receive your volunteer number and open your passport. It takes about 20 minutes, and you can pause any time.</p>
-      <div className="mt-7 flex flex-wrap gap-3 text-sm font-semibold text-[#782653]"><span className="rounded-full bg-white px-4 py-2">Six stamps</span><span className="rounded-full bg-white px-4 py-2">One badge</span><span className="rounded-full bg-white px-4 py-2">Pause any time</span></div>
+    <section className="grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
+      <div>
+        <div className="mb-5 inline-flex rounded-full bg-[#efe3e7] px-4 py-2 text-sm font-semibold text-[#782653]">Meet Spark, your guide</div>
+        <h1 className="serif-display text-4xl leading-tight text-[#782653] md:text-5xl">Your Udada Passport</h1>
+        <p className="mt-5 max-w-xl text-lg leading-8">Welcome to the team. Register to receive your volunteer number and open your passport. It takes about 20 minutes, and you can pause any time.</p>
+        <div className="mt-7 flex flex-wrap gap-3 text-sm font-semibold text-[#782653]"><span className="rounded-full bg-white px-4 py-2">Six stamps</span><span className="rounded-full bg-white px-4 py-2">One badge</span><span className="rounded-full bg-white px-4 py-2">Pause any time</span></div>
+      </div>
+      <Image src="/spark-obx/cutouts/spark-wave.png" alt="" aria-hidden="true" width={192} height={269} priority className="h-auto w-full object-contain" />
     </section>
     <div className="record-surface space-y-5 p-6 md:p-8">
       <h2 className="serif-display text-2xl text-[#782653]">{volunteer ? 'Your volunteer record' : 'Join the OBX'}</h2>

@@ -12,6 +12,8 @@ import { EmptyLedger } from '@/components/BrandIllustrations'
 import { volunteerContributor } from '@/lib/creator'
 import { getDocumentAccess } from '@/lib/document-access'
 import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
+import type { StaffDirectoryEntry } from '@/lib/staff-directory'
+import DocumentAssigneePicker from '@/components/DocumentAssigneePicker'
 
 type Document = NonNullable<ComponentProps<typeof DocumentModal>['doc']>
 
@@ -27,6 +29,9 @@ export default function DocumentsPage() {
   const [currentUserId, setCurrentUserId] = useState('')
   const [createdByMe, setCreatedByMe] = useState(false)
   const [currentRole, setCurrentRole] = useState('')
+  const [assignees, setAssignees] = useState<StaffDirectoryEntry[]>([])
+  const [assigneesLoaded, setAssigneesLoaded] = useState(false)
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
   const supabase = createClient()
 
   async function fetchDocs() {
@@ -36,8 +41,14 @@ export default function DocumentsPage() {
         .select('*')
         .order('created_at', { ascending: false }), supabase.auth.getUser()])
 
-      if (err) { console.error('Error fetching documents:', err); return }
+      if (err) {
+        console.error('Error fetching documents:', err)
+        setError('Unable to load documents and individual access options. Please refresh and try again.')
+        return
+      }
       const staff = await loadStaffDirectory(supabase)
+      setAssignees(staff)
+      setAssigneesLoaded(true)
       setDocs((data || []).map(doc => ({ ...doc, profiles: staffProfile(staff, doc.uploaded_by) })))
       setCurrentUserId(authData.user?.id || '')
       const { data: ownProfile } = authData.user
@@ -46,6 +57,7 @@ export default function DocumentsPage() {
       setCurrentRole(ownProfile?.role || '')
     } catch (e) {
       console.error('Fetch error:', e)
+      setError('Unable to load individuals for document access. Please refresh and try again.')
     }
   }
 
@@ -97,6 +109,7 @@ export default function DocumentsPage() {
         mime_type: file.type || 'application/octet-stream',
         category: selectedCategory,
         uploaded_by: user.id,
+        assigned_to: selectedAssigneeIds,
         ...volunteerContributor(),
       })
 
@@ -105,6 +118,7 @@ export default function DocumentsPage() {
       logActivity('document.upload', 'document', undefined, { name: file.name, category: selectedCategory })
 
       setSuccess(`"${file.name}" uploaded successfully`)
+      setSelectedAssigneeIds([])
       e.target.value = ''
     } catch (err) {
       setError(`Unexpected error: ${err}`)
@@ -152,6 +166,7 @@ export default function DocumentsPage() {
           name: updates.name,
           description: updates.description,
           category: updates.category,
+          assigned_to: updates.assigned_to,
         })
         .eq('id', selectedDoc.id)
 
@@ -194,6 +209,7 @@ export default function DocumentsPage() {
         doc={selectedDoc}
         onClose={() => setSelectedDoc(null)}
         onSave={handleSaveDocument}
+        assignees={assignees}
       />
 
       {/* Upload Section */}
@@ -221,17 +237,25 @@ export default function DocumentsPage() {
               </select>
             </label>
           </div>
+          <div className="mb-4 w-full max-w-sm">
+            <DocumentAssigneePicker
+              assignees={assignees}
+              selectedIds={selectedAssigneeIds}
+              onChange={setSelectedAssigneeIds}
+              disabled={uploading}
+            />
+          </div>
 
           <label className="cursor-pointer">
             <input
               type="file"
               onChange={handleUpload}
-              disabled={uploading}
+              disabled={uploading || !assigneesLoaded}
               className="hidden"
               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
             />
             <div className="btn-primary">
-              {uploading ? 'Uploading…' : 'Choose File'}
+              {uploading ? 'Uploading…' : assigneesLoaded ? 'Choose File' : 'Loading individuals…'}
             </div>
           </label>
         </div>
@@ -292,6 +316,9 @@ export default function DocumentsPage() {
                           day: 'numeric',
                           year: doc.created_at.startsWith(new Date().getFullYear().toString()) ? undefined : 'numeric',
                         })}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {doc.assigned_to?.length ? `Shared with ${doc.assigned_to.length} individual${doc.assigned_to.length === 1 ? '' : 's'}` : 'Available to everyone'}
                       </span>
                     </div>
                     {doc.description && (
