@@ -4,6 +4,7 @@ import { OBX_CONFIG } from '@/content/obx/config'
 import { OBX_COOKIE, signSession } from '@/lib/obx/session'
 import { hasCurrentLegalConsent, originAllowed, unavailable } from '@/lib/obx/http'
 import { createObxAdminClient } from '@/lib/obx/supabase-admin'
+import { internAccessIsActive } from '@/lib/intern-access'
 
 type RegisteredVolunteer = {
   id: string
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: profile, error: profileError } = await auth.from('profiles')
-      .select('full_name, email, role, access_expires_at')
+      .select('full_name, email, role, access_starts_on, access_expires_at, intern_access_enabled')
       .eq('id', user.id)
       .maybeSingle()
     if (profileError) {
@@ -47,7 +48,11 @@ export async function POST(request: NextRequest) {
     if (!profile || !allowedRoles.includes(profile.role)) {
       return NextResponse.json({ error: 'This StaffHub account cannot start an OBX passport.' }, { status: 403 })
     }
-    if (profile.role === 'intern' && (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now())) {
+    if (profile.role === 'intern' && !internAccessIsActive(
+      profile.intern_access_enabled,
+      profile.access_starts_on,
+      profile.access_expires_at,
+    )) {
       return NextResponse.json({ error: 'Your StaffHub access has ended. Contact an administrator if you need help.' }, { status: 403 })
     }
 

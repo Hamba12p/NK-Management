@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { internHasStarted } from '@/lib/intern-access'
+import { internAccessIsActive, internHasStarted, internPasswordChangeIsDue } from '@/lib/intern-access'
 
 export async function GET(
   _request: Request,
@@ -16,7 +16,7 @@ export async function GET(
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, access_starts_on, access_expires_at, must_change_password')
+    .select('role, access_starts_on, access_expires_at, intern_access_enabled, must_change_password, password_change_required_on')
     .eq('id', user.id)
     .single()
   if (profileError || !profile) {
@@ -25,10 +25,10 @@ export async function GET(
   if (profile.role === 'intern' && !internHasStarted(profile.access_starts_on)) {
     return Response.json({ error: 'Your access has not started' }, { status: 403 })
   }
-  if (profile.role === 'intern' && (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now())) {
+  if (profile.role === 'intern' && !internAccessIsActive(profile.intern_access_enabled, profile.access_starts_on, profile.access_expires_at)) {
     return Response.json({ error: 'Your access has ended' }, { status: 403 })
   }
-  if (profile.role === 'intern' && profile.must_change_password) {
+  if (profile.role === 'intern' && internPasswordChangeIsDue(profile.must_change_password, profile.password_change_required_on)) {
     return Response.json({ error: 'Change your password before accessing documents' }, { status: 403 })
   }
 

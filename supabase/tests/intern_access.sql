@@ -5,7 +5,7 @@ insert into auth.users (id,email,raw_user_meta_data) values
 ('10000000-0000-0000-0000-000000000101','intern-test@example.invalid','{"full_name":"Test Intern","role":"intern"}'),
 ('10000000-0000-0000-0000-000000000102','dpo-test@example.invalid','{"full_name":"Test DPO","role":"dpo"}'),
 ('10000000-0000-0000-0000-000000000103','manager-test@example.invalid','{"full_name":"Test Manager","role":"manager"}');
-update public.profiles set access_starts_on=(now() at time zone 'Africa/Nairobi')::date,access_expires_at=now()+interval '14 days',must_change_password=false where id='10000000-0000-0000-0000-000000000101';
+update public.profiles set access_starts_on=(now() at time zone 'Africa/Nairobi')::date,access_expires_at=now()+interval '14 days',intern_access_enabled=true,must_change_password=false where id='10000000-0000-0000-0000-000000000101';
 
 insert into public.documents(id,name,file_path,file_size,mime_type,category,uploaded_by,visibility,intern_visible) values
 ('20000000-0000-0000-0000-000000000101','Flagged','shared/flagged.pdf',100,'application/pdf','template','10000000-0000-0000-0000-000000000102','standard',true),
@@ -139,5 +139,51 @@ begin
  if (select count(*) from public.profiles) <> 1 then raise exception 'Intern must retain read access to own profile status'; end if;
 end $$;
 reset role;
+update public.profiles set access_expires_at=null where id='10000000-0000-0000-0000-000000000101';
+select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000101',true);
+select set_config('request.jwt.claims','{"sub":"10000000-0000-0000-0000-000000000101","role":"authenticated"}',true);
+set local role authenticated;
+do $$
+begin
+ if not public.intern_access_active() then raise exception 'Manually managed intern access with no expiry is inactive'; end if;
+end $$;
+reset role;
+ update public.profiles set must_change_password=true,password_change_required_on=(now() at time zone 'Africa/Nairobi')::date + 1 where id='10000000-0000-0000-0000-000000000101';
+ set local role authenticated;
+ do $$
+ begin
+  if not public.intern_access_active() then raise exception 'Future password-change date blocks intern access early'; end if;
+ end $$;
+ reset role;
+ update public.profiles set password_change_required_on=(now() at time zone 'Africa/Nairobi')::date where id='10000000-0000-0000-0000-000000000101';
+ set local role authenticated;
+ do $$
+ begin
+  if public.intern_access_active() then raise exception 'Password change is not enforced by database access'; end if;
+  if exists(select from public.documents) or exists(select from public.tasks) then raise exception 'Intern can access workspace data before changing due password'; end if;
+ end $$;
+ reset role;
+ update public.profiles set must_change_password=false,password_change_required_on=null where id='10000000-0000-0000-0000-000000000101';
+ set local role authenticated;
+ do $$
+ begin
+  if not public.intern_access_active() then raise exception 'Changing password did not restore intern data access'; end if;
+ end $$;
+ reset role;
+ update public.profiles set intern_access_enabled=false where id='10000000-0000-0000-0000-000000000101';
+set local role authenticated;
+do $$
+begin
+ if public.intern_access_active() then raise exception 'Disabled intern access remains active'; end if;
+ if exists(select from public.documents) or exists(select from public.tasks) then raise exception 'Disabled intern can access workspace data'; end if;
+end $$;
+reset role;
+update public.profiles set intern_access_enabled=true,access_expires_at=now()+interval '1 day' where id='10000000-0000-0000-0000-000000000101';
+set local role authenticated;
+do $$
+begin
+ if not public.intern_access_active() then raise exception 'Re-enabled intern access remains inactive'; end if;
+end $$;
+reset role;
 rollback;
-select 'PASS: intern table/storage boundaries, own task status, directory, DPO/manager writes, closed-data RPCs and expired access' as result;
+select 'PASS: intern boundaries, manual access toggle, scheduled password deadline, directory, DPO/manager writes, closed-data RPCs and expiry' as result;

@@ -2,8 +2,9 @@
 // Refreshes the Supabase session on every request and redirects based on auth state
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { internHasStarted } from '@/lib/intern-access'
+import { internAccessIsActive, internHasStarted, internPasswordChangeIsDue } from '@/lib/intern-access'
 import { canVolunteerAccessApi, isObxOnlyVolunteerRole } from '@/lib/staffhub-access'
+import { createNotificationAdminClient } from '@/lib/notifications/server'
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -48,11 +49,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  let profile: { role: string; email: string | null; access_starts_on: string | null; access_expires_at: string | null; must_change_password: boolean } | null = null
+  let profile: {
+    role: string
+    email: string | null
+    access_starts_on: string | null
+    access_expires_at: string | null
+    intern_access_enabled: boolean
+    must_change_password: boolean
+    password_change_required_on: string | null
+  } | null = null
   if (user && (isDashboardPath || pathname === '/change-password' || isApiPath || pathname === '/' || pathname === '/login')) {
     const { data } = await supabase
       .from('profiles')
-      .select('role, email, access_starts_on, access_expires_at, must_change_password')
+      .select('role, email, access_starts_on, access_expires_at, intern_access_enabled, must_change_password, password_change_required_on')
       .eq('id', user.id)
       .single()
     profile = data
@@ -63,16 +72,33 @@ export async function proxy(request: NextRequest) {
       if (pathname !== '/access-not-started') return NextResponse.redirect(new URL('/access-not-started', request.url))
       return response
     }
-    if (!profile.access_expires_at || Date.parse(profile.access_expires_at) <= Date.now()) {
+    if (!internAccessIsActive(profile.intern_access_enabled, profile.access_starts_on, profile.access_expires_at)) {
+      let pushCleanupFailed = false
+      try {
+        const admin = createNotificationAdminClient()
+        const { error } = await admin.from('push_subscriptions').delete().eq('user_id', user.id)
+        if (error) throw error
+      } catch (error) {
+        console.error('Inactive intern push subscriptions could not be removed:', error)
+        pushCleanupFailed = true
+      }
       await supabase.auth.signOut()
-      const ended = NextResponse.redirect(new URL('/access-ended', request.url))
+      const endedUrl = new URL('/access-ended', request.url)
+      endedUrl.searchParams.set('push-cleanup', pushCleanupFailed ? 'failed' : 'complete')
+      const ended = NextResponse.redirect(endedUrl)
       response.cookies.getAll().forEach(cookie => ended.cookies.set(cookie.name, cookie.value, cookie))
       return ended
     }
-    if (profile.must_change_password && pathname !== '/change-password') {
+    const passwordChangeDue = internPasswordChangeIsDue(
+      profile.must_change_password,
+      profile.password_change_required_on,
+    )
+    const isPasswordChangeRequest = pathname === '/change-password'
+      || pathname === '/api/intern/password-change'
+    if (passwordChangeDue && !isPasswordChangeRequest) {
       return NextResponse.redirect(new URL('/change-password', request.url))
     }
-    if (!profile.must_change_password && pathname === '/change-password') {
+    if (!passwordChangeDue && pathname === '/change-password') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     if (isDashboardPath) {

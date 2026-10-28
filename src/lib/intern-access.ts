@@ -12,3 +12,22 @@ export function todayInNairobi(now = new Date()): string {
 export function internHasStarted(startDate: string | null, now = new Date()): boolean {
   return Boolean(startDate && startDate <= todayInNairobi(now))
 }
+
+export function internAccessIsActive(
+  enabled: boolean,
+  startDate: string | null,
+  expiresAt: string | null,
+  now = new Date(),
+): boolean {
+  return enabled
+    && internHasStarted(startDate, now)
+    && (!expiresAt || Date.parse(expiresAt) > now.getTime())
+}
+
+export function internPasswordChangeIsDue(
+  required: boolean,
+  requiredOn: string | null,
+  now = new Date(),
+): boolean {
+  return required && (!requiredOn || requiredOn <= todayInNairobi(now))
+}

@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, LogOut, Menu, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatRole, roleBadgeClass } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
+import { clearPushSubscriptionBeforeSignOut } from '@/lib/notifications/client'
 import HubIcon, { type HubIconName } from '@/components/HubIcon'
 
 type NavItem = { href: string; label: string; icon: HubIconName; adminOnly: boolean }
@@ -83,11 +84,12 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
     setSigningOut(true)
     try {
       await logActivity('user.logout', 'auth')
+      await clearPushSubscriptionBeforeSignOut()
       await supabase.auth.signOut()
       document.cookie = 'nk_volunteer_name=; Path=/; Max-Age=0; SameSite=Lax'
       router.push('/login')
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Sign out could not be completed:', error instanceof Error ? error.message : 'Unknown error')
       setSigningOut(false)
     }
   }

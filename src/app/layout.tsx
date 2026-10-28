@@ -11,13 +11,18 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: 'Staff Hub',
+    title: 'NK Hub',
     statusBarStyle: 'default',
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-title': 'NK Hub',
+    'apple-mobile-web-app-status-bar-style': 'default',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#f8f8f8',
+  themeColor: '#782653',
 }
 
 export default function RootLayout({

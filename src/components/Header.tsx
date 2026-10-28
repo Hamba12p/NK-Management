@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
+import { clearPushSubscriptionBeforeSignOut } from '@/lib/notifications/client'
 
 export default function Header({ profile }: { profile?: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -12,8 +13,14 @@ export default function Header({ profile }: { profile?: any }) {
   const supabase = createClient()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      await clearPushSubscriptionBeforeSignOut()
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      router.push('/login')
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : 'Unable to safely sign out. Please try again.')
+    }
   }
 
   return (

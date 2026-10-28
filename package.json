@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "node --conditions=react-server --experimental-strip-types --test tests/*.test.mjs",
+    "setup:notification-env": "node scripts/setup-notification-env.mjs",
     "seed:obx": "node --env-file-if-exists=.env.local scripts/seed-obx.mjs",
-    "test": "node --conditions=react-server --experimental-strip-types --test tests/*.test.mjs",
     "seed:users": "node --env-file-if-exists=.env.local scripts/seed-users.mjs"
   },
   "dependencies": {
@@ -28,6 +28,7 @@
     "react-dom": "^19",
     "react-hook-form": "^7.74.0",
     "tailwind-merge": "^3.5.0",
+    "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
   "overrides": {
@@ -42,6 +43,7 @@
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.12",
     "postcss": "^8",

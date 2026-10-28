@@ -18,6 +18,7 @@ interface TeamMember {
   display_tag?: string;
   display_color?: string;
   role: string;
+  intern_access_enabled?: boolean;
   avatar_url?: string;
   created_at?: string;
 }
@@ -121,6 +122,8 @@ export default function TeamPage() {
   const [selectedRole, setSelectedRole] = useState<'all' | ProfileRole>('all');
   const [totalCount, setTotalCount] = useState(0);
   const [isIntern, setIsIntern] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [updatingInternId, setUpdatingInternId] = useState<string | null>(null);
 
   async function fetchMembers() {
     try {
@@ -137,12 +140,35 @@ export default function TeamPage() {
       setMembers(data || []);
       setTotalCount(data?.length || 0);
       setIsIntern(ownProfile?.role === 'intern');
+      setIsAdmin(ownProfile?.role === 'admin');
       setError(null);
     } catch (err) {
       console.error('Failed to fetch team members:', err);
       setError('Failed to load team members');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function toggleInternAccess(member: TeamMember) {
+    const enabled = !member.intern_access_enabled;
+    setUpdatingInternId(member.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/intern-access/${encodeURIComponent(member.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Intern access could not be updated.');
+      setMembers(current => current.map(profile => profile.id === member.id
+        ? { ...profile, intern_access_enabled: result.enabled }
+        : profile));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Intern access could not be updated.');
+    } finally {
+      setUpdatingInternId(null);
     }
   }
 
@@ -341,6 +367,29 @@ export default function TeamPage() {
                     {member.job_title || rosterMember?.title || roleDescriptions[role]}
                   </p>
                 </div>}
+
+                {isAdmin && role === 'intern' && (
+                  <div className="mt-4 border-t border-current border-opacity-10 pt-4">
+                    <p className="text-xs text-muted uppercase tracking-wide">Intern account access</p>
+                    <p className="mt-1 text-sm text-ink">
+                      {member.intern_access_enabled ? 'Enabled' : 'Disabled'}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      This control blocks Staff Hub and database access without deleting profile data.
+                    </p>
+                    <button
+                      type="button"
+                      aria-pressed={Boolean(member.intern_access_enabled)}
+                      disabled={updatingInternId === member.id}
+                      onClick={() => toggleInternAccess(member)}
+                      className="btn-secondary mt-3 w-full disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {updatingInternId === member.id
+                        ? 'Updating access…'
+                        : member.intern_access_enabled ? 'Disable access' : 'Enable access'}
+                    </button>
+                  </div>
+                )}
               </div>
               )
             })

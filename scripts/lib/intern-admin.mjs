@@ -3,7 +3,10 @@ import { createHash } from 'node:crypto'
 
 export function parseArgs(allowed) {
   const values = { apply: false }
-  const booleanFlags = new Set(['apply', ...(allowed.includes('show-password') ? ['show-password'] : [])])
+  const booleanFlags = new Set([
+    'apply',
+    ...['show-password', 'no-expiry', 'use-env-password'].filter(flag => allowed.includes(flag)),
+  ])
   for (let index = 2; index < process.argv.length; index += 1) {
     const token = process.argv[index]
     if (!token.startsWith('--')) throw new Error(`Unexpected argument: ${token}`)
@@ -47,7 +50,7 @@ export function addMonths(value, months) {
 }
 
 export async function profileForEmail(client, email) {
-  const { data, error } = await client.from('profiles').select('id,full_name,email,role,access_starts_on,access_expires_at,must_change_password,display_tag').ilike('email', email).maybeSingle()
+  const { data, error } = await client.from('profiles').select('id,full_name,email,role,access_starts_on,access_expires_at,intern_access_enabled,must_change_password,password_change_required_on,display_tag').ilike('email', email).maybeSingle()
   if (error) throw new Error(`Profile lookup failed: ${error.message}`)
   return data
 }
