@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, FileText, Loader, AlertCircle, ExternalLink } from 'lucide-react'
 import CreatorTag from '@/components/CreatorTag'
 import { getDocumentAccess } from '@/lib/document-access'
@@ -35,6 +35,7 @@ type Preview =
   | { kind: 'unavailable'; content: string }
 
 export default function DocumentModal({ doc, onClose, onSave, assignees }: DocumentModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
@@ -44,6 +45,18 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    if (!doc) return
+    const dialog = dialogRef.current
+    dialog?.showModal()
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      dialog?.close()
+      document.body.style.overflow = previousOverflow
+    }
+  }, [doc])
 
   async function loadPreview(document: Document) {
     setLoading(true)
@@ -109,6 +122,7 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
       // Synchronise editable fields when a different document is selected.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditedName(doc.name)
+      setIsEditing(false)
       setEditedDescription(doc.description || '')
       setEditedCategory(doc.category)
       setEditedAssigneeIds(doc.assigned_to || [])
@@ -148,32 +162,38 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
   if (!doc) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-      <div className="record-surface max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="document-preview-title"
+      onCancel={(event) => { event.preventDefault(); onClose() }}
+      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-cream p-0 text-ink backdrop:bg-black/50"
+    >
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-warm rounded-lg">
+        <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 border-b border-border">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 p-2 bg-warm rounded-lg">
               <FileText size={20} className="text-gold" />
             </div>
-            <div>
-              <h2 className="font-semibold text-ink">{doc.name}</h2>
+            <div className="min-w-0">
+              <h2 id="document-preview-title" className="truncate font-semibold text-ink" title={doc.name}>{doc.name}</h2>
               <div className="mt-1"><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} showName /></div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-warm rounded transition-colors"
+            aria-label="Close document preview"
+            className="shrink-0 p-2 hover:bg-warm rounded transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2 sm:p-4">
           {/* Edit Form */}
           {isEditing && (
-            <div className="space-y-4 pb-4 border-b border-border">
+            <div className="shrink-0 space-y-4 pb-4 border-b border-border">
               <div>
                 <label className="block text-sm font-medium text-ink mb-2">Document Name</label>
                 <input
@@ -220,7 +240,9 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
           )}
 
           {/* Document Info */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <details className="shrink-0 rounded-lg border border-border px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium text-ink">Document details</summary>
+          <div className="mt-3 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 break-words">
             <div>
               <p className="text-muted mb-1">Category</p>
               {isEditing ? null : (
@@ -253,15 +275,15 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
           </div>
 
           {doc.description && !isEditing && (
-            <div>
+            <div className="mt-3">
               <p className="text-sm font-medium text-ink mb-2">Description</p>
               <p className="text-sm text-muted">{doc.description}</p>
             </div>
           )}
+          </details>
 
           {/* Preview */}
-          <div>
-            <p className="text-sm font-medium text-ink mb-2">Preview</p>
+          <div className={`flex flex-col ${isEditing ? 'min-h-[60dvh] shrink-0' : 'min-h-0 flex-1'}`}>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader size={20} className="animate-spin text-gold" />
@@ -273,27 +295,27 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
               </div>
             ) : preview ? (
               preview.kind === 'image' ? (
-                <div className="bg-warm/60 rounded p-4 border border-border flex items-center justify-center max-h-64">
+                <div className="bg-warm/60 rounded p-4 border border-border flex min-h-0 flex-1 items-center justify-center overflow-auto">
                   <img
                     src={preview.url}
                     alt={doc.name}
-                    className="max-w-full max-h-60 rounded-lg object-contain"
+                    className="max-w-full max-h-full rounded-lg object-contain"
                   />
                 </div>
               ) : preview.kind === 'pdf' ? (
                 <iframe
                   src={preview.url}
                   title={`${doc.name} preview`}
-                  className="h-[480px] w-full rounded-lg border border-border bg-white"
+                  className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
                 />
               ) : preview.kind === 'office' ? (
                 <iframe
                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(preview.url)}`}
                   title={`${doc.name} preview`}
-                  className="h-[480px] w-full rounded-lg border border-border bg-white"
+                  className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
                 />
               ) : (preview.kind === 'text' || preview.kind === 'unavailable') ? (
-                <div className="bg-warm/60 rounded p-4 border border-border max-h-48 overflow-y-auto font-mono text-xs text-ink whitespace-pre-wrap break-words">
+                <div className="bg-warm/60 rounded p-4 border border-border min-h-0 flex-1 overflow-y-auto font-mono text-base leading-relaxed text-ink whitespace-pre-wrap break-words">
                   {preview.content}
                 </div>
               ) : null
@@ -302,7 +324,7 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-border bg-warm/60">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-border bg-warm/60">
           <button
             onClick={() => setIsEditing(!isEditing)}
             disabled={isSaving}
@@ -311,7 +333,7 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
             {isEditing ? 'Cancel' : 'Edit'}
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleOpenWithApp}
               className="px-4 py-2 text-sm font-medium rounded border border-purple text-purple hover:bg-purple/10 transition-colors flex items-center gap-2"
@@ -337,6 +359,6 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   )
 }
