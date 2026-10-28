@@ -20,6 +20,9 @@
   --border: #dccfd6;
   --background: #f8f4f1;
   --foreground: #392f35;
+  --switch-on: #782653;
+  --switch-off: #a8959f;
+  --switch-thumb: #ffffff;
 }
 
 .obx-checkmark-path {
@@ -90,9 +93,16 @@
   --border: #75425e;
   --background: #2b1121;
   --foreground: #f8edf2;
+  --switch-on: #b86491;
+  --switch-off: #77586a;
+  --switch-thumb: #fff8f5;
 }
 
 * { border-color: var(--border); }
+
+button[role='switch'][aria-checked='true'] { background-color: var(--switch-on); }
+button[role='switch'][aria-checked='false'] { background-color: var(--switch-off); }
+button[role='switch'] > span { background-color: var(--switch-thumb); box-shadow: 0 1px 3px rgb(36 24 32 / 22%); }
 
 html { scroll-behavior: smooth; }
 
@@ -240,6 +250,12 @@ input:not([type='checkbox']):not([type='radio']):focus, select:focus, textarea:f
 .creator-tag[data-color='magenta'] { color: var(--purple); border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--cream)); }
 .creator-tag[data-color='rust'] { color: var(--rust); background: color-mix(in srgb, var(--rust) 8%, var(--cream)); }
 .creator-tag[data-color='ink'] { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, var(--cream)); }
+:root[data-theme='dark'] .creator-tag { background: color-mix(in srgb, currentColor 12%, var(--warm)); }
+:root[data-theme='dark'] .creator-tag[data-color='burgundy'] { color: #f2b8d5; border-color: currentColor; }
+:root[data-theme='dark'] .creator-tag[data-color='soft-burgundy'] { color: #d894b6; border-color: currentColor; }
+:root[data-theme='dark'] .creator-tag[data-color='magenta'] { color: #ff81b9; border-color: currentColor; }
+:root[data-theme='dark'] .creator-tag[data-color='rust'] { color: #ffab84; border-color: currentColor; }
+:root[data-theme='dark'] .creator-tag[data-color='ink'] { color: #f8edf2; border-color: currentColor; }
 .creator-avatar { display: grid; width: 3rem; height: 3rem; flex: 0 0 auto; place-items: center; border: 1px solid var(--purple); border-radius: 42% 58% 54% 46%; background: color-mix(in srgb, var(--warm) 72%, var(--cream)); color: var(--purple); font-family: 'DM Mono', ui-monospace, monospace; font-size: .78rem; font-weight: 700; }
 .creator-avatar[data-color='magenta'] { border-color: var(--gold); }
 .creator-avatar[data-color='rust'] { border-color: var(--rust); color: var(--rust); }
