@@ -27,7 +27,7 @@ if (!noExpiry && (!profile.access_expires_at || Date.parse(profile.access_expire
   throw new Error('The intern profile is missing a start date or has expired. No account was changed.')
 }
 const expires = noExpiry ? null : profile.access_expires_at
-console.log(`Dry run: reset the temporary password for ${email}; access starts ${accessStart}, password change required ${passwordChangeOn || 'immediately'}, expiry ${expires || 'manual admin toggle'}.`)
+console.log(`Dry run: confirm the email and reset the temporary password for ${email}; access starts ${accessStart}, password change required ${passwordChangeOn || 'immediately'}, expiry ${expires || 'manual admin toggle'}.`)
 if (!args.apply) {
   console.log('No changes made. Add --apply to reset the password.')
 } else {
@@ -48,7 +48,10 @@ if (!args.apply) {
   if (noExpiry) profileUpdate.access_expires_at = null
   const { error: profileError } = await client.from('profiles').update(profileUpdate).eq('id', user.id)
   if (profileError) throw new Error(`Password reset was not attempted because the access profile could not be updated: ${profileError.message}`)
-  const { error: passwordError } = await client.auth.admin.updateUserById(user.id, { password: temporaryPassword })
+  const { error: passwordError } = await client.auth.admin.updateUserById(user.id, {
+    password: temporaryPassword,
+    email_confirm: true,
+  })
   if (passwordError) {
     const { error: rollbackError } = await client.from('profiles').update({
       access_starts_on: profile.access_starts_on,

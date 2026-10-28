@@ -15,7 +15,7 @@ export function parseArgs(allowed) {
     if (booleanFlags.has(name)) { values[name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = true; continue }
     const value = inlineValue ?? process.argv[++index]
     if (!value || value.startsWith('--')) throw new Error(`Missing value for --${name}`)
-    values[name] = value
+    values[name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = value
   }
   return values
 }
