@@ -221,6 +221,6 @@ function SectionTitle({ title, description }: { title: string; description: stri
 function SwitchRow({ title, description, checked, disabled, onChange }: { title: string; description: string; checked: boolean; disabled: boolean; onChange: (checked: boolean) => void }) {
   return <div className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
     <div><p className="font-semibold text-[#241820]">{title}</p><p className="mt-1 text-sm leading-5 text-[#6E646A]">{description}</p></div>
-    <button type="button" role="switch" aria-checked={checked} aria-label={title} disabled={disabled} onClick={() => onChange(!checked)} className={`relative h-8 w-14 shrink-0 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#EA519D] disabled:opacity-50 ${checked ? 'bg-[#782653]' : 'bg-[#A8959F]'}`}><span aria-hidden="true" className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${checked ? 'translate-x-7' : 'translate-x-1'}`} /></button>
+    <button type="button" role="switch" aria-checked={checked} aria-label={title} disabled={disabled} onClick={() => onChange(!checked)} className="app-switch focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#EA519D]"><span aria-hidden="true" /></button>
   </div>
 }

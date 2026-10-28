@@ -100,9 +100,11 @@
 
 * { border-color: var(--border); }
 
-button[role='switch'][aria-checked='true'] { background-color: var(--switch-on); }
-button[role='switch'][aria-checked='false'] { background-color: var(--switch-off); }
-button[role='switch'] > span { background-color: var(--switch-thumb); box-shadow: 0 1px 3px rgb(36 24 32 / 22%); }
+button.app-switch { position: relative; width: 3.5rem; height: 2rem; flex: 0 0 auto; border-radius: 999px; background-color: var(--switch-off); transition: background-color 150ms ease; }
+button.app-switch[aria-checked='true'] { background-color: var(--switch-on); }
+button.app-switch:disabled { cursor: not-allowed; }
+button.app-switch > span { position: absolute; top: .25rem; left: .25rem; width: 1.5rem; height: 1.5rem; border-radius: 999px; background-color: var(--switch-thumb); box-shadow: 0 1px 3px rgb(36 24 32 / 22%); transform: translateX(0); transition: transform 150ms ease; }
+button.app-switch[aria-checked='true'] > span { transform: translateX(1.5rem); }
 
 html { scroll-behavior: smooth; }
 
