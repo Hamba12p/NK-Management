@@ -1,6 +1,7 @@
 'use client'
 
 import type { StaffDirectoryEntry } from '@/lib/staff-directory'
+import { formatProfileRole } from '@/lib/utils'
 
 type DocumentAssigneePickerProps = {
   assignees: StaffDirectoryEntry[]
@@ -40,7 +41,7 @@ export default function DocumentAssigneePicker({
                 className="h-4 w-4 rounded border-border"
               />
               <span>{assignee.full_name}</span>
-              <span className="ml-auto text-xs capitalize text-muted">{assignee.role.replaceAll('_', ' ')}</span>
+              {formatProfileRole(assignee.full_name, assignee.role) && <span className="ml-auto text-xs capitalize text-muted">{formatProfileRole(assignee.full_name, assignee.role)}</span>}
             </label>
           ))}
         </div>

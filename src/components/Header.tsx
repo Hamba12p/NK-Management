@@ -6,6 +6,7 @@ import { LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
 import { clearPushSubscriptionBeforeSignOut } from '@/lib/notifications/client'
+import { formatProfileRole } from '@/lib/utils'
 
 export default function Header({ profile }: { profile?: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -56,7 +57,7 @@ export default function Header({ profile }: { profile?: any }) {
             <div className="hidden md:flex items-center gap-3">
               <div className="text-right">
                 <p className="text-sm font-semibold text-text">{profile.name || 'User'}</p>
-                <p className="text-xs text-muted capitalize">{profile.role || 'member'}</p>
+                {formatProfileRole(profile.name, profile.role || 'member') && <p className="text-xs text-muted capitalize">{formatProfileRole(profile.name, profile.role || 'member')}</p>}
               </div>
               <div className="w-8 h-8 rounded-full bg-pink-accent/20 flex items-center justify-center flex-shrink-0">
                 <span className="text-accent font-bold text-sm">{profile.name?.[0] || 'U'}</span>

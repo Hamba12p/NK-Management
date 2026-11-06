@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, LogOut, Menu, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatRole, roleBadgeClass } from '@/lib/utils'
+import { formatProfileRole, roleBadgeClass } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
 import { clearPushSubscriptionBeforeSignOut } from '@/lib/notifications/client'
 import HubIcon, { type HubIconName } from '@/components/HubIcon'
@@ -96,6 +96,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
 
   const getInitials = (name: string) =>
     name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+  const displayRole = formatProfileRole(profile?.full_name, profile?.role)
 
   return (
     <div className="app-sidebar flex h-full flex-col bg-sidebar-bg text-sidebar-text">
@@ -142,13 +143,13 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
 
       <div className={`space-y-3 border-t border-sidebar-border ${collapsed ? 'p-2' : 'p-4'}`}>
         {profile ? (
-          <div className={`flex items-center rounded-lg bg-sidebar-text/5 ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`} title={collapsed ? `${profile.full_name} — ${formatRole(profile.role)}` : undefined}>
+          <div className={`flex items-center rounded-lg bg-sidebar-text/5 ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`} title={collapsed ? [profile.full_name, displayRole].filter(Boolean).join(' — ') : undefined}>
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-pink-accent/50 bg-sidebar-text/10 text-xs font-semibold text-sidebar-text">
               {getInitials(profile.full_name || 'User')}
             </div>
             <div className={collapsed ? 'sr-only' : 'min-w-0 flex-1'}>
               <p className="truncate text-sm font-semibold text-sidebar-text">{profile.full_name}</p>
-              <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeClass(profile.role)}`}>{formatRole(profile.role)}</span>
+              {displayRole && <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeClass(profile.role)}`}>{displayRole}</span>}
             </div>
           </div>
         ) : null}
