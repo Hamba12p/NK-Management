@@ -4,7 +4,19 @@ import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import InlineConfirm from '@/components/InlineConfirm'
 import DocumentModal from '@/components/DocumentModal'
-import { Upload, FileText, Download, Trash2, AlertCircle } from 'lucide-react'
+import {
+  AlertCircle,
+  CalendarDays,
+  ChartNoAxesColumn,
+  Download,
+  FileStack,
+  FileText,
+  FolderOpen,
+  LayoutTemplate,
+  ShieldCheck,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { logActivity } from '@/lib/activity'
 import { archiveAndDeleteContent } from '@/lib/content-deletion'
 import CreatorTag from '@/components/CreatorTag'
@@ -17,12 +29,21 @@ import DocumentAssigneePicker from '@/components/DocumentAssigneePicker'
 
 type Document = NonNullable<ComponentProps<typeof DocumentModal>['doc']>
 
+const DOCUMENT_CATEGORIES = [
+  { id: 'general', label: 'General', icon: FolderOpen },
+  { id: 'policy', label: 'Policies', icon: ShieldCheck },
+  { id: 'report', label: 'Reports', icon: ChartNoAxesColumn },
+  { id: 'template', label: 'Templates', icon: LayoutTemplate },
+  { id: 'meeting', label: 'Meetings', icon: CalendarDays },
+]
+
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<Document[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('general')
+  const [activeCategory, setActiveCategory] = useState('all')
   // Inline confirm: stores id of doc pending deletion
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
@@ -199,6 +220,24 @@ export default function DocumentsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
   const visibleDocs = createdByMe ? docs.filter(doc => doc.uploaded_by === currentUserId) : docs
+  const extraCategories = [...new Set(docs.map(doc => doc.category.trim().toLowerCase()))]
+    .filter(category => category && !DOCUMENT_CATEGORIES.some(item => item.id === category))
+    .sort()
+    .map(category => ({
+      id: category,
+      label: category.replace(/[-_]/g, ' ').replace(/\b\w/g, character => character.toUpperCase()),
+      icon: FileText,
+    }))
+  const categoryTabs = [
+    { id: 'all', label: 'All documents', icon: FileStack },
+    ...DOCUMENT_CATEGORIES,
+    ...extraCategories,
+  ]
+  const selectedCategoryId = categoryTabs.some(category => category.id === activeCategory) ? activeCategory : 'all'
+  const selectedCategoryTab = categoryTabs.find(category => category.id === selectedCategoryId)
+  const filteredDocs = selectedCategoryId === 'all'
+    ? visibleDocs
+    : visibleDocs.filter(doc => doc.category.trim().toLowerCase() === selectedCategoryId)
 
   return (
     <div>
@@ -280,16 +319,103 @@ export default function DocumentsPage() {
 
       {/* Documents List */}
       <div>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold text-ink">{visibleDocs.length} {visibleDocs.length === 1 ? 'Document' : 'Documents'}</h2><label className="flex items-center gap-2 text-sm font-semibold text-muted"><input type="checkbox" checked={createdByMe} onChange={event => setCreatedByMe(event.target.checked)} /> Created by me</label></div>
-
-        {visibleDocs.length === 0 ? (
-          <div className="text-center py-16 text-muted card">
-            <EmptyLedger variant="documents" className="empty-illustration mx-auto mb-3" />
-            <p className="font-semibold text-ink">{createdByMe ? 'You have not uploaded a document yet.' : 'No documents recorded yet.'}</p><p className="mt-1 text-sm text-muted">Choose a category above, then select a file to share.</p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">{filteredDocs.length} {filteredDocs.length === 1 ? 'Document' : 'Documents'}</h2>
+            <p className="mt-1 text-sm text-muted">
+              Browse your files by category
+            </p>
           </div>
-        ) : (
-          <div className="grid gap-3">
-            {visibleDocs.map((doc) => (
+          <label className="flex items-center gap-2 text-sm font-semibold text-muted">
+            <input type="checkbox" checked={createdByMe} onChange={event => setCreatedByMe(event.target.checked)} />
+            Created by me
+          </label>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="Document categories"
+          className="no-scrollbar mb-5 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-warm/60 p-2"
+        >
+          {categoryTabs.map(category => {
+            const Icon = category.icon
+            const count = category.id === 'all'
+              ? visibleDocs.length
+              : visibleDocs.filter(doc => doc.category.trim().toLowerCase() === category.id).length
+            const isSelected = selectedCategoryId === category.id
+
+            return (
+              <button
+                key={category.id}
+                id={`document-category-tab-${category.id}`}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-controls="document-category-panel"
+                onClick={() => setActiveCategory(category.id)}
+                onKeyDown={event => {
+                  const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])
+                  const currentIndex = tabs.indexOf(event.currentTarget)
+                  const nextIndex = event.key === 'ArrowRight'
+                    ? (currentIndex + 1) % tabs.length
+                    : event.key === 'ArrowLeft'
+                      ? (currentIndex - 1 + tabs.length) % tabs.length
+                      : event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? tabs.length - 1
+                          : null
+
+                  if (nextIndex !== null) {
+                    event.preventDefault()
+                    tabs[nextIndex]?.focus()
+                    setActiveCategory(categoryTabs[nextIndex].id)
+                  }
+                }}
+                className={`flex min-w-[9rem] flex-1 items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple focus-visible:ring-offset-2 ${
+                  isSelected
+                    ? 'border-purple bg-purple text-white shadow-md shadow-purple/15'
+                    : 'border-transparent bg-cream/70 text-muted hover:border-border hover:bg-cream hover:text-ink'
+                }`}
+              >
+                <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isSelected ? 'bg-white/15' : 'bg-warm text-purple'}`}>
+                  <Icon size={18} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{category.label}</span>
+                  <span className={`mt-0.5 block text-xs ${isSelected ? 'text-white/75' : 'text-muted'}`}>
+                    {count} {count === 1 ? 'file' : 'files'}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div
+          id="document-category-panel"
+          role="tabpanel"
+          aria-labelledby={`document-category-tab-${selectedCategoryId}`}
+          tabIndex={0}
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple focus-visible:ring-offset-2"
+        >
+          {filteredDocs.length === 0 ? (
+            <div className="card py-16 text-center text-muted">
+              <EmptyLedger variant="documents" className="empty-illustration mx-auto mb-3" />
+              <p className="font-semibold text-ink">
+                {visibleDocs.length === 0
+                  ? createdByMe ? 'You have not uploaded a document yet.' : 'No documents recorded yet.'
+                  : `No ${selectedCategoryTab?.label.toLowerCase() ?? 'category'} yet.`}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {visibleDocs.length === 0
+                  ? 'Choose a category in the upload panel, then select a file to share.'
+                  : 'Documents added to this category will appear here.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {filteredDocs.map((doc) => (
               <div
                 key={doc.id}
                 className="card cursor-pointer hover:border-purple"
@@ -363,9 +489,10 @@ export default function DocumentsPage() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
