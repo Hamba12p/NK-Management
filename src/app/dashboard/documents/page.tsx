@@ -6,16 +6,22 @@ import InlineConfirm from '@/components/InlineConfirm'
 import DocumentModal from '@/components/DocumentModal'
 import {
   AlertCircle,
+  Award,
+  BriefcaseBusiness,
   CalendarDays,
   ChartNoAxesColumn,
+  ContactRound,
   Download,
   FileStack,
   FileText,
   FolderOpen,
+  GraduationCap,
   LayoutTemplate,
+  Mail,
   ShieldCheck,
   Trash2,
   Upload,
+  UserRound,
 } from 'lucide-react'
 import { logActivity } from '@/lib/activity'
 import { archiveAndDeleteContent } from '@/lib/content-deletion'
@@ -30,12 +36,39 @@ import DocumentAssigneePicker from '@/components/DocumentAssigneePicker'
 type Document = NonNullable<ComponentProps<typeof DocumentModal>['doc']>
 
 const DOCUMENT_CATEGORIES = [
-  { id: 'general', label: 'General', icon: FolderOpen },
   { id: 'policy', label: 'Policies', icon: ShieldCheck },
   { id: 'report', label: 'Reports', icon: ChartNoAxesColumn },
   { id: 'template', label: 'Templates', icon: LayoutTemplate },
   { id: 'meeting', label: 'Meetings', icon: CalendarDays },
 ]
+
+const GENERAL_DOCUMENT_CATEGORIES = [
+  { id: 'cv-resume', label: 'CVs & Resumes', icon: UserRound, pattern: /\b(cv|curriculum\s+vitae|resumes?)\b/ },
+  { id: 'portfolio', label: 'Portfolios', icon: BriefcaseBusiness, pattern: /\bportfolios?\b/ },
+  { id: 'certificate', label: 'Certificates', icon: Award, pattern: /\b(certificates?|qualifications?|awards?)\b/ },
+  { id: 'academic-record', label: 'Academic Records', icon: GraduationCap, pattern: /\b(transcripts?|academic|degrees?|diplomas?)\b/ },
+  { id: 'identity-document', label: 'Identity Documents', icon: ContactRound, pattern: /\b(identification|identity|passport|national id|nin|driving licence|driver'?s licence)\b/ },
+  { id: 'letter', label: 'Letters', icon: Mail, pattern: /\b(cover letters?|reference letters?|recommendation letters?)\b/ },
+  { id: 'other-general', label: 'Other Documents', icon: FolderOpen, pattern: null },
+]
+
+function getDocumentCategory(doc: Document) {
+  const storedCategory = doc.category.trim().toLowerCase()
+
+  if (storedCategory === 'general') {
+    const searchableText = `${doc.name} ${doc.description || ''}`
+      .toLowerCase()
+      .replace(/[_-]+/g, ' ')
+    return GENERAL_DOCUMENT_CATEGORIES.find(category => category.pattern?.test(searchableText))
+      ?? GENERAL_DOCUMENT_CATEGORIES[GENERAL_DOCUMENT_CATEGORIES.length - 1]
+  }
+
+  return DOCUMENT_CATEGORIES.find(category => category.id === storedCategory) ?? {
+    id: `category:${storedCategory}`,
+    label: storedCategory.replace(/[-_]/g, ' ').replace(/\b\w/g, character => character.toUpperCase()),
+    icon: FileText,
+  }
+}
 
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<Document[]>([])
@@ -220,24 +253,27 @@ export default function DocumentsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
   const visibleDocs = createdByMe ? docs.filter(doc => doc.uploaded_by === currentUserId) : docs
-  const extraCategories = [...new Set(docs.map(doc => doc.category.trim().toLowerCase()))]
-    .filter(category => category && !DOCUMENT_CATEGORIES.some(item => item.id === category))
-    .sort()
-    .map(category => ({
-      id: category,
-      label: category.replace(/[-_]/g, ' ').replace(/\b\w/g, character => character.toUpperCase()),
-      icon: FileText,
-    }))
+  const categoryCounts = new Map<string, number>()
+  for (const doc of visibleDocs) {
+    const category = getDocumentCategory(doc)
+    categoryCounts.set(category.id, (categoryCounts.get(category.id) ?? 0) + 1)
+  }
+  const extraCategories = [...new Map(visibleDocs
+    .map(doc => getDocumentCategory(doc))
+    .filter(category => category.id.startsWith('category:'))
+    .map(category => [category.id, category])).values()]
+    .sort((a, b) => a.label.localeCompare(b.label))
   const categoryTabs = [
     { id: 'all', label: 'All documents', icon: FileStack },
-    ...DOCUMENT_CATEGORIES,
+    ...DOCUMENT_CATEGORIES.filter(category => categoryCounts.has(category.id)),
+    ...GENERAL_DOCUMENT_CATEGORIES.filter(category => categoryCounts.has(category.id)),
     ...extraCategories,
   ]
   const selectedCategoryId = categoryTabs.some(category => category.id === activeCategory) ? activeCategory : 'all'
   const selectedCategoryTab = categoryTabs.find(category => category.id === selectedCategoryId)
   const filteredDocs = selectedCategoryId === 'all'
     ? visibleDocs
-    : visibleDocs.filter(doc => doc.category.trim().toLowerCase() === selectedCategoryId)
+    : visibleDocs.filter(doc => getDocumentCategory(doc).id === selectedCategoryId)
 
   return (
     <div>
@@ -339,9 +375,7 @@ export default function DocumentsPage() {
         >
           {categoryTabs.map(category => {
             const Icon = category.icon
-            const count = category.id === 'all'
-              ? visibleDocs.length
-              : visibleDocs.filter(doc => doc.category.trim().toLowerCase() === category.id).length
+            const count = category.id === 'all' ? visibleDocs.length : categoryCounts.get(category.id) ?? 0
             const isSelected = selectedCategoryId === category.id
 
             return (
@@ -429,8 +463,8 @@ export default function DocumentsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex min-w-0 items-center gap-2"><h3 className="min-w-0 truncate font-medium text-ink transition-colors hover:text-purple">{doc.name}</h3><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} /></div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs font-medium px-2 py-1 rounded-full capitalize bg-purple/10 text-purple">
-                        {doc.category}
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple/10 text-purple">
+                        {getDocumentCategory(doc).label}
                       </span>
                       <span className="text-xs text-muted">{formatFileSize(doc.file_size)}</span>
                       <span className="text-xs text-muted">•</span>
