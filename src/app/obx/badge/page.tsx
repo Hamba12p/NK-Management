@@ -34,20 +34,20 @@ export default function ObxBadgePage() {
     await downloadBadge()
   }
 
-  if (error) return <div className="mx-auto max-w-xl px-4 py-12"><p role="alert" className="rounded bg-[#efe3e7] p-5">{error}</p><Link href="/obx" className="mt-4 inline-block underline">Return to sign in</Link></div>
+  if (error) return <div className="mx-auto max-w-xl px-4 py-12"><p role="alert" className="rounded bg-surface-muted p-5">{error}</p><Link href="/obx" className="mt-4 inline-block underline">Return to sign in</Link></div>
   if (!data) return <p className="mx-auto max-w-xl px-4 py-12 text-center" aria-live="polite">Finding your badge…</p>
   return <div className="mx-auto max-w-3xl px-4 py-8 text-center md:py-12">
     {needsLegalConsent && <LegalConsentStep onAccepted={() => setNeedsLegalConsent(false)} />}
-    <p className="text-sm font-bold uppercase tracking-widest text-[#a85d88]">Your Udada Passport</p>
-    <h1 className="serif-display mt-3 text-4xl text-[#782653]">You did it, {data.roster.full_name.split(' ')[0]}!</h1>
+    <p className="text-sm font-bold uppercase tracking-widest text-accent-hover">Your Udada Passport</p>
+    <h1 className="serif-display mt-3 text-4xl text-accent">You did it, {data.roster.full_name.split(' ')[0]}!</h1>
     <NextImage src="/spark-obx/cutouts/spark-celebrate.png" alt="" aria-hidden="true" width={260} height={256} className="mx-auto mt-3 h-32 w-36 object-contain sm:h-40 sm:w-44" />
-    <div ref={cardRef} className="mx-auto mt-8 max-w-lg rounded-2xl border border-[#a85d88] bg-white p-8 shadow-sm" role="img" aria-label={`Volunteer badge for ${data.roster.full_name}, ${data.roster.volunteer_number}, completed ${completionDate}`}>
-      <p className="text-xs font-bold uppercase tracking-[.25em] text-[#a85d88]">NK Udada</p><div className="mx-auto my-5 grid h-20 w-20 place-items-center rounded-full bg-[#efe3e7] text-4xl text-[#ea519d]">✦</div>
-      <p className="text-sm font-semibold uppercase tracking-widest text-[#782653]">Volunteer</p><h2 className="serif-display mt-2 text-3xl text-[#782653]">{data.roster.full_name}</h2>
-      <p className="mt-3 font-mono text-sm">{data.roster.volunteer_number}</p>{data.roster.is_founding && <p className="mx-auto mt-4 w-fit rounded-full bg-[#efe3e7] px-4 py-2 text-sm font-bold text-[#782653]">Founding Volunteer</p>}
-      <p className="mt-5 text-sm text-[#6e646a]">Completed {completionDate}</p>
+    <div ref={cardRef} className="mx-auto mt-8 max-w-lg rounded-2xl border border-accent-hover bg-surface-raised p-8 shadow-sm" role="img" aria-label={`Volunteer badge for ${data.roster.full_name}, ${data.roster.volunteer_number}, completed ${completionDate}`}>
+      <p className="text-xs font-bold uppercase tracking-[.25em] text-accent-hover">NK Udada</p><div className="mx-auto my-5 grid h-20 w-20 place-items-center rounded-full bg-surface-muted text-4xl text-pink-accent">✦</div>
+      <p className="text-sm font-semibold uppercase tracking-widest text-accent">Volunteer</p><h2 className="serif-display mt-2 text-3xl text-accent">{data.roster.full_name}</h2>
+      <p className="mt-3 font-mono text-sm">{data.roster.volunteer_number}</p>{data.roster.is_founding && <p className="mx-auto mt-4 w-fit rounded-full bg-surface-muted px-4 py-2 text-sm font-bold text-accent">Founding Volunteer</p>}
+      <p className="mt-5 text-sm text-muted">Completed {completionDate}</p>
     </div>
     <div className="mt-6 flex flex-wrap justify-center gap-3"><button onClick={downloadBadge} className="btn-primary">Download badge</button><button onClick={shareBadge} className="btn-secondary">Share badge</button><button onClick={() => window.print()} className="btn-secondary">Print certificate</button></div>
-    <p className="mt-5 text-sm text-[#6e646a]">Your passport is complete. You can return to this badge any time.</p>
+    <p className="mt-5 text-sm text-muted">Your passport is complete. You can return to this badge any time.</p>
   </div>
 }

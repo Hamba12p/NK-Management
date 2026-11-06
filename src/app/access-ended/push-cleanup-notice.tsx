@@ -26,7 +26,7 @@ export default function PushCleanupNotice({ serverCleanupFailed }: { serverClean
 
   if (status === 'cleaning') return <p role="status" className="mt-4 text-sm text-muted">Switching off device notifications…</p>
   if (status === 'failed' || serverCleanupFailed) {
-    return <p role="alert" className="mt-4 text-sm text-rust">
+    return <p role="alert" className="mt-4 text-sm text-danger">
       This browser subscription could not be fully confirmed as removed. Please contact your supervisor so they can check device notifications.
     </p>
   }

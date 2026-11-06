@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
     return (
       <div className="w-full">
         <div className="max-w-4xl mx-auto">
-          <div className="record-surface bg-rust/10 p-6 text-rust">
+          <div className="record-surface bg-danger/10 p-6 text-danger">
             {error}
           </div>
         </div>
@@ -108,29 +108,29 @@ export default function AnalyticsPage() {
       icon: Users,
       label: 'Total Staff',
       value: analytics.totalUsers,
-      color: 'text-purple',
-      bg: 'bg-purple/10',
+      color: 'text-accent',
+      bg: 'bg-accent/10',
     },
     {
       icon: FileText,
       label: 'Documents',
       value: analytics.totalDocuments,
-      color: 'text-green',
-      bg: 'bg-green/10',
+      color: 'text-success',
+      bg: 'bg-success/10',
     },
     {
       icon: Calendar,
       label: 'Meetings',
       value: analytics.totalMeetings,
-      color: 'text-purple',
-      bg: 'bg-purple-lt/15',
+      color: 'text-accent',
+      bg: 'bg-accent-hover/15',
     },
     {
       icon: TrendingUp,
       label: 'Announcements',
       value: analytics.totalAnnouncements,
-      color: 'text-rust',
-      bg: 'bg-rust/10',
+      color: 'text-danger',
+      bg: 'bg-danger/10',
     },
   ];
 
@@ -139,8 +139,8 @@ export default function AnalyticsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="serif-display text-4xl text-ink mb-2 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-gold" />
+          <h1 className="serif-display mb-2 flex items-center gap-3 text-3xl text-text md:text-4xl">
+            <BarChart3 className="w-8 h-8 text-pink-text" />
             Analytics & Reporting
           </h1>
           <p className="text-muted">Platform usage statistics and team activity insights.</p>
@@ -168,27 +168,27 @@ export default function AnalyticsPage() {
 
         {/* Key Metrics */}
         <div className="card mb-8">
-          <h2 className="serif-display text-2xl text-ink mb-6">Key Metrics</h2>
+          <h2 className="serif-display text-2xl text-text mb-6">Key Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-warm/40 rounded-lg">
+            <div className="p-4 bg-surface-muted/40 rounded-lg">
               <p className="text-sm text-muted mb-1">Avg Documents per Staff</p>
-              <p className="text-2xl font-bold text-ink">
+              <p className="text-2xl font-bold text-text">
                 {analytics.avgDocumentsPerUser.toFixed(1)}
               </p>
             </div>
-            <div className="p-4 bg-warm/40 rounded-lg">
+            <div className="p-4 bg-surface-muted/40 rounded-lg">
               <p className="text-sm text-muted mb-1">Total Activity Log Entries</p>
-              <p className="text-2xl font-bold text-ink">{analytics.recentActivityCount}</p>
+              <p className="text-2xl font-bold text-text">{analytics.recentActivityCount}</p>
             </div>
-            <div className="p-4 bg-warm/40 rounded-lg">
+            <div className="p-4 bg-surface-muted/40 rounded-lg">
               <p className="text-sm text-muted mb-1">Meetings per Staff</p>
-              <p className="text-2xl font-bold text-ink">
+              <p className="text-2xl font-bold text-text">
                 {(analytics.totalMeetings / Math.max(1, analytics.totalUsers)).toFixed(1)}
               </p>
             </div>
-            <div className="p-4 bg-warm/40 rounded-lg">
+            <div className="p-4 bg-surface-muted/40 rounded-lg">
               <p className="text-sm text-muted mb-1">Data Collected</p>
-              <p className="text-2xl font-bold text-ink">
+              <p className="text-2xl font-bold text-text">
                 {(
                   (analytics.totalDocuments +
                     analytics.totalMeetings +
@@ -202,32 +202,32 @@ export default function AnalyticsPage() {
 
         {/* Reports */}
         <div className="card">
-          <h2 className="serif-display text-2xl text-ink mb-6">Generate Reports</h2>
+          <h2 className="serif-display text-2xl text-text mb-6">Generate Reports</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
+            <button className="flex items-center justify-between p-4 bg-surface-muted/40 hover:bg-surface-muted/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-ink">Usage Report</p>
+                <p className="font-semibold text-text">Usage Report</p>
                 <p className="text-sm text-muted">Platform activity and engagement</p>
               </div>
               <Download className="w-5 h-5 text-muted" />
             </button>
-            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
+            <button className="flex items-center justify-between p-4 bg-surface-muted/40 hover:bg-surface-muted/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-ink">Team Report</p>
+                <p className="font-semibold text-text">Team Report</p>
                 <p className="text-sm text-muted">Staff activity and contributions</p>
               </div>
               <Download className="w-5 h-5 text-muted" />
             </button>
-            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
+            <button className="flex items-center justify-between p-4 bg-surface-muted/40 hover:bg-surface-muted/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-ink">Document Report</p>
+                <p className="font-semibold text-text">Document Report</p>
                 <p className="text-sm text-muted">File uploads and downloads</p>
               </div>
               <Download className="w-5 h-5 text-muted" />
             </button>
-            <button className="flex items-center justify-between p-4 bg-warm/40 hover:bg-warm/60 rounded-lg border border-border transition-colors">
+            <button className="flex items-center justify-between p-4 bg-surface-muted/40 hover:bg-surface-muted/60 rounded-lg border border-border transition-colors">
               <div className="text-left">
-                <p className="font-semibold text-ink">Audit Report</p>
+                <p className="font-semibold text-text">Audit Report</p>
                 <p className="text-sm text-muted">Security and compliance log</p>
               </div>
               <Download className="w-5 h-5 text-muted" />

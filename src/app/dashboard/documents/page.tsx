@@ -288,21 +288,21 @@ export default function DocumentsPage() {
       />
 
       {/* Upload Section */}
-      <div className="card mb-6 border-dashed bg-cream p-8 hover:border-purple-lt">
+      <div className="card mb-6 border-dashed bg-surface p-8 hover:border-accent-hover">
         <div className="flex flex-col items-center justify-center">
-          <div className="mb-4 p-3 bg-warm rounded-lg">
-            <Upload size={24} className="text-gold" />
+          <div className="mb-4 p-3 bg-surface-muted rounded-lg">
+            <Upload size={24} className="text-pink-text" />
           </div>
-          <h2 className="text-lg font-semibold text-ink mb-2">Upload Document</h2>
+          <h2 className="text-lg font-semibold text-text mb-2">Upload Document</h2>
           <p className="text-sm text-muted mb-4">PDF, Word, Excel, Images (max 50MB)</p>
 
           <div className="flex gap-4 mb-4 w-full max-w-sm">
             <label className="flex-1">
-              <span className="text-xs font-medium text-ink block mb-2">Category</span>
+              <span className="text-xs font-medium text-text block mb-2">Category</span>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
               >
                 <option value="general">General</option>
                 <option value="policy">Policy</option>
@@ -338,18 +338,18 @@ export default function DocumentsPage() {
 
       {/* Alerts */}
       {error && (
-        <div className="bg-rust/10 border border-rust rounded-lg p-4 mb-6 flex items-start gap-3">
-          <AlertCircle size={20} className="text-rust shrink-0 mt-0.5" />
+        <div className="bg-danger/10 border border-danger rounded-lg p-4 mb-6 flex items-start gap-3">
+          <AlertCircle size={20} className="text-danger shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-rust">Error</h3>
-            <p className="text-sm text-rust mt-0.5">{error}</p>
+            <h3 className="font-medium text-danger">Error</h3>
+            <p className="text-sm text-danger mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-green-700 font-medium">{success}</p>
+        <div className="mb-6 rounded-lg border border-success bg-success/10 p-4">
+          <p className="text-sm font-medium text-success">{success}</p>
         </div>
       )}
 
@@ -357,7 +357,7 @@ export default function DocumentsPage() {
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-ink">{filteredDocs.length} {filteredDocs.length === 1 ? 'Document' : 'Documents'}</h2>
+            <h2 className="text-lg font-semibold text-text">{filteredDocs.length} {filteredDocs.length === 1 ? 'Document' : 'Documents'}</h2>
             <p className="mt-1 text-sm text-muted">
               Browse your files by category
             </p>
@@ -371,7 +371,7 @@ export default function DocumentsPage() {
         <div
           role="tablist"
           aria-label="Document categories"
-          className="no-scrollbar mb-5 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-warm/60 p-2"
+          className="no-scrollbar mb-5 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-surface-muted/60 p-2"
         >
           {categoryTabs.map(category => {
             const Icon = category.icon
@@ -406,18 +406,18 @@ export default function DocumentsPage() {
                     setActiveCategory(categoryTabs[nextIndex].id)
                   }
                 }}
-                className={`flex min-w-[9rem] flex-1 items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple focus-visible:ring-offset-2 ${
+                className={`flex min-w-[9rem] flex-1 items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all     ${
                   isSelected
-                    ? 'border-purple bg-purple text-white shadow-md shadow-purple/15'
-                    : 'border-transparent bg-cream/70 text-muted hover:border-border hover:bg-cream hover:text-ink'
+                    ? 'border-accent bg-accent text-accent-text shadow-md shadow-accent/15'
+                    : 'border-transparent bg-surface/70 text-muted hover:border-border hover:bg-surface hover:text-text'
                 }`}
               >
-                <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isSelected ? 'bg-white/15' : 'bg-warm text-purple'}`}>
+                <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isSelected ? 'bg-accent-text/15' : 'bg-surface-muted text-accent'}`}>
                   <Icon size={18} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{category.label}</span>
-                  <span className={`mt-0.5 block text-xs ${isSelected ? 'text-white/75' : 'text-muted'}`}>
+                  <span className={`mt-0.5 block text-xs ${isSelected ? 'text-accent-text' : 'text-muted'}`}>
                     {count} {count === 1 ? 'file' : 'files'}
                   </span>
                 </span>
@@ -431,12 +431,11 @@ export default function DocumentsPage() {
           role="tabpanel"
           aria-labelledby={`document-category-tab-${selectedCategoryId}`}
           tabIndex={0}
-          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple focus-visible:ring-offset-2"
         >
           {filteredDocs.length === 0 ? (
             <div className="card py-16 text-center text-muted">
               <EmptyLedger variant="documents" className="empty-illustration mx-auto mb-3" />
-              <p className="font-semibold text-ink">
+              <p className="font-semibold text-text">
                 {visibleDocs.length === 0
                   ? createdByMe ? 'You have not uploaded a document yet.' : 'No documents recorded yet.'
                   : `No ${selectedCategoryTab?.label.toLowerCase() ?? 'category'} yet.`}
@@ -452,18 +451,18 @@ export default function DocumentsPage() {
               {filteredDocs.map((doc) => (
               <div
                 key={doc.id}
-                className="card cursor-pointer hover:border-purple"
+                className="card cursor-pointer hover:border-accent"
                 onClick={() => setSelectedDoc(doc)}
               >
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-warm rounded-lg shrink-0">
+                  <div className="p-3 bg-surface-muted rounded-lg shrink-0">
                     <FileText size={20} className="text-muted" />
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex min-w-0 items-center gap-2"><h3 className="min-w-0 truncate font-medium text-ink transition-colors hover:text-purple">{doc.name}</h3><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} /></div>
+                    <div className="flex min-w-0 items-center gap-2"><h3 className="min-w-0 truncate font-medium text-text transition-colors hover:text-accent">{doc.name}</h3><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} /></div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple/10 text-purple">
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-accent/10 text-accent">
                         {getDocumentCategory(doc).label}
                       </span>
                       <span className="text-xs text-muted">{formatFileSize(doc.file_size)}</span>
@@ -503,10 +502,10 @@ export default function DocumentsPage() {
                         e.stopPropagation()
                         handleDownload(doc)
                       }}
-                      className="p-2 hover:bg-gold/10 rounded-lg transition-colors"
+                      className="p-2 hover:bg-pink-accent/10 rounded-lg transition-colors"
                       title="Download"
                     >
-                      <Download size={18} className="text-gold" />
+                      <Download size={18} className="text-pink-text" />
                     </button>
                     {deletingDocId !== doc.id && (
                       <button
@@ -514,10 +513,10 @@ export default function DocumentsPage() {
                           e.stopPropagation()
                           setDeletingDocId(doc.id)
                         }}
-                        className="p-2 hover:bg-rust/10 rounded-lg transition-colors"
+                        className="p-2 hover:bg-danger/10 rounded-lg transition-colors"
                         title="Delete"
                       >
-                        <Trash2 size={18} className="text-rust" />
+                        <Trash2 size={18} className="text-danger" />
                       </button>
                     )}
                   </div>

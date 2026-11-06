@@ -178,7 +178,7 @@ export default function AnnouncementsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-ink mb-2">Announcements</h1>
+        <h1 className="serif-display mb-2 text-3xl text-text md:text-4xl">Announcements</h1>
         <p className="text-muted">Stay updated with team announcements</p>
       </div>
 
@@ -187,7 +187,7 @@ export default function AnnouncementsPage() {
         <div className="mb-6">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-purple text-white px-4 py-2.5 rounded-lg hover:bg-purple-lt transition-all font-medium"
+            className="btn-primary"
           >
             <Plus size={18} /> Post Announcement
           </button>
@@ -197,10 +197,10 @@ export default function AnnouncementsPage() {
       {/* Create Announcement Form */}
       {showForm && canPost && (
         <div className="card mb-6 space-y-4">
-          <h2 className="font-semibold text-ink">New Announcement</h2>
+          <h2 className="font-semibold text-text">New Announcement</h2>
 
           {errors.general && (
-            <div className="rounded border border-rust/30 bg-rust/10 p-3 text-sm text-rust">
+            <div className="rounded border border-danger bg-danger/10 p-3 text-sm text-danger">
               {errors.general}
             </div>
           )}
@@ -212,10 +212,10 @@ export default function AnnouncementsPage() {
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               maxLength={200}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="Announcement title"
             />
-            {errors.title && <p className="text-rust text-xs mt-1">{errors.title}</p>}
+            {errors.title && <p className="text-danger text-xs mt-1">{errors.title}</p>}
           </div>
 
           <div>
@@ -225,10 +225,10 @@ export default function AnnouncementsPage() {
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
               maxLength={5000}
               rows={5}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none"
               placeholder="Write your announcement..."
             />
-            {errors.body && <p className="text-rust text-xs mt-1">{errors.body}</p>}
+            {errors.body && <p className="text-danger text-xs mt-1">{errors.body}</p>}
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
@@ -236,23 +236,23 @@ export default function AnnouncementsPage() {
               type="checkbox"
               checked={form.pinned}
               onChange={(e) => setForm((f) => ({ ...f, pinned: e.target.checked }))}
-              className="w-4 h-4 rounded border-border text-gold focus:ring-gold cursor-pointer"
+              className="w-4 h-4 rounded border-border cursor-pointer"
             />
             <span className="text-sm text-muted">Pin this announcement (appears at top)</span>
           </label>
 
-          {profile?.role === 'dpo' ? <p className="text-sm text-muted">This announcement will be visible to interns.</p> : <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.intern_visible} onChange={e => setForm(f => ({ ...f, intern_visible: e.target.checked }))} className="h-4 w-4 rounded border-border text-gold focus:ring-gold" /><span className="text-sm text-muted">Visible to interns</span></label>}
+          {profile?.role === 'dpo' ? <p className="text-sm text-muted">This announcement will be visible to interns.</p> : <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.intern_visible} onChange={e => setForm(f => ({ ...f, intern_visible: e.target.checked }))} className="h-4 w-4 rounded border-border" /><span className="text-sm text-muted">Visible to interns</span></label>}
 
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleCreateAnnouncement}
-              className="bg-gold text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-purple transition-colors"
+              className="btn-primary"
             >
               Post Announcement
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="px-5 py-2 rounded-lg text-sm border border-border hover:bg-warm/40 transition-colors"
+              className="px-5 py-2 rounded-lg text-sm border border-border hover:bg-surface-muted/40 transition-colors"
             >
               Cancel
             </button>
@@ -262,31 +262,31 @@ export default function AnnouncementsPage() {
 
       {/* Alerts */}
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded border border-rust/30 bg-rust/10 p-4">
-          <AlertCircle size={20} className="text-rust shrink-0 mt-0.5" />
+        <div className="mb-6 flex items-start gap-3 rounded border border-danger bg-danger/10 p-4">
+          <AlertCircle size={20} className="text-danger shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-rust">Error</h3>
-            <p className="text-sm text-rust mt-0.5">{error}</p>
+            <h3 className="font-medium text-danger">Error</h3>
+            <p className="text-sm text-danger mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-green-700 font-medium">{success}</p>
+        <div className="mb-6 rounded-lg border border-success bg-success/10 p-4">
+          <p className="text-sm font-medium text-success">{success}</p>
         </div>
       )}
 
       {/* Announcements List */}
       <div>
-        <h2 className="text-lg font-semibold text-ink mb-4">
+        <h2 className="text-lg font-semibold text-text mb-4">
           {announcements.length} {announcements.length === 1 ? 'Announcement' : 'Announcements'}
         </h2>
 
         {announcements.length === 0 ? (
           <div className="record-surface py-16 text-center">
             <EmptyLedger variant="documents" className="empty-illustration mx-auto mb-3" />
-            <p className="font-semibold text-ink">No announcements recorded yet.</p><p className="mt-1 text-sm text-muted">New team notices will appear here; managers can use Post Announcement.</p>
+            <p className="font-semibold text-text">No announcements recorded yet.</p><p className="mt-1 text-sm text-muted">New team notices will appear here; managers can use Post Announcement.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -303,7 +303,7 @@ export default function AnnouncementsPage() {
                   key={announcement.id}
                   className={`record-surface overflow-hidden ${
                     announcement.pinned
-                      ? 'bg-gold/10'
+                      ? 'bg-pink-accent/10'
                       : ''
                   }`}
                 >
@@ -313,9 +313,9 @@ export default function AnnouncementsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {announcement.pinned && (
-                            <Pin size={16} className="text-gold shrink-0" />
+                            <Pin size={16} className="text-pink-text shrink-0" />
                           )}
-                          <h3 className="font-semibold text-ink text-lg truncate">
+                          <h3 className="font-semibold text-text text-lg truncate">
                             {announcement.title}
                           </h3>
                           <CreatorTag profile={announcement.profiles} contributorName={announcement.contributor_name} contributorTag={announcement.contributor_tag} />
@@ -338,8 +338,8 @@ export default function AnnouncementsPage() {
                             onClick={() => handleTogglePin(announcement.id, announcement.pinned)}
                             className={`p-2 rounded-lg transition-colors ${
                               announcement.pinned
-                                ? 'bg-gold/15 text-purple hover:bg-gold/25'
-                                : 'hover:bg-warm/60 text-muted'
+                                ? 'bg-pink-accent/15 text-accent hover:bg-pink-accent/25'
+                                : 'hover:bg-surface-muted/60 text-muted'
                             }`}
                             title={announcement.pinned ? 'Unpin' : 'Pin'}
                           >
@@ -347,7 +347,7 @@ export default function AnnouncementsPage() {
                           </button>
                           <button
                             onClick={() => handleDelete(announcement.id)}
-                            className="p-2 hover:bg-rust/10 rounded transition-colors text-rust/70 hover:text-rust"
+                            className="p-2 hover:bg-danger/10 rounded transition-colors text-danger/70 hover:text-danger"
                             title="Delete"
                           >
                             <Trash2 size={18} />
@@ -360,7 +360,7 @@ export default function AnnouncementsPage() {
                     <p className="text-muted whitespace-pre-wrap text-sm leading-relaxed">
                       {announcement.body}
                     </p>
-                    {(announcement.pinned || announcement.acknowledgement_required) && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div className="flex items-center gap-2 text-sm text-muted"><Users size={16} /><span>{acknowledgements.length} acknowledgement{acknowledgements.length === 1 ? '' : 's'}</span>{isAdmin && <details className="relative"><summary className="cursor-pointer font-semibold text-purple">{missing.length} pending</summary><div className="record-surface absolute right-0 z-10 mt-2 w-64 p-3"><p className="mb-2 text-xs font-bold uppercase text-muted">Not acknowledged</p>{missing.length ? missing.map(item => <p key={item.id} className="py-1 text-sm text-ink">{item.full_name}</p>) : <p className="text-sm text-muted">Everyone has acknowledged.</p>}</div></details>}</div>{hasAcknowledged ? <span className="flex items-center gap-2 text-sm font-semibold text-green"><CheckCircle2 size={16} />Acknowledged</span> : <button onClick={() => acknowledge(announcement.id)} className="btn-secondary !min-h-0 !px-3 !py-2">Acknowledge</button>}</div>}
+                    {(announcement.pinned || announcement.acknowledgement_required) && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div className="flex items-center gap-2 text-sm text-muted"><Users size={16} /><span>{acknowledgements.length} acknowledgement{acknowledgements.length === 1 ? '' : 's'}</span>{isAdmin && <details className="relative"><summary className="cursor-pointer font-semibold text-warning">{missing.length} pending</summary><div className="record-surface absolute right-0 z-10 mt-2 w-64 p-3"><p className="mb-2 text-xs font-bold uppercase text-muted">Not acknowledged</p>{missing.length ? missing.map(item => <p key={item.id} className="py-1 text-sm text-text">{item.full_name}</p>) : <p className="text-sm text-muted">Everyone has acknowledged.</p>}</div></details>}</div>{hasAcknowledged ? <span className="flex items-center gap-2 text-sm font-semibold text-success"><CheckCircle2 size={16} />Acknowledged</span> : <button onClick={() => acknowledge(announcement.id)} className="btn-secondary !min-h-0 !px-3 !py-2">Acknowledge</button>}</div>}
                   </div>
                 </div>
               )

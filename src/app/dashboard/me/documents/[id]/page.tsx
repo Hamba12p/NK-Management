@@ -26,7 +26,7 @@ export default function MEDocumentPage() {
     await me.load()
   }
   return <MEFrame title="Document preview" description="This file is stored in the existing document repository." {...me}>
-    <div className="card flex flex-wrap gap-4"><button className="btn-primary" disabled={!me.data} onClick={() => setOpen(true)}>Preview document</button><Link className="text-purple underline" href="/dashboard/documents">Open document repository</Link></div>
+    <div className="card flex flex-wrap gap-4"><button className="btn-primary" disabled={!me.data} onClick={() => setOpen(true)}>Preview document</button><Link className="text-accent underline" href="/dashboard/documents">Open document repository</Link></div>
     {open && me.data && <DocumentModal doc={me.data} onClose={() => setOpen(false)} onSave={save} />}
   </MEFrame>
 }

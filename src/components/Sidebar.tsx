@@ -98,8 +98,8 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
     name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 
   return (
-    <div className="app-sidebar flex h-full flex-col bg-ink text-cream">
-      <div className={collapsed ? 'border-b border-white/10 p-2' : 'border-b border-white/10 p-6'}>
+    <div className="app-sidebar flex h-full flex-col bg-sidebar-bg text-sidebar-text">
+      <div className={collapsed ? 'border-b border-sidebar-border p-2' : 'border-b border-sidebar-border p-6'}>
         <Link
           href="/dashboard"
           onClick={onNavigate}
@@ -107,12 +107,12 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
           aria-label={collapsed ? 'NK Udada Staff Hub home' : undefined}
           title={collapsed ? 'NK Udada Staff Hub' : undefined}
         >
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-gold bg-white p-0.5">
+          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-pink-accent bg-surface-raised p-0.5">
             <Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={44} height={44} className="h-full w-full rounded-full object-cover" priority />
           </div>
           <div className={collapsed ? 'sr-only' : ''}>
-            <p className="serif-display text-sm font-bold leading-tight text-cream">NK Udada</p>
-            <p className="text-xs text-white/60">Staff Hub</p>
+            <p className="serif-display text-sm font-bold leading-tight text-sidebar-text">NK Udada</p>
+            <p className="text-xs text-sidebar-muted">Staff Hub</p>
           </div>
         </Link>
       </div>
@@ -129,25 +129,25 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
               aria-label={collapsed ? label : undefined}
               title={collapsed ? label : undefined}
               className={`flex items-center border-l-2 py-3 text-sm font-medium transition-colors ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'} ${
-                isActive ? 'border-gold bg-cream text-purple' : 'border-transparent text-white/70 hover:bg-white/10 hover:text-cream'
+                isActive ? 'border-sidebar-active-marker bg-sidebar-active text-sidebar-active-text' : 'border-transparent text-sidebar-muted hover:bg-sidebar-text/10 hover:text-sidebar-text'
               }`}
             >
-              <HubIcon name={icon} width={18} height={18} className={isActive ? 'text-purple' : 'text-white/60'} />
+              <HubIcon name={icon} width={18} height={18} className={isActive ? 'text-sidebar-active-text' : 'text-sidebar-muted'} />
               <span className={collapsed ? 'sr-only' : ''}>{label}</span>
-              {isActive && !collapsed ? <ChevronRight size={16} className="ml-auto text-purple" /> : null}
+              {isActive && !collapsed ? <ChevronRight size={16} className="ml-auto text-sidebar-active-text" /> : null}
             </Link>
           )
         })}
       </nav>
 
-      <div className={`space-y-3 border-t border-white/10 ${collapsed ? 'p-2' : 'p-4'}`}>
+      <div className={`space-y-3 border-t border-sidebar-border ${collapsed ? 'p-2' : 'p-4'}`}>
         {profile ? (
-          <div className={`flex items-center rounded-lg bg-white/5 ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`} title={collapsed ? `${profile.full_name} — ${formatRole(profile.role)}` : undefined}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/50 bg-white/10 text-xs font-semibold text-cream">
+          <div className={`flex items-center rounded-lg bg-sidebar-text/5 ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`} title={collapsed ? `${profile.full_name} — ${formatRole(profile.role)}` : undefined}>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-pink-accent/50 bg-sidebar-text/10 text-xs font-semibold text-sidebar-text">
               {getInitials(profile.full_name || 'User')}
             </div>
             <div className={collapsed ? 'sr-only' : 'min-w-0 flex-1'}>
-              <p className="truncate text-sm font-semibold text-cream">{profile.full_name}</p>
+              <p className="truncate text-sm font-semibold text-sidebar-text">{profile.full_name}</p>
               <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeClass(profile.role)}`}>{formatRole(profile.role)}</span>
             </div>
           </div>
@@ -157,7 +157,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
           disabled={signingOut}
           aria-label={signingOut ? 'Signing out' : 'Sign out'}
           title={collapsed ? (signingOut ? 'Signing out' : 'Sign out') : undefined}
-          className={`flex w-full items-center rounded py-3 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-cream disabled:cursor-not-allowed disabled:opacity-50 ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'}`}
+          className={`flex w-full items-center rounded py-3 text-sm font-medium text-sidebar-muted transition-colors hover:bg-sidebar-text/10 hover:text-sidebar-text disabled:cursor-not-allowed ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'}`}
         >
           <LogOut size={18} />
           <span className={collapsed ? 'sr-only' : ''}>{signingOut ? 'Signing out…' : 'Sign out'}</span>
@@ -197,28 +197,28 @@ export default function Sidebar({ profile }: { profile: any }) {
   return (
     <>
       {isMobile ? (
-        <button onClick={() => setMobileOpen(true)} className="app-sidebar fixed left-4 top-4 z-40 border border-white/20 p-2 md:hidden" aria-label="Open menu">
-          <Menu size={20} className="text-cream" />
+        <button onClick={() => setMobileOpen(true)} className="app-sidebar fixed left-4 top-4 z-40 rounded-lg border border-sidebar-border p-2 md:hidden" aria-label="Open menu">
+          <Menu size={20} className="text-sidebar-text" />
         </button>
       ) : null}
 
       {isMobile && mobileOpen ? (
         <div className="fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="app-sidebar relative h-full w-72 overflow-hidden border-r border-white/15">
-            <button onClick={() => setMobileOpen(false)} className="absolute right-4 top-4 z-10 rounded-lg p-2 transition-colors hover:bg-white/10" aria-label="Close menu">
-              <X size={18} className="text-cream" />
+          <div className="absolute inset-0 bg-overlay" onClick={() => setMobileOpen(false)} />
+          <aside className="app-sidebar relative h-full w-72 overflow-hidden border-r border-sidebar-border">
+            <button onClick={() => setMobileOpen(false)} className="absolute right-4 top-4 z-10 rounded-lg p-2 transition-colors hover:bg-sidebar-text/10" aria-label="Close menu">
+              <X size={18} className="text-sidebar-text" />
             </button>
             <SidebarContent profile={profile} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
           </aside>
         </div>
       ) : null}
 
-      <aside className={`app-sidebar relative sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/10 bg-ink transition-[width] duration-300 ease-in-out md:flex ${collapsed ? 'w-[4.5rem]' : 'w-64'}`}>
+      <aside className={`app-sidebar relative sticky top-0 hidden h-screen shrink-0 flex-col border-r border-sidebar-border transition-[width] duration-300 ease-in-out md:flex ${collapsed ? 'w-[4.5rem]' : 'w-64'}`}>
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="absolute -right-3 top-5 z-10 grid h-7 w-7 place-items-center rounded-full border border-white/20 bg-ink text-cream shadow-sm transition-colors hover:bg-purple focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          className="absolute -right-3 top-5 z-10 grid h-7 w-7 place-items-center rounded-full border border-sidebar-border bg-sidebar-bg text-sidebar-text shadow-sm transition-colors hover:bg-sidebar-active"
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

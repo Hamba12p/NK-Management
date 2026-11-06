@@ -177,12 +177,12 @@ export default function NotificationSettings({ userId, role }: { userId: string;
 
   const isPushEnabled = Boolean(currentDeviceId)
   return <div className="space-y-5">
-    {(error || message) && <p role={error ? 'alert' : 'status'} className={`rounded-lg border px-4 py-3 text-sm ${error ? 'border-[#B84C1A]/30 bg-[#B84C1A]/10 text-[#8B3514]' : 'border-[#782653]/20 bg-[#EFE3E7] text-[#782653]'}`}>{error || message}</p>}
+    {(error || message) && <p role={error ? 'alert' : 'status'} className={`rounded-lg border px-4 py-3 text-sm ${error ? 'border-danger bg-danger/10 text-danger' : 'border-border bg-surface-muted text-accent'}`}>{error || message}</p>}
     <section className="card">
       <SectionTitle title="Device notifications" description="Choose which alerts this account receives, then enable push separately on each device." />
-      <div className="divide-y divide-[#DCCFD6]">
+      <div className="divide-y divide-border-subtle">
         <SwitchRow title="Notifications on this device" description={`Current browser permission: ${permission}. Turning this off removes this device subscription.`} checked={isPushEnabled} disabled={saving || (!supported && !iosHomeScreenRequired)} onChange={(checked) => void togglePush(checked)} />
-        {iosHomeScreenRequired && <p className="py-4 text-sm leading-6 text-[#6E646A]">On iPhone or iPad, tap Share, choose Add to Home Screen, then open NK Udada Staff Hub from your Home Screen. Push requires iOS 16.4 or later.</p>}
+        {iosHomeScreenRequired && <p className="py-4 text-sm leading-6 text-muted">On iPhone or iPad, tap Share, choose Add to Home Screen, then open NK Udada Staff Hub from your Home Screen. Push requires iOS 16.4 or later.</p>}
         <SwitchRow title="In-app notifications" description="Master switch for alerts in the Hub bell. This does not change device push permission." checked={preferences.notifications_enabled} disabled={saving} onChange={(checked) => void saveInApp(checked)} />
         <SwitchRow title="Comments on my documents" description="Alert me when someone comments on a document I own or have commented on." checked={settings?.comments_enabled ?? true} disabled={saving} onChange={(checked) => void saveSetting({ comments_enabled: checked })} />
         <SwitchRow title="Tasks assigned to me" description="Alert me when a task is assigned to my account." checked={settings?.assignments_enabled ?? true} disabled={saving} onChange={(checked) => void saveSetting({ assignments_enabled: checked })} />
@@ -194,33 +194,33 @@ export default function NotificationSettings({ userId, role }: { userId: string;
     <section className="card">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionTitle title="My devices" description="Push subscriptions registered to your Staff Hub account." />
-        <button type="button" onClick={() => void sendTest()} disabled={saving || !isPushEnabled} className="min-h-11 rounded-lg border border-[#782653] px-4 py-2 text-sm font-semibold text-[#782653] hover:bg-[#EFE3E7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#EA519D] disabled:opacity-50">Send a test notification</button>
+        <button type="button" onClick={() => void sendTest()} disabled={saving || !isPushEnabled} className="min-h-11 rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-surface-muted">Send a test notification</button>
       </div>
-      <ul className="divide-y divide-[#DCCFD6]">
+      <ul className="divide-y divide-border-subtle">
         {devices.map((device) => <li key={device.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex min-w-0 items-start gap-3">
-            <Smartphone size={19} className="mt-0.5 shrink-0 text-[#782653]" aria-hidden="true" />
-            <div><p className="font-semibold text-[#241820]">{device.device_label}{device.id === currentDeviceId ? ' · This device' : ''}</p><p className="mt-1 text-xs text-[#6E646A]">Last used {formatUsed(device.last_seen_at)}</p></div>
+            <Smartphone size={19} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+            <div><p className="font-semibold text-text">{device.device_label}{device.id === currentDeviceId ? ' · This device' : ''}</p><p className="mt-1 text-xs text-muted">Last used {formatUsed(device.last_seen_at)}</p></div>
           </div>
-          <button type="button" onClick={() => void removeDevice(device)} disabled={saving} className="min-h-10 rounded-lg px-3 text-sm font-semibold text-[#B84C1A] underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#EA519D] disabled:opacity-50">Remove</button>
+          <button type="button" onClick={() => void removeDevice(device)} disabled={saving} className="min-h-10 rounded-lg px-3 text-sm font-semibold text-danger underline">Remove</button>
         </li>)}
       </ul>
-      {devices.length === 0 && <p className="py-4 text-sm text-[#6E646A]">No push-enabled devices are registered.</p>}
-      <p className="mt-4 rounded-lg bg-[#EFE3E7] p-4 text-sm leading-6 text-[#392F35]">We store a device identifier needed to send alerts and the browser name. You can remove a device here or switch off notifications on that device. Notification previews do not contain private message content. The Data Protection Officer should review this wording before launch.</p>
+      {devices.length === 0 && <p className="py-4 text-sm text-muted">No push-enabled devices are registered.</p>}
+      <p className="mt-4 rounded-lg bg-surface-muted p-4 text-sm leading-6 text-text">We store a device identifier needed to send alerts and the browser name. You can remove a device here or switch off notifications on that device. Notification previews do not contain private message content. The Data Protection Officer should review this wording before launch.</p>
     </section>
   </div>
 }
 
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return <div className="mb-5 flex items-start gap-3">
-    <span className="rounded-lg bg-[#EFE3E7] p-2 text-[#782653]"><Bell size={18} aria-hidden="true" /></span>
-    <div><h2 className="font-bold text-[#241820]">{title}</h2><p className="mt-1 text-sm leading-5 text-[#6E646A]">{description}</p></div>
+    <span className="rounded-lg bg-surface-muted p-2 text-accent"><Bell size={18} aria-hidden="true" /></span>
+    <div><h2 className="font-bold text-text">{title}</h2><p className="mt-1 text-sm leading-5 text-muted">{description}</p></div>
   </div>
 }
 
 function SwitchRow({ title, description, checked, disabled, onChange }: { title: string; description: string; checked: boolean; disabled: boolean; onChange: (checked: boolean) => void }) {
   return <div className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-    <div><p className="font-semibold text-[#241820]">{title}</p><p className="mt-1 text-sm leading-5 text-[#6E646A]">{description}</p></div>
-    <button type="button" role="switch" aria-checked={checked} aria-label={title} disabled={disabled} onClick={() => onChange(!checked)} className="app-switch focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#EA519D]"><span aria-hidden="true" /></button>
+    <div><p className="font-semibold text-text">{title}</p><p className="mt-1 text-sm leading-5 text-muted">{description}</p></div>
+    <button type="button" role="switch" aria-checked={checked} aria-label={title} disabled={disabled} onClick={() => onChange(!checked)} className="app-switch"><span aria-hidden="true" /></button>
   </div>
 }

@@ -77,30 +77,30 @@ export default function LoginPage() {
     <div className="login-page min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
       <LoginMotif />
       <form onSubmit={handleLogin} className="record-surface p-10 w-full max-w-sm relative z-10">
-        <div className="mb-8 flex justify-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-gold bg-cream p-1"><Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={80} height={80} className="h-full w-full rounded-full object-cover" priority /></div></div>
+        <div className="mb-8 flex justify-center"><div className="h-20 w-20 overflow-hidden rounded-full border-2 border-pink-accent bg-surface p-1"><Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={80} height={80} className="h-full w-full rounded-full object-cover" priority /></div></div>
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-ink serif-display mb-2">NK Udada</h1>
+          <h1 className="text-4xl font-bold text-text serif-display mb-2">NK Udada</h1>
           <p className="text-muted text-sm font-medium uppercase tracking-wider">Staff Hub</p>
           <p className="text-muted text-sm mt-3">Empower & Equip Together</p>
         </div>
         <div className="space-y-5">
-          <label className="block text-sm font-semibold text-ink">Email address
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-3 w-full border border-border px-5 py-3 text-ink placeholder-muted bg-warm/30" placeholder="staff@the-nkfoundation.org" required disabled={loading} autoComplete="email" />
+          <label className="block text-sm font-semibold text-text">Email address
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-3 w-full border border-border px-5 py-3 text-text placeholder-muted bg-surface-muted/30" placeholder="staff@the-nkfoundation.org" required disabled={loading} autoComplete="email" />
           </label>
-          <label className="block text-sm font-semibold text-ink">Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-3 w-full border border-border px-5 py-3 text-ink bg-warm/30" required minLength={8} disabled={loading} autoComplete="current-password" />
+          <label className="block text-sm font-semibold text-text">Password
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-3 w-full border border-border px-5 py-3 text-text bg-surface-muted/30" required minLength={8} disabled={loading} autoComplete="current-password" />
           </label>
-          {error && <div className="rounded border border-rust/30 bg-rust/10 p-4 text-sm text-rust font-medium">{error}</div>}
-          <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Sign in'}</button>
+          {error && <div className="rounded border border-danger bg-danger/10 p-4 text-sm text-danger font-medium">{error}</div>}
+          <button type="submit" disabled={loading} className="btn-primary w-full disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Sign in'}</button>
         </div>
         <p className="text-center text-xs text-muted mt-6 font-medium">Only registered staff can access the Hub</p>
-        <Link href="/obx" className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded border border-purple px-4 py-3 text-sm font-bold text-purple transition-colors hover:bg-warm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple"><Sparkles size={18} aria-hidden="true" />New volunteer? Start OBX</Link>
+        <Link href="/obx" className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded border border-accent px-4 py-3 text-sm font-bold text-accent transition-colors hover:bg-surface-muted"><Sparkles size={18} aria-hidden="true" />New volunteer? Start OBX</Link>
         <InstallAppButton />
       </form>
       {volunteerPrompt && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/55 px-4">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-overlay px-4">
           <form onSubmit={continueAsVolunteer} className="record-surface w-full max-w-sm p-7">
-            <h2 className="serif-display text-2xl text-ink">Who’s working right now?</h2>
+            <h2 className="serif-display text-2xl text-text">Who’s working right now?</h2>
             <p className="mt-2 text-sm text-muted">This is recorded with the volunteer team’s activity for this browser session.</p>
             <input value={volunteerName} onChange={(e) => setVolunteerName(e.target.value)} className="mt-5 w-full border border-border px-4 py-3" placeholder="Your name" autoFocus required maxLength={100} />
             <button className="btn-primary mt-4 w-full">Continue to the Hub</button>

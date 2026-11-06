@@ -25,34 +25,34 @@ interface TeamMember {
 
 const roleColors: Record<ProfileRole, { bg: string; text: string; border: string }> = {
   admin: {
-    bg: 'bg-rust/10',
-    text: 'text-rust',
-    border: 'border-rust/25',
+    bg: 'bg-danger/10',
+    text: 'text-danger',
+    border: 'border-danger',
   },
   manager: {
-    bg: 'bg-purple/10',
-    text: 'text-purple',
-    border: 'border-purple/25',
+    bg: 'bg-accent/10',
+    text: 'text-accent',
+    border: 'border-border',
   },
   dpo: {
-    bg: 'bg-purple-lt/15',
-    text: 'text-purple',
-    border: 'border-purple-lt/35',
+    bg: 'bg-accent-hover/15',
+    text: 'text-accent',
+    border: 'border-border',
   },
   volunteer_lead: {
-    bg: 'bg-gold/10',
-    text: 'text-purple',
-    border: 'border-gold/30',
+    bg: 'bg-pink-accent/10',
+    text: 'text-accent',
+    border: 'border-pink-accent/30',
   },
-  board_advisor: { bg: 'bg-purple-lt/15', text: 'text-purple', border: 'border-purple-lt/35' },
-  intern: { bg: 'bg-gold/10', text: 'text-ink', border: 'border-gold/30' },
+  board_advisor: { bg: 'bg-accent-hover/15', text: 'text-accent', border: 'border-border' },
+  intern: { bg: 'bg-pink-accent/10', text: 'text-text', border: 'border-pink-accent/30' },
   volunteer_senior: {
-    bg: 'bg-green/10',
-    text: 'text-green',
-    border: 'border-green/20',
+    bg: 'bg-success/10',
+    text: 'text-success',
+    border: 'border-success',
   },
   volunteer: {
-    bg: 'bg-warm/40',
+    bg: 'bg-surface-muted/40',
     text: 'text-muted',
     border: 'border-border',
   },
@@ -60,30 +60,30 @@ const roleColors: Record<ProfileRole, { bg: string; text: string; border: string
 
 const roleBadgeColors: Record<ProfileRole, { bg: string; text: string }> = {
   admin: {
-    bg: 'bg-rust/15',
-    text: 'text-rust',
+    bg: 'bg-danger/15',
+    text: 'text-danger',
   },
   manager: {
-    bg: 'bg-purple/10',
-    text: 'text-purple',
+    bg: 'bg-accent/10',
+    text: 'text-accent',
   },
   dpo: {
-    bg: 'bg-purple-lt/20',
-    text: 'text-purple',
+    bg: 'bg-accent-hover/20',
+    text: 'text-accent',
   },
   volunteer_lead: {
-    bg: 'bg-gold/15',
-    text: 'text-purple',
+    bg: 'bg-pink-accent/15',
+    text: 'text-accent',
   },
-  board_advisor: { bg: 'bg-purple-lt/20', text: 'text-purple' },
-  intern: { bg: 'bg-gold/15', text: 'text-ink' },
+  board_advisor: { bg: 'bg-accent-hover/20', text: 'text-accent' },
+  intern: { bg: 'bg-pink-accent/15', text: 'text-text' },
   volunteer_senior: {
-    bg: 'bg-green/10',
-    text: 'text-green',
+    bg: 'bg-success/10',
+    text: 'text-success',
   },
   volunteer: {
-    bg: 'bg-warm/60',
-    text: 'text-ink',
+    bg: 'bg-surface-muted/60',
+    text: 'text-text',
   },
 };
 
@@ -230,8 +230,8 @@ export default function TeamPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="serif-display text-4xl text-ink mb-2 flex items-center gap-3">
-            <HubIcon name="team" className="h-8 w-8 text-purple" />
+          <h1 className="serif-display mb-2 flex items-center gap-3 text-3xl text-text md:text-4xl">
+            <HubIcon name="team" className="h-8 w-8 text-accent" />
             Team Directory
           </h1>
           <p className="text-muted">
@@ -253,7 +253,7 @@ export default function TeamPage() {
                 placeholder="Search team members..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg"
               />
             </div>
 
@@ -266,7 +266,7 @@ export default function TeamPage() {
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value as any)}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg"
               >
                 <option value="all">All Roles</option>
                 <option value="admin">Admins</option>
@@ -284,7 +284,7 @@ export default function TeamPage() {
             <div className="flex items-end">
               <div>
                 <p className="text-sm text-muted mb-2">Showing Results</p>
-                <p className="serif-display text-3xl text-purple">{filteredMembers.length}</p>
+                <p className="serif-display text-3xl text-accent">{filteredMembers.length}</p>
               </div>
             </div>
           </div>
@@ -292,7 +292,7 @@ export default function TeamPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="record-surface mb-8 bg-rust/10 p-4 text-rust">
+          <div className="record-surface mb-8 bg-danger/10 p-4 text-danger">
             {error}
           </div>
         )}
@@ -317,14 +317,14 @@ export default function TeamPage() {
               return (
               <div
                 key={member.id}
-                className="record-surface bg-cream p-6"
+                className="record-surface bg-surface p-6"
               >
                 {/* Avatar & Name */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4 flex-1">
                     <div className="creator-avatar" data-color={member.display_color || 'burgundy'}>{member.display_tag || rosterMember?.avatar || member.full_name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}</div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-ink truncate">
+                      <h3 className="text-lg font-bold text-text truncate">
                         {member.full_name}
                       </h3>
                       <div className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${
@@ -338,7 +338,7 @@ export default function TeamPage() {
                 </div>
 
                 {/* Contact Info */}
-                {!isIntern && <div className="space-y-3 pt-4 border-t border-current border-opacity-10">
+                {!isIntern && <div className="space-y-3 pt-4 border-t border-border-subtle">
                   <div className="flex items-center gap-3 text-sm">
                     <Mail className="w-4 h-4 text-muted flex-shrink-0" />
                     <span className="text-muted truncate">
@@ -361,7 +361,7 @@ export default function TeamPage() {
                 </div>}
 
                 {/* Role Badge (larger, for reference) */}
-                {!isIntern && <div className="mt-4 pt-4 border-t border-current border-opacity-10">
+                {!isIntern && <div className="mt-4 border-t border-border-subtle pt-4">
                   <p className="text-xs text-muted uppercase tracking-wide">Role Details</p>
                   <p className={`mt-1 text-sm font-medium ${roleColors[role].text}`}>
                     {member.job_title || rosterMember?.title || roleDescriptions[role]}
@@ -369,9 +369,9 @@ export default function TeamPage() {
                 </div>}
 
                 {isAdmin && role === 'intern' && (
-                  <div className="mt-4 border-t border-current border-opacity-10 pt-4">
+                  <div className="mt-4 border-t border-border-subtle pt-4">
                     <p className="text-xs text-muted uppercase tracking-wide">Intern account access</p>
-                    <p className="mt-1 text-sm text-ink">
+                    <p className="mt-1 text-sm text-text">
                       {member.intern_access_enabled ? 'Enabled' : 'Disabled'}
                     </p>
                     <p className="mt-1 text-xs text-muted">
@@ -382,7 +382,7 @@ export default function TeamPage() {
                       aria-pressed={Boolean(member.intern_access_enabled)}
                       disabled={updatingInternId === member.id}
                       onClick={() => toggleInternAccess(member)}
-                      className="btn-secondary mt-3 w-full disabled:cursor-not-allowed disabled:opacity-60"
+                      className="btn-secondary mt-3 w-full disabled:cursor-not-allowed"
                     >
                       {updatingInternId === member.id
                         ? 'Updating access…'

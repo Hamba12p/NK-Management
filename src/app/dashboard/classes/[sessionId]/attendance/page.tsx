@@ -69,12 +69,12 @@ export default function AttendancePage() {
   const recorded = Object.keys(attendance).length
 
   return <div>
-    <Link href="/dashboard/classes" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-purple"><ArrowLeft size={16} />Back to classes</Link>
+    <Link href="/dashboard/classes" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-accent"><ArrowLeft size={16} />Back to classes</Link>
     <PageHeader title={`${className} Roll-call`} description={`Week ${session?.cycle_week || '—'}${startsAt ? ` · ${new Date(startsAt).toLocaleString('en-UG')}` : ''}. Mark attendance in the first few minutes of class.`} action={<button onClick={() => void markAllPresent()} className="btn-secondary"><Check size={16} />Mark all present</button>} />
-    {error ? <p className="mb-5 rounded border border-rust/30 bg-rust/10 p-3 text-sm text-rust">{error}</p> : null}
-    {message ? <p className="mb-5 rounded border border-purple/20 bg-warm/55 p-3 text-sm text-purple">{message}</p> : null}
+    {error ? <p className="mb-5 rounded border border-danger bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
+    {message ? <p className="mb-5 rounded border border-border bg-surface-muted/55 p-3 text-sm text-accent">{message}</p> : null}
     <div className="mb-4 flex items-center justify-between text-sm text-muted"><span>{enrolments.length} enrolled learners</span><span>{recorded} marked</span></div>
-    <div className="space-y-3">{enrolments.map(enrolment => { const learner = one(enrolment.learners); const current = attendance[enrolment.learner_id]; return <article key={enrolment.learner_id} className="card flex flex-wrap items-center justify-between gap-4"><p className="font-semibold text-ink">{learner?.full_name || 'Learner'}</p><div className="flex flex-wrap gap-2"><StatusButton active={current === 'present'} label="Present" icon={Check} onClick={() => void mark(enrolment.learner_id, 'present')} /><StatusButton active={current === 'late'} label="Late" icon={Clock3} onClick={() => void mark(enrolment.learner_id, 'late')} /><StatusButton active={current === 'absent'} label="Absent" icon={UserX} onClick={() => void mark(enrolment.learner_id, 'absent')} /></div></article>})}{!enrolments.length ? <div className="card py-12 text-center text-muted">No active learners are enrolled in this class.</div> : null}</div>
+    <div className="space-y-3">{enrolments.map(enrolment => { const learner = one(enrolment.learners); const current = attendance[enrolment.learner_id]; return <article key={enrolment.learner_id} className="card flex flex-wrap items-center justify-between gap-4"><p className="font-semibold text-text">{learner?.full_name || 'Learner'}</p><div className="flex flex-wrap gap-2"><StatusButton active={current === 'present'} label="Present" icon={Check} onClick={() => void mark(enrolment.learner_id, 'present')} /><StatusButton active={current === 'late'} label="Late" icon={Clock3} onClick={() => void mark(enrolment.learner_id, 'late')} /><StatusButton active={current === 'absent'} label="Absent" icon={UserX} onClick={() => void mark(enrolment.learner_id, 'absent')} /></div></article>})}{!enrolments.length ? <div className="card py-12 text-center text-muted">No active learners are enrolled in this class.</div> : null}</div>
   </div>
 }
 

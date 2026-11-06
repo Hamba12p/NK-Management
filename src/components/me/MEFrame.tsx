@@ -10,9 +10,9 @@ export default function MEFrame({ title, description, loading, error, message, c
   const path = usePathname()
   return <div>
     <PageHeader title={title} description={description} />
-    <nav aria-label="M&E navigation" className="mb-6 flex flex-wrap gap-2">{links.map(([label, suffix]) => <Link key={suffix} href={`/dashboard/me${suffix}`} aria-current={path === `/dashboard/me${suffix}` ? 'page' : undefined} className={`rounded border px-4 py-2 text-sm font-semibold ${path === `/dashboard/me${suffix}` ? 'bg-purple text-cream' : 'border-purple/20 text-purple'}`}>{label}</Link>)}</nav>
-    {error && <p role="alert" className="mb-5 rounded border border-rust/30 bg-rust/10 p-3 text-sm text-rust">{error}</p>}
-    {message && <p role="status" className="mb-5 rounded border border-purple/20 bg-warm p-3 text-sm text-purple">{message}</p>}
+    <nav aria-label="M&E navigation" className="mb-6 flex flex-wrap gap-2">{links.map(([label, suffix]) => <Link key={suffix} href={`/dashboard/me${suffix}`} aria-current={path === `/dashboard/me${suffix}` ? 'page' : undefined} className={`rounded border px-4 py-2 text-sm font-semibold ${path === `/dashboard/me${suffix}` ? 'bg-accent text-accent-text' : 'border-border text-accent'}`}>{label}</Link>)}</nav>
+    {error && <p role="alert" className="mb-5 rounded border border-danger bg-danger/10 p-3 text-sm text-danger">{error}</p>}
+    {message && <p role="status" className="mb-5 rounded border border-border bg-surface-muted p-3 text-sm text-accent">{message}</p>}
     {loading ? <p role="status" className="p-12 text-center text-muted">Loading M&E records…</p> : children}
   </div>
 }

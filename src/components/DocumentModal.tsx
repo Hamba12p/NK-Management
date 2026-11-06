@@ -166,24 +166,24 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
       ref={dialogRef}
       aria-labelledby="document-preview-title"
       onCancel={(event) => { event.preventDefault(); onClose() }}
-      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-cream p-0 text-ink backdrop:bg-black/50"
+      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-surface p-0 text-text backdrop:bg-overlay"
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 border-b border-border">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="shrink-0 p-2 bg-warm rounded-lg">
-              <FileText size={20} className="text-gold" />
+            <div className="shrink-0 p-2 bg-surface-muted rounded-lg">
+              <FileText size={20} className="text-pink-text" />
             </div>
             <div className="min-w-0">
-              <h2 id="document-preview-title" className="truncate font-semibold text-ink" title={doc.name}>{doc.name}</h2>
+              <h2 id="document-preview-title" className="truncate font-semibold text-text" title={doc.name}>{doc.name}</h2>
               <div className="mt-1"><CreatorTag profile={doc.profiles} contributorName={doc.contributor_name} contributorTag={doc.contributor_tag} showName /></div>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close document preview"
-            className="shrink-0 p-2 hover:bg-warm rounded transition-colors"
+            className="shrink-0 p-2 hover:bg-surface-muted rounded transition-colors"
           >
             <X size={20} />
           </button>
@@ -195,31 +195,31 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
           {isEditing && (
             <div className="shrink-0 space-y-4 pb-4 border-b border-border">
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">Document Name</label>
+                <label className="block text-sm font-medium text-text mb-2">Document Name</label>
                 <input
                   type="text"
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">Description</label>
+                <label className="block text-sm font-medium text-text mb-2">Description</label>
                 <textarea
                   value={editedDescription}
                   onChange={(e) => setEditedDescription(e.target.value)}
                   rows={3}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">Category</label>
+                <label className="block text-sm font-medium text-text mb-2">Category</label>
                 <select
                   value={editedCategory}
                   onChange={(e) => setEditedCategory(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="general">General</option>
                   <option value="policy">Policy</option>
@@ -241,12 +241,12 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
 
           {/* Document Info */}
           <details className="shrink-0 rounded-lg border border-border px-3 py-2">
-            <summary className="cursor-pointer text-sm font-medium text-ink">Document details</summary>
+            <summary className="cursor-pointer text-sm font-medium text-text">Document details</summary>
           <div className="mt-3 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 break-words">
             <div>
               <p className="text-muted mb-1">Category</p>
               {isEditing ? null : (
-                <p className="font-medium capitalize text-ink">{doc.category}</p>
+                <p className="font-medium capitalize text-text">{doc.category}</p>
               )}
             </div>
             {!isEditing && (
@@ -258,17 +258,17 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
             )}
             <div>
               <p className="text-muted mb-1">Size</p>
-              <p className="font-medium text-ink">
+              <p className="font-medium text-text">
                 {(doc.file_size / 1024).toFixed(2)} KB
               </p>
             </div>
             <div>
               <p className="text-muted mb-1">Type</p>
-              <p className="font-medium text-ink">{doc.mime_type}</p>
+              <p className="font-medium text-text">{doc.mime_type}</p>
             </div>
             <div>
               <p className="text-muted mb-1">Uploaded</p>
-              <p className="font-medium text-ink">
+              <p className="font-medium text-text">
                 {new Date(doc.created_at).toLocaleDateString()}
               </p>
             </div>
@@ -276,7 +276,7 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
 
           {doc.description && !isEditing && (
             <div className="mt-3">
-              <p className="text-sm font-medium text-ink mb-2">Description</p>
+              <p className="text-sm font-medium text-text mb-2">Description</p>
               <p className="text-sm text-muted">{doc.description}</p>
             </div>
           )}
@@ -286,16 +286,16 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
           <div className={`flex flex-col ${isEditing ? 'min-h-[60dvh] shrink-0' : 'min-h-0 flex-1'}`}>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader size={20} className="animate-spin text-gold" />
+                <Loader size={20} className="animate-spin text-pink-text" />
               </div>
             ) : error ? (
-              <div className="bg-rust/10 border border-rust rounded-lg p-3 flex items-start gap-2">
-                <AlertCircle size={16} className="text-rust shrink-0 mt-0.5" />
-                <p className="text-xs text-rust">{error}</p>
+              <div className="bg-danger/10 border border-danger rounded-lg p-3 flex items-start gap-2">
+                <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" />
+                <p className="text-xs text-danger">{error}</p>
               </div>
             ) : preview ? (
               preview.kind === 'image' ? (
-                <div className="bg-warm/60 rounded p-4 border border-border flex min-h-0 flex-1 items-center justify-center overflow-auto">
+                <div className="bg-surface-muted/60 rounded p-4 border border-border flex min-h-0 flex-1 items-center justify-center overflow-auto">
                   <img
                     src={preview.url}
                     alt={doc.name}
@@ -306,16 +306,16 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
                 <iframe
                   src={preview.url}
                   title={`${doc.name} preview`}
-                  className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
+                  className="min-h-0 w-full flex-1 rounded-lg border border-border bg-surface-raised"
                 />
               ) : preview.kind === 'office' ? (
                 <iframe
                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(preview.url)}`}
                   title={`${doc.name} preview`}
-                  className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
+                  className="min-h-0 w-full flex-1 rounded-lg border border-border bg-surface-raised"
                 />
               ) : (preview.kind === 'text' || preview.kind === 'unavailable') ? (
-                <div className="bg-warm/60 rounded p-4 border border-border min-h-0 flex-1 overflow-y-auto font-mono text-base leading-relaxed text-ink whitespace-pre-wrap break-words">
+                <div className="bg-surface-muted/60 rounded p-4 border border-border min-h-0 flex-1 overflow-y-auto font-mono text-base leading-relaxed text-text whitespace-pre-wrap break-words">
                   {preview.content}
                 </div>
               ) : null
@@ -324,11 +324,11 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-border bg-warm/60">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-border bg-surface-muted/60">
           <button
             onClick={() => setIsEditing(!isEditing)}
             disabled={isSaving}
-            className="btn-secondary !min-h-0 !px-4 !py-2 disabled:opacity-50"
+            className="btn-secondary !min-h-0 !px-4 !py-2"
           >
             {isEditing ? 'Cancel' : 'Edit'}
           </button>
@@ -336,7 +336,7 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleOpenWithApp}
-              className="px-4 py-2 text-sm font-medium rounded border border-purple text-purple hover:bg-purple/10 transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium rounded border border-accent text-accent hover:bg-accent/10 transition-colors flex items-center gap-2"
             >
               <ExternalLink size={16} />
               Open with App
@@ -351,7 +351,7 @@ export default function DocumentModal({ doc, onClose, onSave, assignees }: Docum
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="btn-primary !min-h-0 !px-4 !py-2 disabled:opacity-50"
+                className="btn-primary !min-h-0 !px-4 !py-2"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>

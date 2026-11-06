@@ -31,7 +31,7 @@ export default function ProgramsPage() {
   return <MEFrame title="Programmes" description="Plan programme work and track its outcomes, evidence and actions." {...me}>
     {me.data && <>
       <form onSubmit={save} className="card mb-6">
-        <h2 className="mb-4 font-bold text-ink">{editing ? 'Edit programme' : 'Create programme'}</h2>
+        <h2 className="mb-4 font-bold text-text">{editing ? 'Edit programme' : 'Create programme'}</h2>
         <fieldset disabled={me.busy} className="grid gap-4 md:grid-cols-2">
           <Field label="Name"><input className={fieldClass} required maxLength={200} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
           <Field label="Owner"><select className={fieldClass} value={form.owner_id} onChange={e => setForm({ ...form, owner_id: e.target.value })}><option value="">Unassigned</option>{me.data.profiles.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}</select></Field>
@@ -43,8 +43,8 @@ export default function ProgramsPage() {
         </fieldset>
       </form>
       <div className="table-surface overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>{['Programme', 'Status', 'Owner', 'Dates', 'Manage'].map(h => <th key={h} className="p-4">{h}</th>)}</tr></thead><tbody>{me.data.programs.map(p => <tr key={p.id}>
-        <td className="p-4"><Link className="font-semibold text-purple underline" href={`/dashboard/me/programs/${p.id}`}>{p.name}</Link><p className="mt-1 text-muted">{p.description}</p></td><td className="p-4">{p.status}</td><td className="p-4">{me.data!.profiles.find(owner => owner.id === p.owner_id)?.full_name || 'Unassigned'}</td><td className="p-4">{p.start_date || 'No start'} — {p.end_date || 'Ongoing'}</td>
-        <td className="p-4"><div className="flex gap-3"><button disabled={me.busy} className="text-purple underline" onClick={() => { setEditing(p.id); setForm({ name: p.name, description: p.description || '', status: p.status, start_date: p.start_date || '', end_date: p.end_date || '', owner_id: p.owner_id || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Edit</button><button disabled={me.busy} className="text-rust underline" onClick={() => { if (confirm('Archive this programme? Its records will be retained.')) void me.run(() => softDelete(me.supabase, 'programs', p.id, me.profile!.id), 'Programme archived.') }}>Archive</button></div></td>
+        <td className="p-4"><Link className="font-semibold text-accent underline" href={`/dashboard/me/programs/${p.id}`}>{p.name}</Link><p className="mt-1 text-muted">{p.description}</p></td><td className="p-4">{p.status}</td><td className="p-4">{me.data!.profiles.find(owner => owner.id === p.owner_id)?.full_name || 'Unassigned'}</td><td className="p-4">{p.start_date || 'No start'} — {p.end_date || 'Ongoing'}</td>
+        <td className="p-4"><div className="flex gap-3"><button disabled={me.busy} className="text-accent underline" onClick={() => { setEditing(p.id); setForm({ name: p.name, description: p.description || '', status: p.status, start_date: p.start_date || '', end_date: p.end_date || '', owner_id: p.owner_id || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Edit</button><button disabled={me.busy} className="text-danger underline" onClick={() => { if (confirm('Archive this programme? Its records will be retained.')) void me.run(() => softDelete(me.supabase, 'programs', p.id, me.profile!.id), 'Programme archived.') }}>Archive</button></div></td>
       </tr>)}</tbody></table>{!me.data.programs.length && <Empty>No programmes yet. Create the first programme above.</Empty>}</div>
     </>}
   </MEFrame>

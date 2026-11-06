@@ -96,8 +96,8 @@ export default function GlobalSearch() {
   return (
     <div ref={wrapperRef} className="relative hidden w-80 lg:block">
       <label htmlFor="global-search" className="sr-only">Search documents, tasks, meetings, and announcements</label>
-      <div className="flex items-center gap-2 rounded border border-border bg-cream px-3 py-2 text-sm focus-within:border-purple">
-        {loading ? <Loader2 size={15} className="animate-spin text-purple" /> : <Search size={15} className="text-muted" />}
+      <div className="global-search-shell flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm">
+        {loading ? <Loader2 size={15} className="animate-spin text-accent" /> : <Search size={15} className="text-muted" />}
         <input
           id="global-search"
           type="search"
@@ -110,10 +110,10 @@ export default function GlobalSearch() {
           aria-expanded={open}
           aria-controls="global-search-results"
           role="combobox"
-          className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-muted"
+          className="global-search-input min-w-0 flex-1 text-text placeholder:text-muted"
         />
         {query && (
-          <button type="button" onClick={() => { updateQuery(''); setOpen(false) }} aria-label="Clear search" className="text-muted hover:text-ink">
+          <button type="button" onClick={() => { updateQuery(''); setOpen(false) }} aria-label="Clear search" className="text-muted hover:text-text">
             <X size={14} />
           </button>
         )}
@@ -122,7 +122,7 @@ export default function GlobalSearch() {
       {open && query.trim().length >= 2 && (
         <div id="global-search-results" role="listbox" className="record-surface absolute right-0 z-50 mt-2 max-h-96 w-full overflow-y-auto p-2">
           {error ? (
-            <div role="alert" className="rounded bg-rust/10 p-3 text-sm text-rust">
+            <div role="alert" className="rounded bg-danger/10 p-3 text-sm text-danger">
               <p>{error}</p>
               <button type="button" onClick={() => setQuery(value => `${value} `)} className="mt-2 font-semibold underline">Retry</button>
             </div>
@@ -134,10 +134,10 @@ export default function GlobalSearch() {
                 const Icon = iconByKind[result.kind]
                 return (
                   <li key={`${result.kind}-${result.id}`} role="option" aria-selected="false">
-                    <Link href={result.href} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-cream">
-                      <Icon size={16} className="shrink-0 text-purple" />
+                    <Link href={result.href} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-surface">
+                      <Icon size={16} className="shrink-0 text-accent" />
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-ink">{result.label}</span>
+                        <span className="block truncate text-sm font-semibold text-text">{result.label}</span>
                         <span className="block text-xs text-muted">{result.kind}</span>
                       </span>
                     </Link>

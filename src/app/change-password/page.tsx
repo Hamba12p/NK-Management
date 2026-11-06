@@ -34,17 +34,17 @@ export default function ChangePasswordPage() {
 
   return <main className="page-container mx-auto max-w-lg px-4 py-16">
     <section className="card">
-      <p className="text-xs font-bold uppercase tracking-[.15em] text-purple">Account security</p>
-      <h1 className="serif-display mt-2 text-3xl text-ink">Choose a new password</h1>
+      <p className="text-xs font-bold uppercase tracking-[.15em] text-accent">Account security</p>
+      <h1 className="serif-display mt-2 text-3xl text-text">Choose a new password</h1>
       <p className="mt-3 text-sm leading-6 text-muted">Change your temporary password before opening the staff hub.</p>
       <form onSubmit={submit} className="mt-6 space-y-4">
-        <label className="block text-sm font-semibold text-ink">New password
-          <input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 w-full rounded border border-border bg-cream px-3 py-2" />
+        <label className="block text-sm font-semibold text-text">New password
+          <input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 w-full rounded border border-border bg-surface px-3 py-2" />
         </label>
-        <label className="block text-sm font-semibold text-ink">Confirm new password
-          <input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e => setConfirm(e.target.value)} className="mt-1 w-full rounded border border-border bg-cream px-3 py-2" />
+        <label className="block text-sm font-semibold text-text">Confirm new password
+          <input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e => setConfirm(e.target.value)} className="mt-1 w-full rounded border border-border bg-surface px-3 py-2" />
         </label>
-        {error && <p role="alert" className="rounded border border-rust/30 bg-rust/10 px-3 py-2 text-sm text-rust">{error}</p>}
+        {error && <p role="alert" className="rounded border border-danger bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
         <button className="btn-primary" disabled={saving}>{saving ? 'Updating password…' : 'Update password'}</button>
       </form>
     </section>

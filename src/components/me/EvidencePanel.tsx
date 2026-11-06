@@ -42,7 +42,7 @@ export default function EvidencePanel({ target }: { target: { program_id?: strin
     }, 'Evidence attached.')
   }
   return <div className="mt-4">
-    {me.error && <p role="alert" className="mb-3 text-rust">{me.error}</p>}{me.message && <p role="status" className="mb-3 text-purple">{me.message}</p>}
+    {me.error && <p role="alert" className="mb-3 text-danger">{me.error}</p>}{me.message && <p role="status" className="mb-3 text-accent">{me.message}</p>}
     <p className="mb-4 text-sm text-muted">New evidence uploads are available to administrators and board advisors, plus any individuals you assign. Linking an existing document keeps its current access.</p>
     <form onSubmit={attach}><fieldset disabled={me.busy || me.loading} className="grid gap-4 md:grid-cols-2">
       <Field label="Existing document"><select className={fieldClass} value={documentId} disabled={!!file} onChange={e => setDocumentId(e.target.value)}><option value="">Choose a document</option>{me.data?.documents.map(d => <option key={d.id} value={d.id}>{d.name} ({d.visibility})</option>)}</select></Field>
@@ -50,7 +50,7 @@ export default function EvidencePanel({ target }: { target: { program_id?: strin
       {file && me.data && <DocumentAssigneePicker assignees={me.data.assignees} selectedIds={selectedAssigneeIds} onChange={setSelectedAssigneeIds} unassignedMessage="Leave everyone unselected to keep this evidence limited to administrators and board advisors." />}
       <button className="btn-primary w-fit" disabled={!file && !documentId}>{me.busy ? 'Attaching…' : 'Attach evidence'}</button>
     </fieldset></form>
-    <ul className="mt-5 divide-y divide-purple/10">{me.data?.links.map(link => <li key={link.id} className="flex flex-wrap justify-between gap-3 py-3 text-sm"><Link className="text-purple underline" href={`/dashboard/me/documents/${link.document_id}`}>{link.documents?.name || 'Document unavailable'}</Link><button disabled={me.busy} className="text-rust underline" onClick={() => { if (confirm('Remove this evidence link? The document will be retained.')) void me.run(() => softDelete(me.supabase, 'evidence_links', link.id, me.profile!.id), 'Evidence link removed.') }}>Remove link</button></li>)}</ul>
+    <ul className="mt-5 divide-y divide-border-subtle">{me.data?.links.map(link => <li key={link.id} className="flex flex-wrap justify-between gap-3 py-3 text-sm"><Link className="text-accent underline" href={`/dashboard/me/documents/${link.document_id}`}>{link.documents?.name || 'Document unavailable'}</Link><button disabled={me.busy} className="text-danger underline" onClick={() => { if (confirm('Remove this evidence link? The document will be retained.')) void me.run(() => softDelete(me.supabase, 'evidence_links', link.id, me.profile!.id), 'Evidence link removed.') }}>Remove link</button></li>)}</ul>
     {!me.loading && !me.data?.links.length && <Empty>No evidence attached.</Empty>}
   </div>
 }

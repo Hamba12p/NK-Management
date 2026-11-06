@@ -54,7 +54,7 @@ export default function VolunteersPage() {
 
   return <div>
     <PageHeader title="Volunteer Network" description="A durable directory of volunteer assignments, status, and auditable hours." />
-    {error && <p className="mb-6 rounded-lg border border-rust/30 bg-rust/10 p-3 text-sm text-rust">{error}</p>}
+    {error && <p className="mb-6 rounded-lg border border-danger bg-danger/10 p-3 text-sm text-danger">{error}</p>}
     <div className="mb-7 grid gap-4 md:grid-cols-3">
       <Stat icon={Users} label="Active volunteers" value={activeCount} />
       <Stat icon={Award} label="Volunteer leads" value={leadCount} />
@@ -62,15 +62,15 @@ export default function VolunteersPage() {
     </div>
     <div className="table-surface">
       <table className="w-full text-left text-sm">
-        <thead className="bg-warm text-muted"><tr><th className="p-4">Volunteer</th><th className="p-4">Tier</th><th className="p-4">Department</th><th className="p-4">Status</th><th className="p-4 text-right">Hours</th></tr></thead>
+        <thead className="bg-surface-muted text-muted"><tr><th className="p-4">Volunteer</th><th className="p-4">Tier</th><th className="p-4">Department</th><th className="p-4">Status</th><th className="p-4 text-right">Hours</th></tr></thead>
         <tbody>{volunteers.map(item => {
           const details = detailsFor(item)
           return <tr key={item.id} className="border-t border-border">
-            <td className="p-4"><p className="font-semibold text-ink">{item.full_name}</p><p className="text-xs text-muted">Joined {details?.join_date ? new Date(details.join_date).toLocaleDateString('en-UG') : '—'}</p></td>
-            <td className="p-4 text-ink">{formatRole(details?.tier || item.role)}</td>
+            <td className="p-4"><p className="font-semibold text-text">{item.full_name}</p><p className="text-xs text-muted">Joined {details?.join_date ? new Date(details.join_date).toLocaleDateString('en-UG') : '—'}</p></td>
+            <td className="p-4 text-text">{formatRole(details?.tier || item.role)}</td>
             <td className="p-4 text-muted">{details?.department || 'General'}</td>
             <td className="p-4 capitalize text-muted">{details?.status || 'onboarding'}</td>
-            <td className="p-4 text-right font-semibold text-ink">{Number(details?.hours_total || 0).toFixed(1)}</td>
+            <td className="p-4 text-right font-semibold text-text">{Number(details?.hours_total || 0).toFixed(1)}</td>
           </tr>
         })}</tbody>
       </table>
@@ -81,5 +81,5 @@ export default function VolunteersPage() {
 }
 
 function Stat({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: string | number }) {
-  return <div className="card"><div className="flex items-center justify-between"><div><p className="text-sm text-muted">{label}</p><p className="serif-display mt-2 text-3xl text-ink">{value}</p></div><Icon className="text-purple/35" size={34} /></div></div>
+  return <div className="card"><div className="flex items-center justify-between"><div><p className="text-sm text-muted">{label}</p><p className="serif-display mt-2 text-3xl text-text">{value}</p></div><Icon className="text-accent/35" size={34} /></div></div>
 }

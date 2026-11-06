@@ -290,10 +290,10 @@ export default function MeetingsPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      upcoming: 'bg-purple/10 text-purple border-purple/20',
-      in_progress: 'bg-gold/15 text-purple border-gold/30',
-      completed: 'bg-green/10 text-green border-green/20',
-      cancelled: 'bg-rust/10 text-rust border-rust/25',
+      upcoming: 'bg-accent/10 text-accent border-border',
+      in_progress: 'bg-pink-accent/15 text-accent border-pink-accent/30',
+      completed: 'bg-success/10 text-success border-success',
+      cancelled: 'bg-danger/10 text-danger border-danger',
     }
     return colors[status] || colors.upcoming
   }
@@ -309,7 +309,7 @@ export default function MeetingsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-ink mb-2">Meetings</h1>
+        <h1 className="serif-display mb-2 text-3xl text-text md:text-4xl">Meetings</h1>
         <p className="text-muted">Schedule and manage meetings with agendas</p>
       </div>
 
@@ -318,7 +318,7 @@ export default function MeetingsPage() {
         <div className="mb-6">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-purple text-white px-4 py-2.5 rounded-lg hover:bg-purple-lt transition-all font-medium"
+            className="btn-primary"
           >
             <Plus size={18} /> Schedule Meeting
           </button>
@@ -328,10 +328,10 @@ export default function MeetingsPage() {
       {/* Create Meeting Form */}
       {showForm && (
         <div className="card mb-6 space-y-4">
-          <h2 className="font-semibold text-ink">Schedule New Meeting</h2>
+          <h2 className="font-semibold text-text">Schedule New Meeting</h2>
 
           {errors.general && (
-            <div className="rounded border border-rust/30 bg-rust/10 p-3 text-sm text-rust">{errors.general}</div>
+            <div className="rounded border border-danger bg-danger/10 p-3 text-sm text-danger">{errors.general}</div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,10 +342,10 @@ export default function MeetingsPage() {
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 maxLength={200}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
                 placeholder="Team Sync Meeting"
               />
-              {errors.title && <p className="text-rust text-xs mt-1">{errors.title}</p>}
+              {errors.title && <p className="text-danger text-xs mt-1">{errors.title}</p>}
             </div>
 
             <div>
@@ -354,9 +354,9 @@ export default function MeetingsPage() {
                 type="datetime-local"
                 value={form.scheduled_at}
                 onChange={(e) => setForm((f) => ({ ...f, scheduled_at: e.target.value }))}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
               />
-              {errors.scheduled_at && <p className="text-rust text-xs mt-1">{errors.scheduled_at}</p>}
+              {errors.scheduled_at && <p className="text-danger text-xs mt-1">{errors.scheduled_at}</p>}
             </div>
 
             <div>
@@ -367,9 +367,9 @@ export default function MeetingsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, duration_min: e.target.value }))}
                 min="15"
                 max="480"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
               />
-              {errors.duration_min && <p className="text-rust text-xs mt-1">{errors.duration_min}</p>}
+              {errors.duration_min && <p className="text-danger text-xs mt-1">{errors.duration_min}</p>}
             </div>
 
             <div>
@@ -379,7 +379,7 @@ export default function MeetingsPage() {
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
                 maxLength={300}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
                 placeholder="Conference Room 1 or Google Meet link"
               />
             </div>
@@ -392,7 +392,7 @@ export default function MeetingsPage() {
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               maxLength={2000}
               rows={3}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none"
               placeholder="Meeting objectives and context..."
             />
           </div>
@@ -402,13 +402,13 @@ export default function MeetingsPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleCreateMeeting}
-              className="bg-gold text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-purple transition-colors"
+              className="btn-primary"
             >
               Schedule Meeting
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="px-5 py-2 rounded-lg text-sm border border-border hover:bg-warm/40 transition-colors"
+              className="px-5 py-2 rounded-lg text-sm border border-border hover:bg-surface-muted/40 transition-colors"
             >
               Cancel
             </button>
@@ -418,14 +418,14 @@ export default function MeetingsPage() {
 
       {/* Meetings List */}
       <div>
-        <h2 className="text-lg font-semibold text-ink mb-4">
+        <h2 className="text-lg font-semibold text-text mb-4">
           {meetings.length} {meetings.length === 1 ? 'Meeting' : 'Meetings'}
         </h2>
 
         {meetings.length === 0 ? (
           <div className="record-surface py-16 text-center">
             <EmptyLedger variant="ledger" className="empty-illustration mx-auto mb-3" />
-            <p className="font-semibold text-ink">No upcoming meetings recorded.</p><p className="mt-1 text-sm text-muted">Managers can schedule the first meeting and add its agenda.</p>
+            <p className="font-semibold text-text">No upcoming meetings recorded.</p><p className="mt-1 text-sm text-muted">Managers can schedule the first meeting and add its agenda.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -443,11 +443,11 @@ export default function MeetingsPage() {
                   {/* Meeting Header */}
                   <button
                     onClick={() => setExpandedMeeting(isExpanded ? null : meeting.id)}
-                    className="w-full text-left p-4 hover:bg-warm/40 transition-colors"
+                    className="w-full text-left p-4 hover:bg-surface-muted/40 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2"><h3 className="min-w-0 truncate text-lg font-semibold text-ink">{meeting.title}</h3><CreatorTag profile={meeting.profiles} contributorName={meeting.contributor_name} contributorTag={meeting.contributor_tag} /></div>
+                        <div className="flex items-center gap-2"><h3 className="min-w-0 truncate text-lg font-semibold text-text">{meeting.title}</h3><CreatorTag profile={meeting.profiles} contributorName={meeting.contributor_name} contributorTag={meeting.contributor_tag} /></div>
                         <div className="flex items-center gap-3 mt-2 text-sm text-muted flex-wrap">
                           <span className="flex items-center gap-1">
                             <Calendar size={14} />
@@ -494,7 +494,7 @@ export default function MeetingsPage() {
                               e.stopPropagation()
                               handleDeleteMeeting(meeting.id)
                             }}
-                            className="p-1 hover:bg-rust/10 rounded text-rust/70 hover:text-rust transition-colors"
+                            className="p-1 hover:bg-danger/10 rounded text-danger/70 hover:text-danger transition-colors"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -505,7 +505,7 @@ export default function MeetingsPage() {
 
                   {/* Meeting Details (Expanded) */}
                   {isExpanded && (
-                    <div className="border-t bg-warm/40 p-4 space-y-4">
+                    <div className="border-t bg-surface-muted/40 p-4 space-y-4">
                       {/* Description */}
                       {meeting.description && (
                         <div>
@@ -521,7 +521,7 @@ export default function MeetingsPage() {
                       {/* Agenda Section */}
                       <div className="border-t pt-4">
                         <div className="mb-3">
-                          <h4 className="font-semibold text-sm text-ink mb-3">
+                          <h4 className="font-semibold text-sm text-text mb-3">
                             Agenda ({doneCount}/{totalItems})
                           </h4>
 
@@ -531,16 +531,16 @@ export default function MeetingsPage() {
                               {meeting.agenda_items.map((item: AgendaItem) => (
                                 <li
                                   key={item.id}
-                                  className="flex items-start gap-2 p-2 bg-cream rounded border border-border hover:border-border transition-colors"
+                                  className="flex items-start gap-2 p-2 bg-surface rounded border border-border hover:border-border transition-colors"
                                 >
                                   {(canEditMeeting(meeting) || (profile?.role === 'intern' && item.created_by === profile?.id)) ? <button
                                     onClick={() => handleToggleAgendaItem(item.id, item.done)} className="mt-0.5 shrink-0">
                                     {item.done ? (
-                                      <Check size={16} className="text-green-600" />
+                                      <Check size={16} className="text-success" />
                                     ) : (
                                       <X size={16} className="text-muted" />
                                     )}
-                                  </button> : <span className="mt-0.5 shrink-0" aria-hidden="true">{item.done ? <Check size={16} className="text-green-600" /> : <X size={16} className="text-muted" />}</span>}
+                                  </button> : <span className="mt-0.5 shrink-0" aria-hidden="true">{item.done ? <Check size={16} className="text-success" /> : <X size={16} className="text-muted" />}</span>}
                                   <span
                                     className={`flex-1 text-sm ${
                                       item.done ? 'line-through text-muted' : 'text-muted'
@@ -549,14 +549,14 @@ export default function MeetingsPage() {
                                     {item.content}
                                   </span>
                                   {!item.done && canEditMeeting(meeting) && (
-                                    <button onClick={() => handleConvertToTask(meeting, item)} className="shrink-0 text-muted transition-colors hover:text-purple" title="Convert to task">
+                                    <button onClick={() => handleConvertToTask(meeting, item)} className="shrink-0 text-muted transition-colors hover:text-accent" title="Convert to task">
                                       <ListTodo size={15} />
                                     </button>
                                   )}
                                   {canDeleteAgendaItem(item) && (
                                     <button
                                       onClick={() => handleDeleteAgendaItem(item.id)}
-                                      className="ml-auto text-muted hover:text-rust transition-colors shrink-0"
+                                      className="ml-auto text-muted hover:text-danger transition-colors shrink-0"
                                       title="Remove agenda item"
                                     >
                                       <Trash2 size={14} />
@@ -580,17 +580,17 @@ export default function MeetingsPage() {
                               }
                               maxLength={1000}
                               placeholder="Add agenda item..."
-                              className="flex-1 border border-border rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none"
+                              className="flex-1 border border-border rounded px-3 py-1.5 text-sm"
                             />
                             <button
                               onClick={() => handleAddAgendaItem(meeting.id)}
-                              className="bg-gold text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-purple transition-colors"
+                              className="btn-primary !min-h-0 !px-3 !py-1.5"
                             >
                               Add
                             </button>
                           </div>}
                           {agendaError[meeting.id] && (
-                            <p className="text-rust text-xs mt-1">{agendaError[meeting.id]}</p>
+                            <p className="text-danger text-xs mt-1">{agendaError[meeting.id]}</p>
                           )}
                         </div>
                       </div>

@@ -13,8 +13,8 @@ export function formatRole(role?: string | null): string {
 
 /** Tailwind badge classes for a role */
 export function roleBadgeClass(role?: string | null): string {
-  if (role === 'admin') return 'bg-purple/20 text-purple'
-  if (role === 'manager') return 'bg-gold/20 text-gold'
-  if (role?.startsWith('volunteer')) return 'bg-warm text-muted border border-border'
-  return 'bg-border text-muted'
+  if (role === 'admin') return 'role-badge role-badge--admin'
+  if (role === 'manager') return 'role-badge role-badge--manager'
+  if (role?.startsWith('volunteer')) return 'role-badge role-badge--volunteer'
+  return 'role-badge'
 }
