@@ -67,9 +67,30 @@ begin
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000012') then raise exception 'Amina cannot chat with the shared volunteer account'; end if;
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000003') then raise exception 'Amina can chat with a non-shared volunteer'; end if;
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000008','81000000-0000-4000-8000-000000000001') then raise exception 'Non-Amina DPO can chat with a manager'; end if;
+ if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000009','81000000-0000-4000-8000-000000000001')
+   or not public.chat_pair_allowed('81000000-0000-4000-8000-000000000007','81000000-0000-4000-8000-000000000009')
+   or not public.chat_pair_allowed('81000000-0000-4000-8000-000000000008','81000000-0000-4000-8000-000000000009')
+   or not public.chat_pair_allowed('81000000-0000-4000-8000-000000000006','81000000-0000-4000-8000-000000000009') then
+   raise exception 'Board and advisory DMs are not reciprocal across profile roles';
+ end if;
 end $$;
 
--- Amina's contacts are restricted to managers and the shared volunteer login.
+-- Board/advisory can initiate any profile DM, and other profiles can open the same room in reverse.
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000009',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000009","role":"authenticated"}',true);
+set local role authenticated;
+select public.chat_open_dm('81000000-0000-4000-8000-000000000007') as board_admin_room \gset
+select public.chat_open_dm('81000000-0000-4000-8000-000000000008') as board_dpo_room \gset
+insert into public.chat_messages(room_id,body) values (:'board_admin_room','Board to admin'),(:'board_dpo_room','Board to DPO');
+reset role;
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000007',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000007","role":"authenticated"}',true);
+set local role authenticated;
+select 1 / case when public.chat_open_dm('81000000-0000-4000-8000-000000000009')=:'board_admin_room'::uuid then 1 else 0 end as reverse_board_dm_same_room;
+select 1 / case when count(*)=1 then 1 else 0 end as admin_sees_board_contact from public.chat_contacts() where user_id='81000000-0000-4000-8000-000000000009';
+reset role;
+
+-- Amina sees her DPO exception contacts plus reciprocal board/advisory contacts.
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000011',true);
 select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000011","role":"authenticated"}',true);
 set local role authenticated;

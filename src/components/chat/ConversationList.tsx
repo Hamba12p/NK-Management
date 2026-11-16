@@ -5,13 +5,14 @@ import type { ChatContact } from './useChatRoom'
 
 const roleGroup = (role: string) => role === 'manager' ? 'Managers'
   : role === 'dpo' ? 'Managers'
+  : role === 'board_advisor' ? 'Board & Advisory'
   : role === 'intern' ? 'Interns'
   : ['volunteer', 'volunteer_senior', 'volunteer_lead'].includes(role) ? 'Volunteers' : ''
 
 export default function ConversationList({ contacts, selectedId, unread, onSelect }: {
   contacts: ChatContact[]; selectedId: string | null; unread: Record<string, number>; onSelect: (contact: ChatContact) => void
 }) {
-  const groups = ['General', 'Managers', 'Volunteers', 'Interns']
+  const groups = ['General', 'Managers', 'Volunteers', 'Interns', 'Board & Advisory']
   return <nav aria-label="Conversations" className="space-y-5">
     {groups.map((group) => {
       const entries = contacts.filter((contact) => group === 'General' ? contact.role === 'general' : roleGroup(contact.role) === group)

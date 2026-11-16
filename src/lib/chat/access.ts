@@ -1,7 +1,6 @@
 export const AMINA_CHAT_EMAIL = 'aminayarmah@gmail.com'
+export const CHAT_PROFILE_ROLES = ['admin', 'manager', 'dpo', 'volunteer', 'volunteer_senior', 'volunteer_lead', 'board_advisor', 'intern']
 
-export function canUseChat(role: string | null | undefined, email: string | null | undefined, isFounder = false) {
-  return isFounder
-    || ['manager', 'volunteer', 'volunteer_senior', 'volunteer_lead', 'intern'].includes(role || '')
-    || (role === 'dpo' && email?.trim().toLowerCase() === AMINA_CHAT_EMAIL)
+export function canUseChat(role: string | null | undefined, _email?: string | null, _isFounder = false) {
+  return CHAT_PROFILE_ROLES.includes(role || '')
 }
