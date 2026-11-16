@@ -44,6 +44,7 @@ test('notification category defaults and saved switches are honoured', () => {
   assert.equal(isCategoryEnabled('upload', null, 'manager'), true)
   assert.equal(isCategoryEnabled('upload', null, 'volunteer'), false)
   assert.equal(isCategoryEnabled('upload', { comments_enabled: true, assignments_enabled: true, uploads_enabled: true }, 'volunteer'), true)
+  assert.equal(isCategoryEnabled('message', null, 'volunteer'), true)
 })
 
 test('quiet hours use Kampala time and cross midnight', () => {
@@ -61,6 +62,12 @@ test('push payload has only a generic type, notification id and same-origin rela
   assert.equal(isSafeNotificationPayload({ ...payload, url: '//example.org' }), false)
   assert.equal(isSafeNotificationPayload({ ...payload, url: 'https://example.org' }), false)
   assert.equal(notificationCopy('comment'), 'New comment on a document you follow')
+  const messagePayload = { type: 'message', id: 'notice-2', url: '/dashboard/chat?room=room-1', name: 'Amina' }
+  assert.equal(isSafeNotificationPayload(messagePayload), true)
+  assert.equal(notificationCopy('message', messagePayload.name), 'New message from Amina')
+  assert.equal(isSafeNotificationPayload({ ...messagePayload, body: 'private message text' }), false)
+  assert.equal(isSafeNotificationPayload({ ...messagePayload, name: '' }), false)
+  assert.equal(notificationUrl('message'), '/dashboard/chat')
   assert.equal(notificationUrl('upload'), '/dashboard/documents')
   assert.equal(JSON.stringify(payload).includes('private comment text'), false)
 })

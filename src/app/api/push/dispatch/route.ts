@@ -10,7 +10,7 @@ async function dispatchOne(id: string) {
   const admin = createNotificationAdminClient()
   const { data, error } = await admin
     .from('notifications')
-    .select('id, recipient_id, type, entity_id, url, push_attempts')
+    .select('id, recipient_id, type, entity_id, url, push_attempts, actor_name')
     .eq('id', id)
     .maybeSingle()
   if (error) throw new Error('Unable to load notification for dispatch')
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     const admin = createNotificationAdminClient()
     const { data, error } = await admin
       .from('notifications')
-      .select('id, recipient_id, type, entity_id, url, push_attempts')
+      .select('id, recipient_id, type, entity_id, url, push_attempts, actor_name')
       .is('push_delivered_at', null)
       .lte('push_next_attempt_at', new Date().toISOString())
       .order('push_next_attempt_at')

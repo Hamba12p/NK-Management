@@ -16,6 +16,7 @@ type PushRecord = {
   entity_id: string
   url: string
   push_attempts: number
+  actor_name: string | null
 }
 
 type PushSubscriptionRecord = {
@@ -84,7 +85,9 @@ export async function dispatchPushNotification(admin: SupabaseClient, notificati
     return 'inactive'
   }
 
-  const categoryEnabled = notification.type === 'comment'
+  const categoryEnabled = notification.type === 'message'
+    ? true
+    : notification.type === 'comment'
     ? settings?.comments_enabled ?? true
     : notification.type === 'assignment'
       ? settings?.assignments_enabled ?? true
@@ -139,6 +142,7 @@ export async function dispatchPushNotification(admin: SupabaseClient, notificati
     type: notification.type,
     id: notification.id,
     url: notification.url,
+    ...(notification.type === 'message' && notification.actor_name ? { name: notification.actor_name } : {}),
   }
   let transientFailure = false
   for (const subscription of subscriptions as PushSubscriptionRecord[]) {

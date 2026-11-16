@@ -1,20 +1,24 @@
-const allowedTypes = new Set(['comment', 'assignment', 'upload', 'test'])
+const allowedTypes = new Set(['comment', 'assignment', 'upload', 'message', 'test'])
 
 function safePayload(value) {
   if (!value || typeof value !== 'object') return null
   const keys = Object.keys(value)
-  if (keys.length !== 3 || keys.some((key) => !['type', 'id', 'url'].includes(key))) return null
+  if (keys.some((key) => !['type', 'id', 'url', 'name'].includes(key))) return null
+  if (value.type === 'message') {
+    if (keys.length !== 4 || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 160) return null
+  } else if (keys.length !== 3 || 'name' in value) return null
   if (!allowedTypes.has(value.type) || typeof value.id !== 'string' || !value.id) return null
   if (typeof value.url !== 'string' || !value.url.startsWith('/dashboard/') || value.url.startsWith('//')) return null
   const target = new URL(value.url, self.location.origin)
   if (target.origin !== self.location.origin) return null
-  return { type: value.type, id: value.id, url: target.pathname + target.search + target.hash }
+  return { type: value.type, id: value.id, url: target.pathname + target.search + target.hash, ...(value.type === 'message' ? { name: value.name } : {}) }
 }
 
-function bodyFor(type) {
+function bodyFor(type, name) {
   if (type === 'comment') return 'New comment on a document you follow'
   if (type === 'assignment') return 'A task has been assigned to you'
   if (type === 'upload') return 'A new document has been uploaded'
+  if (type === 'message') return `New message from ${name}`
   return 'Your notifications are working'
 }
 
@@ -27,7 +31,7 @@ self.addEventListener('push', (event) => {
   }
   if (!payload) return
   event.waitUntil(self.registration.showNotification('NK Udada Staff Hub', {
-    body: bodyFor(payload.type),
+    body: bodyFor(payload.type, payload.name),
     icon: '/logo.jpeg',
     badge: '/icons/notification-badge.png',
     tag: `nk-${payload.type}-${payload.id}`,
