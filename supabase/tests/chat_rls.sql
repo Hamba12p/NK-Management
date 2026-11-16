@@ -77,6 +77,7 @@ select public.chat_open_dm('81000000-0000-4000-8000-000000000003') as manager_vo
 select public.chat_open_dm('81000000-0000-4000-8000-000000000005') as manager_intern_room \gset
 select public.chat_open_dm('81000000-0000-4000-8000-000000000010') as manager_founder_room \gset
 insert into public.chat_messages(room_id,body) values (:'manager_intern_room','Existing intern thread');
+insert into public.chat_messages(room_id,body) values (:'manager_intern_room','Another message in the same thread');
 do $$
 declare a uuid; b uuid;
 begin
@@ -85,6 +86,9 @@ begin
  if a<>b then raise exception 'DM open was not idempotent'; end if;
 end $$;
 reset role;
+select 1 / case when count(*)=1 and bool_and(actor_name='Manager A') then 1 else 0 end as chat_notifications_collapse_without_message_text
+from public.notifications
+where recipient_id='81000000-0000-4000-8000-000000000005' and type='message' and entity_id=:'manager_intern_room';
 
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000005',true);
 select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
@@ -115,6 +119,18 @@ end $$;
 reset role;
 
 -- Intern revocation removes both read and send access to an already-created room.
+update public.profiles set intern_access_enabled=false where id='81000000-0000-4000-8000-000000000005';
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000005',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
+set local role authenticated;
+do $$ declare blocked boolean; rid uuid; begin
+ select id into rid from public.chat_rooms where room_key='81000000-0000-4000-8000-000000000001:81000000-0000-4000-8000-000000000005';
+ if exists(select from public.chat_messages where room_id=rid) then raise exception 'Disabled intern read old thread'; end if;
+ blocked:=false; begin insert into public.chat_messages(room_id,body) values (rid,'No'); exception when others then blocked:=true; end;
+ if not blocked then raise exception 'Disabled intern sent to old thread'; end if;
+end $$;
+reset role;
+update public.profiles set intern_access_enabled=true where id='81000000-0000-4000-8000-000000000005';
 update public.profiles set access_expires_at=now()-interval '1 second' where id='81000000-0000-4000-8000-000000000005';
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000005',true);
 select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
