@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar'
 import DashboardTopbar from '@/components/DashboardTopbar'
 import NotificationBootstrap from '@/components/notifications/NotificationBootstrap'
 import NotificationEnableBanner from '@/components/notifications/NotificationEnableBanner'
+import { ChatUnreadProvider } from '@/components/chat/ChatUnreadProvider'
 
 export default async function DashboardLayout({
   children,
@@ -27,7 +28,7 @@ export default async function DashboardLayout({
     intern_team_directory_enabled: process.env.INTERN_TEAM_DIRECTORY_ENABLED === 'true',
   } : profile
 
-  return (
+  return <ChatUnreadProvider>
     <div className="app-shell flex min-h-screen">
       <Sidebar profile={sidebarProfile} />
       <main className="app-content flex min-h-screen flex-1 flex-col">
@@ -41,5 +42,5 @@ export default async function DashboardLayout({
         </div>
       </main>
     </div>
-  )
+  </ChatUnreadProvider>
 }

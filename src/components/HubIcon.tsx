@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-export type HubIconName = 'home' | 'documents' | 'announcements' | 'workspace' | 'settings' | 'meetings' | 'team' | 'volunteers' | 'classes' | 'learners' | 'equipment' | 'activity' | 'advanced' | 'analytics' | 'dpo-register' | 'dpo-requests' | 'dpo-incidents' | 'profile' | 'hours'
+export type HubIconName = 'home' | 'documents' | 'announcements' | 'workspace' | 'settings' | 'meetings' | 'messages' | 'team' | 'volunteers' | 'classes' | 'learners' | 'equipment' | 'activity' | 'advanced' | 'analytics' | 'dpo-register' | 'dpo-requests' | 'dpo-incidents' | 'profile' | 'hours'
 
 const paths: Record<HubIconName, React.ReactNode> = {
   home: <><path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6"/></>,
@@ -9,6 +9,7 @@ const paths: Record<HubIconName, React.ReactNode> = {
   workspace: <><path d="M5 4h14v16H5z"/><path d="M8 4v16M11 8h5M11 12h5M11 16h3"/></>,
   settings: <><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2M12 19.2v2M2.8 12h2M19.2 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M18.5 5.5l-1.4 1.4M6.9 17.1l-1.4 1.4"/></>,
   meetings: <><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 4.5V2.5M19.5 12h2M12 19.5v2M4.5 12h-2"/></>,
+  messages: <><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.3 8.3 0 0 1-3.2-.6L4 20l1.4-3.4A7 7 0 0 1 4 12c0-4.4 3.6-8 8-8s8 3.1 8 7.5Z"/><path d="M8 11h8M8 14h5"/></>,
   team: <><circle cx="12" cy="7.5" r="2.3"/><circle cx="6" cy="11" r="2"/><circle cx="18" cy="11" r="2"/><path d="M8 19c.4-3 1.8-4.5 4-4.5s3.6 1.5 4 4.5M2.8 19c.2-2.6 1.3-4 3.2-4 1 0 1.8.3 2.4 1M21.2 19c-.2-2.6-1.3-4-3.2-4-1 0-1.8.3-2.4 1"/></>,
   volunteers: <><path d="M12 20c-4-2.4-7-5.2-7-9a3.7 3.7 0 0 1 6.6-2.3L12 9l.4-.3A3.7 3.7 0 0 1 19 11c0 3.8-3 6.6-7 9Z"/><path d="m9.5 12 1.5 1.5 3.5-4"/></>,
   classes: <><path d="M4 5h16v15H4zM8 3v4M16 3v4M4 9h16"/><path d="M8 13h3M13 13h3M8 17h3"/></>,

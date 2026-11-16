@@ -9,6 +9,8 @@ import CreatorTag from '@/components/CreatorTag'
 import { EmptyLedger } from '@/components/BrandIllustrations'
 import { volunteerContributor } from '@/lib/creator'
 import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
+import ChatPanel from '@/components/chat/ChatPanel'
+import { useChatUnread } from '@/components/chat/ChatUnreadProvider'
 
 const meetingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -48,6 +50,8 @@ type AgendaItem = {
 }
 
 export default function MeetingsPage() {
+  const [activeTab, setActiveTab] = useState<'meetings' | 'chat'>('meetings')
+  const { total: chatUnread } = useChatUnread()
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [profile, setProfile] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
@@ -305,6 +309,7 @@ export default function MeetingsPage() {
 
   const canDeleteMeeting = (meeting: Meeting) => profile?.role === 'admin' || profile?.id === meeting.created_by
   const canDeleteAgendaItem = (item: AgendaItem) => profile?.role === 'admin' || profile?.id === item.created_by
+  const canChat = ['manager', 'volunteer', 'volunteer_senior', 'volunteer_lead', 'intern'].includes(profile?.role || '') || profile?.is_founder === true
 
   return (
     <div>
@@ -312,6 +317,13 @@ export default function MeetingsPage() {
         <h1 className="serif-display mb-2 text-3xl text-text md:text-4xl">Meetings</h1>
         <p className="text-muted">Schedule and manage meetings with agendas</p>
       </div>
+
+      <div role="tablist" aria-label="Meetings and chat" className="mb-6 flex gap-2 border-b border-border">
+        <button type="button" role="tab" aria-selected={activeTab === 'meetings'} onClick={() => setActiveTab('meetings')} className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${activeTab === 'meetings' ? 'border-accent text-accent' : 'border-transparent text-muted'}`}>Meetings</button>
+        {canChat && <button type="button" role="tab" aria-selected={activeTab === 'chat'} onClick={() => setActiveTab('chat')} className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${activeTab === 'chat' ? 'border-accent text-accent' : 'border-transparent text-muted'}`}>Chat{chatUnread > 0 && <span className="ml-2 rounded-full bg-pink-accent px-2 py-0.5 text-[10px] font-bold text-pink-fill-text">{chatUnread > 99 ? '99+' : chatUnread}</span>}</button>}
+      </div>
+
+      {activeTab === 'chat' ? <ChatPanel /> : <>
 
       {/* Create Meeting Button */}
       {(profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'dpo') && (
@@ -602,6 +614,7 @@ export default function MeetingsPage() {
           </div>
         )}
       </div>
+      </>}
     </div>
   )
 }
