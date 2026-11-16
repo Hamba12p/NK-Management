@@ -12,11 +12,14 @@ insert into auth.users(id,email,raw_user_meta_data) values
  ('81000000-0000-4000-8000-000000000007','admin-a@example.invalid','{"full_name":"Admin A","role":"admin"}'),
  ('81000000-0000-4000-8000-000000000008','dpo-a@example.invalid','{"full_name":"DPO A","role":"dpo"}'),
  ('81000000-0000-4000-8000-000000000009','board-a@example.invalid','{"full_name":"Board A","role":"board_advisor"}'),
- ('81000000-0000-4000-8000-000000000010','founder-a@example.invalid','{"full_name":"Founder A","role":"admin"}');
+ ('81000000-0000-4000-8000-000000000010','founder-a@example.invalid','{"full_name":"Founder A","role":"admin"}'),
+ ('81000000-0000-4000-8000-000000000011','aminayarmah@gmail.com','{"full_name":"Amina Yarmah","role":"dpo"}'),
+ ('81000000-0000-4000-8000-000000000012','shared-volunteer@example.invalid','{"full_name":"Volunteers","role":"volunteer"}');
 update public.profiles set intern_access_enabled=true, access_starts_on=(now() at time zone 'Africa/Nairobi')::date,
   access_expires_at=now()+interval '30 days', must_change_password=false
 where role='intern';
 update public.profiles set is_founder=true where id='81000000-0000-4000-8000-000000000010';
+update public.profiles set account_type='shared' where id='81000000-0000-4000-8000-000000000012';
 
 -- Every intern state is evaluated for the supplied UID, and matches the existing caller helper.
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000005',true);
@@ -59,7 +62,29 @@ begin
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000005','81000000-0000-4000-8000-000000000006') then raise exception 'Intern-intern allowed'; end if;
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000001') then raise exception 'Self chat allowed'; end if;
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000010','81000000-0000-4000-8000-000000000003') then raise exception 'Founder-manager pair denied'; end if;
+ if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000001')
+   or not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000002') then raise exception 'Amina cannot chat with all managers'; end if;
+ if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000012') then raise exception 'Amina cannot chat with the shared volunteer account'; end if;
+ if public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000003') then raise exception 'Amina can chat with a non-shared volunteer'; end if;
+ if public.chat_pair_allowed('81000000-0000-4000-8000-000000000008','81000000-0000-4000-8000-000000000001') then raise exception 'Non-Amina DPO can chat with a manager'; end if;
 end $$;
+
+-- Amina's contacts are restricted to managers and the shared volunteer login.
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000011',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000011","role":"authenticated"}',true);
+set local role authenticated;
+select 1 / case when count(*)=3 then 1 else 0 end as amina_manager_contacts from public.chat_contacts() where role='manager';
+select 1 / case when count(*)=1 and bool_and(is_shared_account) then 1 else 0 end as amina_shared_volunteer_contact from public.chat_contacts() where role='volunteer';
+select 1 / case when count(*)=0 then 1 else 0 end as amina_no_general_or_unrelated_contacts from public.chat_contacts() where role in ('general','intern') or (role like 'volunteer%' and not is_shared_account);
+select public.chat_open_dm('81000000-0000-4000-8000-000000000001') as amina_manager_room \gset
+select public.chat_open_dm('81000000-0000-4000-8000-000000000012') as amina_volunteer_room \gset
+insert into public.chat_messages(room_id,body) values (:'amina_manager_room','Amina can message a manager'),(:'amina_volunteer_room','Amina can message the shared volunteer');
+reset role;
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000001',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select 1 / case when count(*)=1 then 1 else 0 end as manager_sees_amina_contact from public.chat_contacts() where user_id='81000000-0000-4000-8000-000000000011';
+reset role;
 
 -- Make durable rooms used by the access-revocation assertion.
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000002',true);

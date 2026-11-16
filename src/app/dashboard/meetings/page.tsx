@@ -11,6 +11,7 @@ import { volunteerContributor } from '@/lib/creator'
 import { loadStaffDirectory, staffProfile } from '@/lib/staff-directory'
 import ChatPanel from '@/components/chat/ChatPanel'
 import { useChatUnread } from '@/components/chat/ChatUnreadProvider'
+import { canUseChat } from '@/lib/chat/access'
 
 const meetingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -309,7 +310,7 @@ export default function MeetingsPage() {
 
   const canDeleteMeeting = (meeting: Meeting) => profile?.role === 'admin' || profile?.id === meeting.created_by
   const canDeleteAgendaItem = (item: AgendaItem) => profile?.role === 'admin' || profile?.id === item.created_by
-  const canChat = ['manager', 'volunteer', 'volunteer_senior', 'volunteer_lead', 'intern'].includes(profile?.role || '') || profile?.is_founder === true
+  const canChat = canUseChat(profile?.role, profile?.email, profile?.is_founder)
 
   return (
     <div>

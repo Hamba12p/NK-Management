@@ -4,6 +4,7 @@ import { MessageCircle } from 'lucide-react'
 import type { ChatContact } from './useChatRoom'
 
 const roleGroup = (role: string) => role === 'manager' ? 'Managers'
+  : role === 'dpo' ? 'Managers'
   : role === 'intern' ? 'Interns'
   : ['volunteer', 'volunteer_senior', 'volunteer_lead'].includes(role) ? 'Volunteers' : ''
 

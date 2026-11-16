@@ -5,6 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 import { internAccessIsActive, internHasStarted, internPasswordChangeIsDue } from '@/lib/intern-access'
 import { canVolunteerAccessApi, isObxOnlyVolunteerRole } from '@/lib/staffhub-access'
 import { createNotificationAdminClient } from '@/lib/notifications/server'
+import { canUseChat } from '@/lib/chat/access'
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -139,7 +140,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && (pathname === '/dashboard/chat' || pathname.startsWith('/dashboard/chat/'))
-    && !(['manager', 'volunteer', 'volunteer_senior', 'volunteer_lead', 'intern'].includes(profile?.role || '') || profile?.is_founder)) {
+    && !canUseChat(profile?.role, profile?.email, profile?.is_founder)) {
     return NextResponse.redirect(new URL('/dashboard?access=denied', request.url))
   }
 

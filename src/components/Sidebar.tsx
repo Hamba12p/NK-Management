@@ -11,6 +11,7 @@ import { logActivity } from '@/lib/activity'
 import { clearPushSubscriptionBeforeSignOut } from '@/lib/notifications/client'
 import HubIcon, { type HubIconName } from '@/components/HubIcon'
 import { useChatUnread } from '@/components/chat/ChatUnreadProvider'
+import { canUseChat } from '@/lib/chat/access'
 
 type NavItem = { href: string; label: string; icon: HubIconName; adminOnly: boolean; chat?: boolean }
 
@@ -121,7 +122,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
       </div>
 
       <nav className={`no-scrollbar flex-1 space-y-1 overflow-y-auto ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
-        {[...getNavItems(profile?.role, profile?.intern_team_directory_enabled === true), ...(['manager', 'intern', 'volunteer', 'volunteer_senior', 'volunteer_lead'].includes(profile?.role) || profile?.is_founder ? [{ href: '/dashboard/chat', label: 'Chat', icon: 'messages' as HubIconName, adminOnly: false, chat: true }] : [])].map(({ href, label, icon, adminOnly, chat }) => {
+        {[...getNavItems(profile?.role, profile?.intern_team_directory_enabled === true), ...(canUseChat(profile?.role, profile?.email, profile?.is_founder) ? [{ href: '/dashboard/chat', label: 'Chat', icon: 'messages' as HubIconName, adminOnly: false, chat: true }] : [])].map(({ href, label, icon, adminOnly, chat }) => {
           if (adminOnly && profile?.role !== 'admin') return null
           const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
           return (
