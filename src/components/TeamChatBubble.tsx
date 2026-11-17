@@ -7,18 +7,6 @@ import { ArrowRight, MessageCircle, X } from 'lucide-react'
 import { canUseChat } from '@/lib/chat/access'
 import { createClient } from '@/lib/supabase/client'
 import { useChatUnread } from '@/components/chat/ChatUnreadProvider'
-import { parseChatResources, type ChatResource } from '@/lib/team-chat'
-
-type PreviewMessage = {
-  id: string
-  room_id: string
-  sender_id: string
-  body: string
-  attachments: ChatResource[]
-  created_at: string
-  conversation: string
-  sender: string
-}
 
 type ChatContact = {
   user_id: string | null
@@ -27,60 +15,45 @@ type ChatContact = {
   room_id: string | null
 }
 
-function previewTime(value: string) {
-  return new Intl.DateTimeFormat('en-UG', { hour: 'numeric', minute: '2-digit' }).format(new Date(value))
-}
+type UnreadContact = ChatContact & { room_id: string }
 
 export default function TeamChatBubble({ role }: { role?: string | null }) {
   const pathname = usePathname()
   const supabase = useMemo(() => createClient(), [])
-  const { total: unreadCount, refresh: refreshUnread } = useChatUnread()
-  const [messages, setMessages] = useState<PreviewMessage[]>([])
+  const { counts, total: unreadCount, refresh: refreshUnread } = useChatUnread()
+  const [contacts, setContacts] = useState<ChatContact[]>([])
+  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
 
-  const loadPreviews = useCallback(async () => {
-    const [{ data: authData, error: authError }, { data: contacts, error: contactsError }, { data, error: messagesError }] = await Promise.all([
-      supabase.auth.getUser(),
-      supabase.rpc('chat_contacts'),
-      supabase.from('chat_messages').select('id,room_id,sender_id,body,attachments,created_at').order('created_at', { ascending: false }).limit(3),
-    ])
-    const user = authData.user
-    if (authError || !user || contactsError || messagesError) {
+  const loadContacts = useCallback(async () => {
+    const { data, error: queryError } = await supabase.rpc('chat_contacts')
+    if (queryError) {
       setError('Chat preview is unavailable.')
+      setLoading(false)
       return
     }
-    const availableContacts = (contacts || []) as ChatContact[]
-    const contactByRoom = new Map(availableContacts.filter(contact => contact.room_id).map(contact => [contact.room_id as string, contact]))
-    const contactByUser = new Map(availableContacts.filter(contact => contact.user_id).map(contact => [contact.user_id as string, contact]))
-    const previews = (data || []).flatMap((message): PreviewMessage[] => {
-      const contact = contactByRoom.get(message.room_id)
-      if (!contact) return []
-      return [{
-        ...message,
-        attachments: parseChatResources(message.attachments),
-        conversation: contact.display_name,
-        sender: contact.role === 'general'
-          ? contactByUser.get(message.sender_id)?.display_name || (message.sender_id === user.id ? 'You' : 'Team member')
-          : message.sender_id === user.id ? 'You' : contact.display_name,
-      }]
-    })
-    setMessages(previews)
+    setContacts((data || []) as ChatContact[])
     setError('')
+    setLoading(false)
     await refreshUnread()
   }, [refreshUnread, supabase])
 
+  const unreadChats = contacts
+    .filter((contact): contact is UnreadContact => Boolean(contact.room_id && counts[contact.room_id] > 0))
+    .sort((a, b) => counts[b.room_id] - counts[a.room_id] || a.display_name.localeCompare(b.display_name))
+
   useEffect(() => {
     if (!canUseChat(role) || pathname === '/dashboard/chat') return
-    // Load server-backed previews and subscribe to new messages after mount.
+    // Load conversation names only; unread counts come from the chat provider.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadPreviews()
+    void loadContacts()
     const channel = supabase
       .channel('team-chat-bubble')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => void loadPreviews())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => void loadContacts())
       .subscribe()
     const refreshOnFocus = () => {
-      if (document.visibilityState === 'visible') void loadPreviews()
+      if (document.visibilityState === 'visible') void loadContacts()
     }
     window.addEventListener('focus', refreshOnFocus)
     document.addEventListener('visibilitychange', refreshOnFocus)
@@ -89,7 +62,7 @@ export default function TeamChatBubble({ role }: { role?: string | null }) {
       document.removeEventListener('visibilitychange', refreshOnFocus)
       void supabase.removeChannel(channel)
     }
-  }, [loadPreviews, pathname, role, supabase])
+  }, [loadContacts, pathname, role, supabase])
 
   useEffect(() => {
     if (!open) return
@@ -107,19 +80,20 @@ export default function TeamChatBubble({ role }: { role?: string | null }) {
       <header className="flex items-center justify-between gap-3 bg-accent px-4 py-3 text-accent-text">
         <div className="flex items-center gap-2.5">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent-text/15"><MessageCircle size={18} aria-hidden="true" /></span>
-          <div><h2 className="text-sm font-bold">Team chat</h2><p className="text-xs opacity-85">{unreadCount ? `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}` : 'A little team catch-up'}</p></div>
+          <div><h2 className="text-sm font-bold">Team chat</h2><p className="text-xs opacity-85">{unreadCount ? `${unreadChats.length} unread chat${unreadChats.length === 1 ? '' : 's'} · ${unreadCount} message${unreadCount === 1 ? '' : 's'}` : 'You’re all caught up'}</p></div>
         </div>
         <button type="button" onClick={() => setOpen(false)} aria-label="Close chat preview" className="grid h-9 w-9 place-items-center rounded-lg hover:bg-accent-text/15"><X size={17} aria-hidden="true" /></button>
       </header>
-      {error ? <p role="status" className="px-4 py-5 text-sm text-muted">{error}</p> : messages.length ? <ul className="divide-y divide-border-subtle">
-        {messages.map(message => <li key={message.id} className="px-4 py-3">
-          <Link href={`/dashboard/chat?room=${encodeURIComponent(message.room_id)}`} onClick={() => setOpen(false)} className="block rounded-lg focus-visible:outline">
-            <span className="flex items-center justify-between gap-3"><span className="truncate text-xs font-bold text-text">{message.conversation === 'General' ? `General · ${message.sender}` : message.sender}</span><time className="shrink-0 text-[.68rem] text-muted" dateTime={message.created_at}>{previewTime(message.created_at)}</time></span>
-            <span className="mt-1 block line-clamp-2 text-sm leading-5 text-muted">{message.body || (message.attachments.length ? `Shared ${message.attachments[0].title}` : 'New message')}</span>
-            {message.attachments.length > 0 && <span className="mt-1 block truncate text-[.68rem] font-semibold text-accent">{message.attachments[0].title}</span>}
-          </Link>
-        </li>)}
-      </ul> : <p className="px-4 py-7 text-center text-sm text-muted">No recent messages. Start a conversation.</p>}
+      {error ? <p role="status" className="px-4 py-5 text-sm text-muted">{error}</p>
+        : loading ? <p className="px-4 py-5 text-sm text-muted">Loading chats…</p>
+        : unreadChats.length ? <ul aria-label="Unread chats" className="divide-y divide-border-subtle">
+          {unreadChats.slice(0, 5).map(contact => <li key={contact.room_id} className="px-4 py-2">
+            <Link href={`/dashboard/chat?room=${encodeURIComponent(contact.room_id)}`} onClick={() => setOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-muted focus-visible:outline">
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{contact.display_name}</span>
+              <span className="shrink-0 rounded-full bg-pink-accent px-2 py-0.5 text-xs font-bold text-pink-fill-text">{counts[contact.room_id] > 99 ? '99+' : counts[contact.room_id]}</span>
+            </Link>
+          </li>)}
+        </ul> : <p className="px-4 py-7 text-center text-sm text-muted">No unread chats.</p>}
       <div className="border-t border-border p-3">
         <Link href="/dashboard/chat" onClick={() => setOpen(false)} className="btn-primary flex w-full !min-h-11 !rounded-xl !px-4 !py-2.5">
           Open team chat <ArrowRight size={16} aria-hidden="true" />
