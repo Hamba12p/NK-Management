@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar'
 import DashboardTopbar from '@/components/DashboardTopbar'
 import NotificationBootstrap from '@/components/notifications/NotificationBootstrap'
 import NotificationEnableBanner from '@/components/notifications/NotificationEnableBanner'
+import TeamChatBubble from '@/components/TeamChatBubble'
 
 export default async function DashboardLayout({
   children,
@@ -34,6 +35,7 @@ export default async function DashboardLayout({
         <DashboardTopbar profile={profile} />
         <NotificationBootstrap />
         <NotificationEnableBanner />
+        <TeamChatBubble />
         <div className="flex-1">
           <div className="page-container px-4 py-6 md:px-8 md:py-9">
             {children}

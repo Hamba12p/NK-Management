@@ -109,7 +109,13 @@ export default function WorkspacePage() {
     ])
     const docs = (docResult.data || []).map(doc => ({ ...doc, profiles: staffProfile(directory, doc.author_id) }))
     const tasks = (taskResult.data || []).map(task => ({ ...task, profiles: staffProfile(directory, task.created_by) }))
-    if (docResult.error) setError(docResult.error.message); else { setDocs(docs); if (!selected && docs[0]) openDoc(docs[0]) }
+    if (docResult.error) setError(docResult.error.message); else {
+      setDocs(docs)
+      const requestedDocId = new URLSearchParams(window.location.search).get('document')
+      const requestedDoc = requestedDocId ? docs.find(doc => doc.id === requestedDocId) : undefined
+      if (requestedDoc) openDoc(requestedDoc)
+      else if (!selected && docs[0]) openDoc(docs[0])
+    }
     if (taskResult.error) setError(taskResult.error.message); else setTasks(tasks)
     setRole(profileResult.data?.role || '')
     setAssignees(directory)
@@ -122,6 +128,11 @@ export default function WorkspacePage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   }, [])
+  useEffect(() => {
+    const taskId = new URLSearchParams(window.location.search).get('task')
+    if (!taskId || !tasks.some(task => task.id === taskId)) return
+    document.getElementById(`task-${taskId}`)?.scrollIntoView({ block: 'center' })
+  }, [tasks])
   useEffect(() => {
     const channel = supabase
       .channel('workspace-task-attachments')
@@ -267,7 +278,7 @@ export default function WorkspacePage() {
             const attachments = taskAttachments.filter(item => item.task_id === task.id)
             const isAssignee = task.assignee_id === userId
             const canUpdateTask = canManageTasks || (canManageInternTasks && internStaff.some(member => member.id === task.assignee_id)) || (role === 'intern' && isAssignee)
-            return <div key={task.id} className="rounded border border-border bg-surface p-3 text-sm">
+            return <div key={task.id} id={`task-${task.id}`} className="rounded border border-border bg-surface p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div><div className="flex items-center gap-2"><p className="font-medium text-text">{task.title}</p><CreatorTag profile={task.profiles} contributorName={task.contributor_name} contributorTag={task.contributor_tag} /></div>
                   <p className="mt-1 text-xs text-muted">{task.assignee_id ? assignees.find(person => person.id === task.assignee_id)?.full_name || task.assignee_label || 'Assigned' : task.assignee_label || 'Unassigned'}{task.due_date ? ` · due ${task.due_date}` : ''}</p>

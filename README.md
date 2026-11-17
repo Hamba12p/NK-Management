@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Team chat
+
+The dashboard chat uses the existing Supabase Auth, Row Level Security, and Realtime setup. Apply `supabase/migrations/20261117112900_team_chat.sql` before using it. Messages can link to existing shared files, workspace documents, tasks, and meetings; those items stay in their original workspace and keep their existing access rules.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
