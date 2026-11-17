@@ -5,6 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 import { internAccessIsActive, internHasStarted, internPasswordChangeIsDue } from '@/lib/intern-access'
 import { canVolunteerAccessApi, isObxOnlyVolunteerRole } from '@/lib/staffhub-access'
 import { createNotificationAdminClient } from '@/lib/notifications/server'
+import { canUseChat } from '@/lib/chat/access'
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -51,6 +52,7 @@ export async function proxy(request: NextRequest) {
 
   let profile: {
     role: string
+    is_founder: boolean
     email: string | null
     access_starts_on: string | null
     access_expires_at: string | null
@@ -61,7 +63,7 @@ export async function proxy(request: NextRequest) {
   if (user && (isDashboardPath || pathname === '/change-password' || isApiPath || pathname === '/' || pathname === '/login')) {
     const { data } = await supabase
       .from('profiles')
-      .select('role, email, access_starts_on, access_expires_at, intern_access_enabled, must_change_password, password_change_required_on')
+      .select('role, is_founder, email, access_starts_on, access_expires_at, intern_access_enabled, must_change_password, password_change_required_on')
       .eq('id', user.id)
       .single()
     profile = data
@@ -102,7 +104,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     if (isDashboardPath) {
-      const internPaths = ['/dashboard', '/dashboard/documents', '/dashboard/workspace', '/dashboard/meetings', '/dashboard/announcements', '/dashboard/settings', '/dashboard/feedback']
+      const internPaths = ['/dashboard', '/dashboard/documents', '/dashboard/workspace', '/dashboard/meetings', '/dashboard/chat', '/dashboard/announcements', '/dashboard/settings', '/dashboard/feedback']
       const teamEnabled = process.env.INTERN_TEAM_DIRECTORY_ENABLED === 'true'
       const allowed = internPaths.some(path => pathname === path || pathname.startsWith(`${path}/`))
         || (teamEnabled && (pathname === '/dashboard/team' || pathname.startsWith('/dashboard/team/')))
@@ -137,6 +139,11 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (user && (pathname === '/dashboard/chat' || pathname.startsWith('/dashboard/chat/'))
+    && !canUseChat(profile?.role, profile?.email, profile?.is_founder)) {
+    return NextResponse.redirect(new URL('/dashboard?access=denied', request.url))
+  }
+
   const protectedRoles = (() => {
     if (pathname === '/dashboard/me' || pathname.startsWith('/dashboard/me/')) return ['admin', 'board_advisor']
     if (pathname === '/dashboard/advanced' || pathname === '/dashboard/analytics') return ['admin']
@@ -151,6 +158,9 @@ export async function proxy(request: NextRequest) {
     }
     if (pathname === '/dashboard/volunteer-profile' || pathname === '/dashboard/volunteer-hours') {
       return ['volunteer', 'volunteer_senior', 'volunteer_lead']
+    }
+    if (pathname === '/dashboard/meetings' || pathname.startsWith('/dashboard/meetings/')) {
+      return ['admin', 'manager', 'dpo', 'intern', 'board_advisor']
     }
     if (pathname === '/dashboard/onboarding' || pathname.startsWith('/dashboard/onboarding/')) return ['admin', 'manager', 'dpo']
     return null

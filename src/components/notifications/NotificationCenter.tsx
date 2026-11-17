@@ -13,6 +13,7 @@ type InboxItem = {
   url: string
   created_at: string
   read_at: string | null
+  actor_name: string | null
 }
 
 function formatTime(value: string) {
@@ -40,7 +41,7 @@ export default function NotificationCenter() {
       const refresh = async () => {
         const { data, error: queryError } = await supabase
           .from('notifications')
-          .select('id, type, entity_id, url, created_at, read_at')
+          .select('id, type, entity_id, url, created_at, read_at, actor_name')
           .eq('recipient_id', user.id)
           .order('created_at', { ascending: false })
           .limit(30)
@@ -134,7 +135,7 @@ export default function NotificationCenter() {
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <Link href={item.url} onClick={() => { void markRead(item); setOpen(false) }} className="block text-sm font-semibold leading-5 text-accent hover:underline">
-                {notificationCopy(item.type)}
+                {notificationCopy(item.type, item.actor_name)}
               </Link>
               <time className="mt-1 block text-xs text-muted" dateTime={item.created_at}>{formatTime(item.created_at)}</time>
             </div>

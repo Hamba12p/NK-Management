@@ -6,20 +6,11 @@ export type ChatResource = {
   title: string
 }
 
-export type ChatMessage = {
-  id: string
-  author_id: string
-  author_name: string
-  body: string
-  attachments: ChatResource[]
-  created_at: string
-}
-
 const resourceKinds: ChatResourceKind[] = ['document', 'workspace', 'task', 'meeting']
 
 export function parseChatResources(value: unknown): ChatResource[] {
   if (!Array.isArray(value)) return []
-  return value.flatMap((item): ChatResource[] => {
+  return value.slice(0, 5).flatMap((item): ChatResource[] => {
     if (!item || typeof item !== 'object') return []
     const resource = item as Record<string, unknown>
     if (

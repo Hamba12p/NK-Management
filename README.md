@@ -22,7 +22,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Team chat
 
-The dashboard chat uses the existing Supabase Auth, Row Level Security, and Realtime setup. Apply `supabase/migrations/20261117112900_team_chat.sql` before using it. Messages can link to existing shared files, workspace documents, tasks, and meetings; those items stay in their original workspace and keep their existing access rules.
+The dashboard chat uses the existing Supabase Auth, Row Level Security, and Realtime setup. Apply the chat migrations in timestamp order, including `supabase/migrations/20261117120000_chat_message_attachments.sql`. The dashboard preview and unread count use the same role-scoped conversations as the Chat page. Messages can link to existing files, workspace documents, tasks, and meetings; those items stay in their original workspace and keep their existing access checks.
 
 ## Learn More
 

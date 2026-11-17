@@ -1,9 +1,10 @@
-export type NotificationType = 'comment' | 'assignment' | 'upload' | 'test'
+export type NotificationType = 'comment' | 'assignment' | 'upload' | 'message' | 'test'
 
 export type NotificationPayload = {
   type: NotificationType
   id: string
   url: string
+  name?: string
 }
 
 export type NotificationSettings = {
@@ -49,6 +50,7 @@ export function isCategoryEnabled(
 ) {
   if (type === 'comment') return settings?.comments_enabled ?? true
   if (type === 'assignment') return settings?.assignments_enabled ?? true
+  if (type === 'message') return true
   return settings?.uploads_enabled ?? ['admin', 'manager', 'dpo'].includes(role)
 }
 
@@ -91,6 +93,7 @@ export function nextQuietHoursEnd(
 }
 
 export function notificationUrl(type: Exclude<NotificationType, 'test'>) {
+  if (type === 'message') return '/dashboard/chat'
   return type === 'upload' ? '/dashboard/documents' : '/dashboard/workspace'
 }
 
@@ -114,10 +117,11 @@ export function isTrustedPushEndpoint(value: string) {
     && trustedHost
 }
 
-export function notificationCopy(type: NotificationType) {
+export function notificationCopy(type: NotificationType, name?: string | null) {
   if (type === 'comment') return 'New comment on a document you follow'
   if (type === 'assignment') return 'A task has been assigned to you'
   if (type === 'upload') return 'A new document has been uploaded'
+  if (type === 'message') return `New message from ${name?.trim() || 'a team member'}`
   return 'Your notifications are working'
 }
 
@@ -125,9 +129,11 @@ export function isSafeNotificationPayload(value: unknown): value is Notification
   if (!value || typeof value !== 'object') return false
   const payload = value as Partial<NotificationPayload>
   const keys = Object.keys(value)
-  return keys.length === 3
-    && keys.every((key) => ['type', 'id', 'url'].includes(key))
-    && ['comment', 'assignment', 'upload', 'test'].includes(payload.type || '')
+  return keys.every((key) => ['type', 'id', 'url', 'name'].includes(key))
+    && (payload.type === 'message'
+      ? keys.length === 4 && typeof payload.name === 'string' && payload.name.trim().length > 0 && payload.name.length <= 160
+      : keys.length === 3 && !('name' in payload))
+    && ['comment', 'assignment', 'upload', 'message', 'test'].includes(payload.type || '')
     && typeof payload.id === 'string'
     && payload.id.length > 0
     && typeof payload.url === 'string'

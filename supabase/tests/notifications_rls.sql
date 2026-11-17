@@ -13,6 +13,14 @@ values (
   '73000000-0000-4000-8000-000000000001',
   '/dashboard/workspace'
 );
+insert into public.notifications (recipient_id, type, entity_id, url, actor_name)
+values (
+  '72000000-0000-4000-8000-000000000001',
+  'message',
+  '73000000-0000-4000-8000-000000000003',
+  '/dashboard/chat?room=73000000-0000-4000-8000-000000000003',
+  'Amina'
+);
 
 select 1 / case
   when not has_table_privilege('authenticated', 'public.push_subscriptions', 'select')
@@ -21,8 +29,10 @@ select 1 / case
 
 select set_config('request.jwt.claim.sub', '72000000-0000-4000-8000-000000000001', true);
 set local role authenticated;
-select 1 / case when count(*) = 1 then 1 else 0 end as own_notification_read
+select 1 / case when count(*) = 2 then 1 else 0 end as own_notification_read
 from public.notifications;
+select 1 / case when count(*) = 1 and min(actor_name) = 'Amina' then 1 else 0 end as message_notice_has_sender_name
+from public.notifications where type='message';
 select 1 / case when count(*) = 1 then 1 else 0 end as own_settings_read
 from public.notification_settings;
 update public.notifications set read_at = now()

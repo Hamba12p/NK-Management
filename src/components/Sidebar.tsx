@@ -10,8 +10,10 @@ import { formatProfileRole, roleBadgeClass } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
 import { clearPushSubscriptionBeforeSignOut } from '@/lib/notifications/client'
 import HubIcon, { type HubIconName } from '@/components/HubIcon'
+import { useChatUnread } from '@/components/chat/ChatUnreadProvider'
+import { canUseChat } from '@/lib/chat/access'
 
-type NavItem = { href: string; label: string; icon: HubIconName; adminOnly: boolean }
+type NavItem = { href: string; label: string; icon: HubIconName; adminOnly: boolean; chat?: boolean }
 
 const SIDEBAR_STORAGE_KEY = 'nk_sidebar_collapsed'
 
@@ -79,6 +81,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
   const router = useRouter()
   const supabase = createClient()
   const [signingOut, setSigningOut] = useState(false)
+  const { total: chatUnread } = useChatUnread()
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -119,7 +122,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
       </div>
 
       <nav className={`no-scrollbar flex-1 space-y-1 overflow-y-auto ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
-        {getNavItems(profile?.role, profile?.intern_team_directory_enabled === true).map(({ href, label, icon, adminOnly }) => {
+        {[...getNavItems(profile?.role, profile?.intern_team_directory_enabled === true), ...(canUseChat(profile?.role, profile?.email, profile?.is_founder) ? [{ href: '/dashboard/chat', label: 'Chat', icon: 'messages' as HubIconName, adminOnly: false, chat: true }] : [])].map(({ href, label, icon, adminOnly, chat }) => {
           if (adminOnly && profile?.role !== 'admin') return null
           const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
           return (
@@ -135,6 +138,7 @@ function SidebarContent({ profile, pathname, collapsed = false, onNavigate }: { 
             >
               <HubIcon name={icon} width={18} height={18} className={isActive ? 'text-sidebar-active-text' : 'text-sidebar-muted'} />
               <span className={collapsed ? 'sr-only' : ''}>{label}</span>
+              {chatUnread > 0 && chat && !collapsed ? <span className="ml-auto rounded-full bg-pink-accent px-2 py-0.5 text-[10px] font-bold text-pink-fill-text">{chatUnread > 99 ? '99+' : chatUnread}</span> : null}
               {isActive && !collapsed ? <ChevronRight size={16} className="ml-auto text-sidebar-active-text" /> : null}
             </Link>
           )
