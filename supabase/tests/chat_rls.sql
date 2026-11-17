@@ -12,13 +12,12 @@ insert into auth.users(id,email,raw_user_meta_data) values
  ('81000000-0000-4000-8000-000000000007','admin-a@example.invalid','{"full_name":"Admin A","role":"admin"}'),
  ('81000000-0000-4000-8000-000000000008','dpo-a@example.invalid','{"full_name":"DPO A","role":"dpo"}'),
  ('81000000-0000-4000-8000-000000000009','board-a@example.invalid','{"full_name":"Board A","role":"board_advisor"}'),
- ('81000000-0000-4000-8000-000000000010','founder-a@example.invalid','{"full_name":"Founder A","role":"admin"}'),
+ ('81000000-0000-4000-8000-000000000010','nkateregga003@gmail.com','{"full_name":"Naira Kateregga","role":"admin"}'),
  ('81000000-0000-4000-8000-000000000011','aminayarmah@gmail.com','{"full_name":"Amina Yarmah","role":"dpo"}'),
  ('81000000-0000-4000-8000-000000000012','shared-volunteer@example.invalid','{"full_name":"Volunteers","role":"volunteer"}');
 update public.profiles set intern_access_enabled=true, access_starts_on=(now() at time zone 'Africa/Nairobi')::date,
   access_expires_at=now()+interval '30 days', must_change_password=false
 where role='intern';
-update public.profiles set is_founder=true where id='81000000-0000-4000-8000-000000000010';
 update public.profiles set account_type='shared' where id='81000000-0000-4000-8000-000000000012';
 
 -- Every intern state is evaluated for the supplied UID, and matches the existing caller helper.
@@ -62,6 +61,12 @@ begin
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000005','81000000-0000-4000-8000-000000000006') then raise exception 'Intern-intern allowed'; end if;
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000001') then raise exception 'Self chat allowed'; end if;
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000010','81000000-0000-4000-8000-000000000003') then raise exception 'Founder-manager pair denied'; end if;
+ if exists (
+   select 1 from public.profiles p
+   where p.id <> '81000000-0000-4000-8000-000000000010'
+     and (not public.chat_pair_allowed('81000000-0000-4000-8000-000000000010',p.id)
+       or not public.chat_pair_allowed(p.id,'81000000-0000-4000-8000-000000000010'))
+ ) then raise exception 'Founder DMs are not available in both directions for every profile'; end if;
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000001')
    or not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000002') then raise exception 'Amina cannot chat with all managers'; end if;
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000011','81000000-0000-4000-8000-000000000012') then raise exception 'Amina cannot chat with the shared volunteer account'; end if;
@@ -74,6 +79,20 @@ begin
    raise exception 'Board and advisory DMs are not reciprocal across profile roles';
  end if;
 end $$;
+
+-- Naira can open any eligible user's DM, and that user sees her in their contacts and opens the same room.
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000010',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000010","role":"authenticated"}',true);
+set local role authenticated;
+select public.chat_open_dm('81000000-0000-4000-8000-000000000008') as founder_dpo_room \gset
+insert into public.chat_messages(room_id,body) values (:'founder_dpo_room','Naira to DPO');
+reset role;
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000008',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000008","role":"authenticated"}',true);
+set local role authenticated;
+select 1 / case when public.chat_open_dm('81000000-0000-4000-8000-000000000010')=:'founder_dpo_room'::uuid then 1 else 0 end as reverse_founder_dm_same_room;
+select 1 / case when count(*)=1 and bool_and(role='manager') then 1 else 0 end as dpo_sees_founder_contact from public.chat_contacts() where user_id='81000000-0000-4000-8000-000000000010';
+reset role;
 
 -- Board/advisory can initiate any profile DM, and other profiles can open the same room in reverse.
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000009',true);
