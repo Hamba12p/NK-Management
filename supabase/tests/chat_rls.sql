@@ -58,7 +58,16 @@ begin
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000005') then raise exception 'Manager-intern denied'; end if;
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000003','81000000-0000-4000-8000-000000000005') then raise exception 'Volunteer-intern denied'; end if;
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000003','81000000-0000-4000-8000-000000000004') then raise exception 'Volunteer-volunteer allowed'; end if;
- if public.chat_pair_allowed('81000000-0000-4000-8000-000000000005','81000000-0000-4000-8000-000000000006') then raise exception 'Intern-intern allowed'; end if;
+ if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000005','81000000-0000-4000-8000-000000000006')
+   or not public.chat_pair_allowed('81000000-0000-4000-8000-000000000006','81000000-0000-4000-8000-000000000005') then
+   raise exception 'Intern DMs are not reciprocal';
+ end if;
+ if exists (
+   select 1 from public.profiles p
+   where p.id <> '81000000-0000-4000-8000-000000000005'
+     and (not public.chat_pair_allowed('81000000-0000-4000-8000-000000000005',p.id)
+       or not public.chat_pair_allowed(p.id,'81000000-0000-4000-8000-000000000005'))
+ ) then raise exception 'Intern DMs are not available in both directions for every profile'; end if;
  if public.chat_pair_allowed('81000000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000001') then raise exception 'Self chat allowed'; end if;
  if not public.chat_pair_allowed('81000000-0000-4000-8000-000000000010','81000000-0000-4000-8000-000000000003') then raise exception 'Founder-manager pair denied'; end if;
  if exists (
@@ -162,6 +171,22 @@ select public.chat_open_dm('81000000-0000-4000-8000-000000000003') as intern_vol
 insert into public.chat_messages(room_id,body) values (:'intern_volunteer_room','Intern and volunteer can chat');
 reset role;
 
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000005',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
+set local role authenticated;
+select public.chat_open_dm('81000000-0000-4000-8000-000000000007') as intern_admin_room \gset
+insert into public.chat_messages(room_id,body) values (:'intern_admin_room','Intern and admin can chat');
+select 1 / case when count(*)=11 then 1 else 0 end as intern_sees_all_other_profiles
+from public.chat_contacts() where user_id is not null;
+reset role;
+select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000007',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000007","role":"authenticated"}',true);
+set local role authenticated;
+select 1 / case when public.chat_open_dm('81000000-0000-4000-8000-000000000005')=:'intern_admin_room'::uuid then 1 else 0 end as reverse_intern_dm_same_room;
+select 1 / case when count(*)=1 then 1 else 0 end as admin_sees_intern_contact
+from public.chat_contacts() where user_id='81000000-0000-4000-8000-000000000005';
+reset role;
+
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000003',true); set local role authenticated;
 do $$ declare blocked boolean; begin
  blocked:=false; begin perform public.chat_open_dm('81000000-0000-4000-8000-000000000004'); exception when others then blocked:=true; end;
@@ -169,8 +194,7 @@ do $$ declare blocked boolean; begin
 end $$; reset role;
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000005',true); set local role authenticated;
 do $$ declare blocked boolean; begin
- blocked:=false; begin perform public.chat_open_dm('81000000-0000-4000-8000-000000000006'); exception when others then blocked:=true; end;
- if not blocked then raise exception 'Intern-intern DM creation was accepted'; end if;
+ if public.chat_open_dm('81000000-0000-4000-8000-000000000006') is null then raise exception 'Intern-intern DM was not created'; end if;
 end $$; reset role;
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000002',true);
 select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
