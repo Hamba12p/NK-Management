@@ -123,11 +123,11 @@ export default function ObxTrailPage() {
     <section className="record-surface p-5 md:p-8">
       <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-accent-hover">NK Udada Passport</p>
+          <p className="text-sm font-semibold text-accent-hover">Your guide, Spark ✦</p>
           <h1 className="serif-display mt-2 text-3xl text-accent">{stop.title}</h1>
           <p className="mt-3 leading-7">{stop.intro}</p>
         </div>
-        <Image key={sparkPose} src="/logo.jpeg" alt="NK Udada Foundation logo" width={160} height={160} className="h-24 w-24 shrink-0 rounded-full object-cover sm:h-32 sm:w-32" />
+        <Image key={sparkPose} src={`/spark-obx/cutouts/${sparkPose}.png`} alt="" aria-hidden="true" width={238} height={280} className="h-28 w-24 shrink-0 object-contain sm:h-36 sm:w-32" />
       </div>
       {showStory ? <div className="mt-7 rounded-xl bg-surface-raised p-6"><p className="text-xs font-bold uppercase tracking-widest text-accent-hover">Our story, {storyIndex + 1} of {meetNkUdadaStory.length}</p><p className="serif-display mt-4 text-2xl text-accent">{meetNkUdadaStory[storyIndex]}</p><button onClick={() => setStoryIndex((value) => value + 1)} className="btn-primary mt-6 w-full">{storyIndex === meetNkUdadaStory.length - 1 ? 'Try a quick question' : 'Next story'}</button></div> : question ? <div className="mt-7"><p className="text-lg font-semibold">{question.prompt}</p><div className="mt-4 grid gap-3">{question.choices.map((choice) => <button key={choice.id} onClick={() => setSelected(choice.id)} disabled={!!feedback} aria-pressed={selected === choice.id} className={`min-h-12 rounded border px-4 py-3 text-left ${selected === choice.id ? 'border-accent bg-surface-muted' : 'border-border bg-surface-raised'}`}>{choice.label}</button>)}</div>
       {feedback && <div role="status" aria-live="polite" className={`mt-4 rounded p-4 ${feedback.correct ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}><p className="font-semibold">{feedback.correct ? 'Nice one.' : 'Not quite, here is why.'}</p><p className="mt-1">{feedback.explanation}</p><button onClick={feedback.correct ? next : () => { setFeedback(null); setSelected('') }} className="btn-secondary mt-3">{feedback.correct ? 'Continue' : 'Try again'}</button></div>}
