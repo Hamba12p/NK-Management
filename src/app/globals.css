@@ -249,6 +249,13 @@ button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 
+@media (max-width: 767px) {
+  .page-container { padding-inline: 0.75rem !important; }
+  .card { padding: 1rem; }
+  .record-surface { border-radius: 0.5rem; }
+  .app-topbar { position: sticky; top: 0; z-index: 30; }
+}
+
 .serif-display { font-family: 'Playfair Display', Georgia, serif; font-weight: 800; letter-spacing: -0.035em; }
 .serif-italic { font-family: 'Playfair Display', Georgia, serif; font-style: italic; }
 

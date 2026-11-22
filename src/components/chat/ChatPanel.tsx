@@ -75,7 +75,7 @@ export default function ChatPanel() {
 
   const backToList = () => { setMobileThread(false); setRoomId(null); setSelected(null) }
 
-  return <section aria-label="Chat" className="record-surface flex min-h-[min(72vh,52rem)] overflow-hidden rounded-xl border border-border">
+  return <section aria-label="Chat" className="record-surface flex h-[calc(100dvh-10rem)] min-h-[28rem] max-h-[52rem] overflow-hidden rounded-xl border border-border md:h-[min(72vh,52rem)]">
     <aside className={`${mobileThread ? 'hidden' : 'flex'} w-full shrink-0 flex-col border-r border-border bg-surface-raised md:flex md:w-72 lg:w-80`}>
       <div className="border-b border-border px-4 py-4"><h1 className="text-lg font-bold text-text">Chat</h1><p className="mt-1 text-xs text-muted">Private conversations for your team</p></div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">

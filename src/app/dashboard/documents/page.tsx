@@ -288,7 +288,7 @@ export default function DocumentsPage() {
       />
 
       {/* Upload Section */}
-      <div className="card mb-6 border-dashed bg-surface p-8 hover:border-accent-hover">
+      <div className="card mb-6 border-dashed bg-surface p-4 hover:border-accent-hover sm:p-8">
         <div className="flex flex-col items-center justify-center">
           <div className="mb-4 p-3 bg-surface-muted rounded-lg">
             <Upload size={24} className="text-pink-text" />
@@ -355,14 +355,14 @@ export default function DocumentsPage() {
 
       {/* Documents List */}
       <div>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-lg font-semibold text-text">{filteredDocs.length} {filteredDocs.length === 1 ? 'Document' : 'Documents'}</h2>
             <p className="mt-1 text-sm text-muted">
               Browse your files by category
             </p>
           </div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-muted">
+          <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold text-muted sm:border-0 sm:p-0">
             <input type="checkbox" checked={createdByMe} onChange={event => setCreatedByMe(event.target.checked)} />
             Created by me
           </label>
@@ -454,7 +454,7 @@ export default function DocumentsPage() {
                 className="card cursor-pointer hover:border-accent"
                 onClick={() => setSelectedDoc(doc)}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div className="p-3 bg-surface-muted rounded-lg shrink-0">
                     <FileText size={20} className="text-muted" />
                   </div>
@@ -496,7 +496,7 @@ export default function DocumentsPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 flex-col items-center gap-1 sm:flex-row sm:gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()

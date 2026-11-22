@@ -115,14 +115,14 @@ export default function ObxWelcomePage() {
   }
 
   return <div className="mx-auto grid max-w-5xl gap-10 px-4 pb-12 pt-8 md:grid-cols-2 md:items-center md:py-16">
-    <section className="grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
-      <div>
-        <div className="mb-5 inline-flex rounded-full bg-surface-muted px-4 py-2 text-sm font-semibold text-accent">Meet Spark, your guide</div>
+    <section className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-center">
+      <div className="text-center sm:text-left">
+        <div className="mb-5 inline-flex rounded-full bg-surface-muted px-4 py-2 text-sm font-semibold text-accent">Your place at NK Udada</div>
         <h1 className="serif-display text-4xl leading-tight text-accent md:text-5xl">Your Udada Passport</h1>
         <p className="mt-5 max-w-xl text-lg leading-8">Welcome to the team. Register to receive your volunteer number and open your passport. It takes about 20 minutes, and you can pause any time.</p>
-        <div className="mt-7 flex flex-wrap gap-3 text-sm font-semibold text-accent"><span className="rounded-full bg-surface-raised px-4 py-2">Six stamps</span><span className="rounded-full bg-surface-raised px-4 py-2">One badge</span><span className="rounded-full bg-surface-raised px-4 py-2">Pause any time</span></div>
+        <div className="mt-7 flex flex-wrap justify-center gap-3 text-sm font-semibold text-accent sm:justify-start"><span className="rounded-full bg-surface-raised px-4 py-2">Six stamps</span><span className="rounded-full bg-surface-raised px-4 py-2">One badge</span><span className="rounded-full bg-surface-raised px-4 py-2">Pause any time</span></div>
       </div>
-      <Image src="/spark-obx/cutouts/spark-wave.png" alt="" aria-hidden="true" width={192} height={269} priority className="h-auto w-full object-contain" />
+      <Image src="/logo.jpeg" alt="NK Udada Foundation logo" width={160} height={160} priority className="mx-auto h-36 w-36 rounded-full object-cover sm:h-40 sm:w-40" />
     </section>
     <div className="record-surface space-y-5 p-6 md:p-8">
       <h2 className="serif-display text-2xl text-accent">{volunteer ? 'Your volunteer record' : 'Join the OBX'}</h2>

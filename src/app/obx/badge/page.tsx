@@ -40,7 +40,7 @@ export default function ObxBadgePage() {
     {needsLegalConsent && <LegalConsentStep onAccepted={() => setNeedsLegalConsent(false)} />}
     <p className="text-sm font-bold uppercase tracking-widest text-accent-hover">Your Udada Passport</p>
     <h1 className="serif-display mt-3 text-4xl text-accent">You did it, {data.roster.full_name.split(' ')[0]}!</h1>
-    <NextImage src="/spark-obx/cutouts/spark-celebrate.png" alt="" aria-hidden="true" width={260} height={256} className="mx-auto mt-3 h-32 w-36 object-contain sm:h-40 sm:w-44" />
+    <NextImage src="/logo.jpeg" alt="NK Udada Foundation logo" width={176} height={176} className="mx-auto mt-3 h-36 w-36 rounded-full object-cover sm:h-44 sm:w-44" />
     <div ref={cardRef} className="mx-auto mt-8 max-w-lg rounded-2xl border border-accent-hover bg-surface-raised p-8 shadow-sm" role="img" aria-label={`Volunteer badge for ${data.roster.full_name}, ${data.roster.volunteer_number}, completed ${completionDate}`}>
       <p className="text-xs font-bold uppercase tracking-[.25em] text-accent-hover">NK Udada</p><div className="mx-auto my-5 grid h-20 w-20 place-items-center rounded-full bg-surface-muted text-4xl text-pink-accent">✦</div>
       <p className="text-sm font-semibold uppercase tracking-widest text-accent">Volunteer</p><h2 className="serif-display mt-2 text-3xl text-accent">{data.roster.full_name}</h2>
