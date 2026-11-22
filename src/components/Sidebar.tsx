@@ -55,6 +55,7 @@ const getNavItems = (role?: string, teamDirectoryEnabled = false): NavItem[] => 
     return [
       ...baseItems,
       { href: '/dashboard/onboarding', label: 'Onboarding', icon: 'volunteers' as const, adminOnly: false },
+      { href: '/dashboard/meetings', label: 'Meetings', icon: 'meetings' as const, adminOnly: false },
       { href: '/dashboard/dpo/register', label: 'Processing Register', icon: 'dpo-register' as const, adminOnly: false },
       { href: '/dashboard/dpo/requests', label: 'Data Requests', icon: 'dpo-requests' as const, adminOnly: false },
       { href: '/dashboard/dpo/incidents', label: 'Incident Log', icon: 'dpo-incidents' as const, adminOnly: false },
