@@ -26,7 +26,7 @@ export function parseChatResources(value: unknown): ChatResource[] {
 export function chatResourceHref(resource: ChatResource) {
   switch (resource.kind) {
     case 'document':
-      return `/api/documents/${encodeURIComponent(resource.id)}/access`
+      return `/dashboard/documents?document=${encodeURIComponent(resource.id)}`
     case 'workspace':
       return `/dashboard/workspace?document=${encodeURIComponent(resource.id)}`
     case 'task':

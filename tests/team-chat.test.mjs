@@ -16,5 +16,5 @@ test('chat references ignore malformed and unknown workspace items', () => {
 test('chat references open their matching workspace destinations safely', () => {
   assert.equal(chatResourceHref({ id: 'doc 1', kind: 'workspace', title: 'Report' }), '/dashboard/workspace?document=doc%201')
   assert.equal(chatResourceHref({ id: 'task/2', kind: 'task', title: 'Follow up' }), '/dashboard/workspace?task=task%2F2')
-  assert.equal(chatResourceHref({ id: 'file-3', kind: 'document', title: 'Policy' }), '/api/documents/file-3/access')
+  assert.equal(chatResourceHref({ id: 'file-3', kind: 'document', title: 'Policy' }), '/dashboard/documents?document=file-3')
 })

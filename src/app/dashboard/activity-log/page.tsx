@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { FileUp, FileDown, Calendar, MessageSquare, Pin, Trash2, LogIn, LogOut, Eye, Filter } from 'lucide-react';
+import { FileUp, FileDown, Calendar, MessageSquare, Pin, Trash2, LogIn, LogOut, Eye, Filter, ShieldCheck } from 'lucide-react';
 import CreatorTag from '@/components/CreatorTag';
 
 interface ActivityEntry {
@@ -29,6 +29,9 @@ const actionIcons: Record<string, React.ReactNode> = {
   document_upload: <FileUp className="w-4 h-4 text-accent" />,
   document_download: <FileDown className="w-4 h-4 text-success" />,
   document_delete: <Trash2 className="w-4 h-4 text-danger" />,
+  document_access_requested: <ShieldCheck className="w-4 h-4 text-accent" />,
+  document_access_granted: <ShieldCheck className="w-4 h-4 text-success" />,
+  document_access_denied: <ShieldCheck className="w-4 h-4 text-danger" />,
   meeting_create: <Calendar className="w-4 h-4 text-accent" />,
   meeting_update: <Calendar className="w-4 h-4 text-accent-hover" />,
   meeting_delete: <Trash2 className="w-4 h-4 text-danger" />,
@@ -46,6 +49,9 @@ const actionLabels: Record<string, string> = {
   document_upload: 'Uploaded Document',
   document_download: 'Downloaded Document',
   document_delete: 'Deleted Document',
+  document_access_requested: 'Requested Document Access',
+  document_access_granted: 'Granted Document Access',
+  document_access_denied: 'Denied Document Access',
   meeting_create: 'Created Meeting',
   meeting_update: 'Updated Meeting',
   meeting_delete: 'Deleted Meeting',
@@ -68,8 +74,8 @@ const actionLabels: Record<string, string> = {
 function formatActionLabel(actionType: string, details?: Record<string, unknown>): string {
   const baseLabel = actionLabels[actionType] || actionType;
   
-  if (details?.fileName) {
-    return `${baseLabel}: ${details.fileName}`;
+  if (details?.document_name || details?.fileName) {
+    return `${baseLabel}: ${details.document_name || details.fileName}`;
   }
   if (details?.title) {
     return `${baseLabel}: "${details.title}"`;

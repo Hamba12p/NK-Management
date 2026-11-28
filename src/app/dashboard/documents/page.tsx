@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect, type ComponentProps } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, type ComponentProps } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import InlineConfirm from '@/components/InlineConfirm'
 import DocumentModal from '@/components/DocumentModal'
+import DocumentAccessRequests from '@/components/documents/DocumentAccessRequests'
 import {
   AlertCircle,
   Award,
@@ -86,9 +87,16 @@ export default function DocumentsPage() {
   const [assignees, setAssignees] = useState<StaffDirectoryEntry[]>([])
   const [assigneesLoaded, setAssigneesLoaded] = useState(false)
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
-  const supabase = createClient()
+  const [documentsLoaded, setDocumentsLoaded] = useState(false)
+  const [chatDocumentId, setChatDocumentId] = useState<string | null>(null)
+  const [chatRequestStatus, setChatRequestStatus] = useState('')
+  const [chatRequestReason, setChatRequestReason] = useState('')
+  const [chatRequestError, setChatRequestError] = useState('')
+  const [requestingChatAccess, setRequestingChatAccess] = useState(false)
+  const chatDocumentHandled = useRef(false)
+  const supabase = useMemo(() => createClient(), [])
 
-  async function fetchDocs() {
+  const fetchDocs = useCallback(async () => {
     try {
       const [{ data, error: err }, { data: authData }] = await Promise.all([supabase
         .from('documents')
@@ -98,22 +106,42 @@ export default function DocumentsPage() {
       if (err) {
         console.error('Error fetching documents:', err)
         setError('Unable to load documents and individual access options. Please refresh and try again.')
-        return
+        setDocumentsLoaded(true)
+        return []
       }
       const staff = await loadStaffDirectory(supabase)
       setAssignees(staff)
       setAssigneesLoaded(true)
-      setDocs((data || []).map(doc => ({ ...doc, profiles: staffProfile(staff, doc.uploaded_by) })))
+      const loadedDocs = (data || []).map(doc => ({ ...doc, profiles: staffProfile(staff, doc.uploaded_by) })) as Document[]
+      setDocs(loadedDocs)
+      const requestedChatDocumentId = new URLSearchParams(window.location.search).get('document')
+      const linkedDocument = requestedChatDocumentId
+        ? loadedDocs.find(doc => doc.id === requestedChatDocumentId)
+        : null
+      if (linkedDocument) {
+        chatDocumentHandled.current = true
+        setSelectedDoc(linkedDocument)
+        setChatDocumentId(null)
+        const url = new URL(window.location.href)
+        url.searchParams.delete('document')
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+      } else {
+        setChatDocumentId(requestedChatDocumentId)
+      }
       setCurrentUserId(authData.user?.id || '')
       const { data: ownProfile } = authData.user
         ? await supabase.from('profiles').select('role').eq('id', authData.user.id).single()
         : { data: null }
       setCurrentRole(ownProfile?.role || '')
+      setDocumentsLoaded(true)
+      return loadedDocs
     } catch (e) {
       console.error('Fetch error:', e)
       setError('Unable to load individuals for document access. Please refresh and try again.')
+      setDocumentsLoaded(true)
+      return []
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
     // Initial hydration deliberately updates local state after the first query.
@@ -126,7 +154,69 @@ export default function DocumentsPage() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [fetchDocs, supabase])
+
+  const refreshChatRequestStatus = useCallback(async (documentId: string) => {
+    if (!currentUserId) return
+    const { data, error: requestError } = await supabase
+      .from('document_access_requests')
+      .select('status')
+      .eq('document_id', documentId)
+      .eq('requester_id', currentUserId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (requestError) {
+      console.error('Document access request status could not be loaded:', requestError)
+      setChatRequestError('The request status could not be checked. Refresh and try again.')
+      return
+    }
+
+    setChatRequestStatus(data?.status || '')
+    setChatRequestError('')
+  }, [currentUserId, supabase])
+
+  useEffect(() => {
+    if (!chatDocumentId || !documentsLoaded || !currentUserId || chatDocumentHandled.current) return
+    chatDocumentHandled.current = true
+    void refreshChatRequestStatus(chatDocumentId)
+  }, [chatDocumentId, currentUserId, documentsLoaded, refreshChatRequestStatus])
+
+  async function requestChatDocumentAccess() {
+    if (!chatDocumentId) return
+    setRequestingChatAccess(true)
+    setChatRequestError('')
+    const { error: requestError } = await supabase.rpc('request_document_access', {
+      p_document_id: chatDocumentId,
+      p_reason: chatRequestReason.trim() || null,
+    })
+    if (requestError) {
+      console.error('Document access request failed:', requestError)
+      setChatRequestError(requestError.message || 'The access request could not be submitted.')
+      setRequestingChatAccess(false)
+      return
+    }
+
+    setChatRequestStatus('pending')
+    setRequestingChatAccess(false)
+  }
+
+  async function checkChatDocumentAccess() {
+    if (!chatDocumentId) return
+    setChatRequestError('')
+    const refreshedDocs = await fetchDocs()
+    const accessibleDocument = refreshedDocs.find(doc => doc.id === chatDocumentId)
+    if (accessibleDocument) {
+      setSelectedDoc(accessibleDocument)
+      setChatDocumentId(null)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('document')
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+      return
+    }
+    await refreshChatRequestStatus(chatDocumentId)
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -278,6 +368,36 @@ export default function DocumentsPage() {
   return (
     <div>
       <PageHeader title="Documents" description="Upload and access shared files" />
+
+      {currentRole === 'admin' && <DocumentAccessRequests />}
+
+      {chatDocumentId && documentsLoaded && currentUserId && !docs.some(doc => doc.id === chatDocumentId) && (
+        <section aria-labelledby="chat-document-access-title" className="card mb-6 border-accent/30 p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <ShieldCheck size={21} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <h2 id="chat-document-access-title" className="font-semibold text-text">This chat document is not shared with you yet</h2>
+              <p className="mt-1 text-sm text-muted">Request access from an administrator. They will review the request before access is granted.</p>
+              {chatRequestStatus === 'pending' && <p role="status" className="mt-3 text-sm font-medium text-accent">Your request is pending administrator review.</p>}
+              {chatRequestStatus === 'approved' && <p role="status" className="mt-3 text-sm font-medium text-success">Your request was approved. Check again to open the document.</p>}
+              {chatRequestStatus === 'denied' && <p role="status" className="mt-3 text-sm font-medium text-warning">Your previous request was denied. You may submit a new request.</p>}
+              {chatRequestError && <p role="alert" className="mt-3 text-sm text-danger">{chatRequestError}</p>}
+              {(chatRequestStatus === '' || chatRequestStatus === 'denied') && <label className="mt-3 block max-w-xl text-xs font-medium text-muted">
+                Reason (optional)
+                <textarea value={chatRequestReason} onChange={event => setChatRequestReason(event.target.value)} maxLength={500} rows={2} placeholder="Tell the administrators why you need this document" className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text" />
+              </label>}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(chatRequestStatus === '' || chatRequestStatus === 'denied') && <button type="button" disabled={requestingChatAccess} onClick={() => void requestChatDocumentAccess()} className="btn-primary min-h-10 disabled:opacity-60">
+                  {requestingChatAccess ? 'Requesting…' : chatRequestStatus === 'denied' ? 'Request access again' : 'Request access'}
+                </button>}
+                {(chatRequestStatus === 'pending' || chatRequestStatus === 'approved') && <button type="button" onClick={() => void checkChatDocumentAccess()} className="min-h-10 rounded-lg border border-border px-4 text-sm font-semibold text-text hover:bg-surface-muted">
+                  Check access
+                </button>}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Modal */}
       <DocumentModal
