@@ -16,9 +16,9 @@
     "@hookform/resolvers": "^5.2.2",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.111.0",
-    "@tiptap/extension-table": "3.29.2",
-    "@tiptap/react": "^3.29.2",
-    "@tiptap/starter-kit": "^3.29.2",
+    "@tiptap/extension-table": "^3.35.1",
+    "@tiptap/react": "^3.35.1",
+    "@tiptap/starter-kit": "^3.35.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "docx": "^9.7.1",
@@ -36,7 +36,7 @@
       "postcss": "$postcss",
       "sharp": "^0.35.0"
     },
-    "minimatch": "^10.2.6"
+    "minimatch": "^11.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",

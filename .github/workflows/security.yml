@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -24,15 +27,21 @@ jobs:
         run: npm audit --audit-level=high
         # Fails the build if any HIGH or CRITICAL vulnerabilities found
 
-      - name: Type Check
-        run: npx tsc --noEmit
+      - name: Unit Tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build
         run: npm run build
 
-      - name: Check for hardcoded secrets
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Check for hardcoded Supabase credentials
         run: |
-          if grep -r "NEXT_PUBLIC_SUPABASE_KEY" src/ --include="*.ts" --include="*.tsx"; then
-            echo "ERROR: Never hardcode API keys in source code"
+          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{20,}|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}' -- src; then
+            echo "ERROR: Supabase credentials must not be hardcoded in source code"
             exit 1
           fi
