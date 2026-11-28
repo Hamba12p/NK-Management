@@ -69,6 +69,9 @@ test('push payload has only a generic type, notification id and same-origin rela
   assert.equal(isSafeNotificationPayload({ ...messagePayload, name: '' }), false)
   assert.equal(notificationUrl('message'), '/dashboard/chat')
   assert.equal(notificationUrl('upload'), '/dashboard/documents')
+  assert.equal(notificationUrl('comment', 'doc id'), '/dashboard/workspace?document=doc+id')
+  assert.equal(notificationUrl('assignment', 'task-id'), '/dashboard/workspace?task=task-id')
+  assert.equal(notificationUrl('upload', 'doc-id'), '/dashboard/documents?document=doc-id')
   assert.equal(JSON.stringify(payload).includes('private comment text'), false)
 })
 

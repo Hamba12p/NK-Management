@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import { Calendar, Clock, MapPin, Plus, Trash2, Check, X, ListTodo } from 'lucide-react'
@@ -51,6 +52,8 @@ type AgendaItem = {
 }
 
 export default function MeetingsPage() {
+  const searchParams = useSearchParams()
+  const requestedMeetingId = searchParams.get('meeting')
   const [activeTab, setActiveTab] = useState<'meetings' | 'chat'>('meetings')
   const { total: chatUnread } = useChatUnread()
   const [meetings, setMeetings] = useState<Meeting[]>([])
@@ -73,6 +76,7 @@ export default function MeetingsPage() {
 
   const fetchAll = useCallback(async () => {
     try {
+      if (requestedMeetingId) setActiveTab('meetings')
       const [{ data: meetingsData }, { data: userData }, directory] = await Promise.all([
         supabase
           .from('meetings')
@@ -84,13 +88,30 @@ export default function MeetingsPage() {
       ])
 
       if (meetingsData) {
-        const sorted = meetingsData
+        let meetingRows = meetingsData
+        if (requestedMeetingId && !meetingRows.some(meeting => meeting.id === requestedMeetingId)) {
+          const { data: requestedMeeting, error: requestedMeetingError } = await supabase
+            .from('meetings')
+            .select('*, agenda_items(*)')
+            .eq('id', requestedMeetingId)
+            .maybeSingle()
+          if (requestedMeetingError) {
+            console.error('Requested meeting could not be loaded:', requestedMeetingError)
+          } else if (requestedMeeting) {
+            meetingRows = [...meetingRows, requestedMeeting]
+          }
+        }
+
+        const sorted = meetingRows
           .map(m => ({
             ...m,
             profiles: staffProfile(directory, m.created_by),
             agenda_items: (m.agenda_items || []).sort((a: AgendaItem, b: AgendaItem) => a.order_index - b.order_index),
           }))
           .sort((a: Meeting, b: Meeting) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+        if (requestedMeetingId && sorted.some(meeting => meeting.id === requestedMeetingId)) {
+          setExpandedMeeting(requestedMeetingId)
+        }
         setMeetings(sorted)
       }
 
@@ -105,7 +126,7 @@ export default function MeetingsPage() {
     } catch (e) {
       console.error('Fetch error:', e)
     }
-  }, [supabase])
+  }, [requestedMeetingId, supabase])
 
   useEffect(() => {
     // Initial hydration deliberately updates local state after the first query.
@@ -123,6 +144,11 @@ export default function MeetingsPage() {
       supabase.removeChannel(channel)
     }
   }, [fetchAll, supabase])
+
+  useEffect(() => {
+    if (!requestedMeetingId || !meetings.some(meeting => meeting.id === requestedMeetingId)) return
+    document.getElementById(`meeting-${requestedMeetingId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [meetings, requestedMeetingId])
 
   async function handleCreateMeeting(e: React.FormEvent) {
     e.preventDefault()
@@ -451,6 +477,7 @@ export default function MeetingsPage() {
               return (
                 <div
                   key={meeting.id}
+                  id={`meeting-${meeting.id}`}
                   className="record-surface overflow-hidden"
                 >
                   {/* Meeting Header */}

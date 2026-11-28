@@ -92,9 +92,13 @@ export function nextQuietHoursEnd(
   return date
 }
 
-export function notificationUrl(type: Exclude<NotificationType, 'test'>) {
+export function notificationUrl(type: Exclude<NotificationType, 'test'>, entityId?: string) {
   if (type === 'message') return '/dashboard/chat'
-  return type === 'upload' ? '/dashboard/documents' : '/dashboard/workspace'
+  if (!entityId) return type === 'upload' ? '/dashboard/documents' : '/dashboard/workspace'
+  const query = new URLSearchParams({
+    [type === 'upload' ? 'document' : type === 'comment' ? 'document' : 'task']: entityId,
+  })
+  return `${type === 'upload' ? '/dashboard/documents' : '/dashboard/workspace'}?${query}`
 }
 
 export function isTrustedPushEndpoint(value: string) {

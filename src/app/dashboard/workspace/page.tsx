@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TableKit } from '@tiptap/extension-table'
@@ -63,6 +64,10 @@ function textFromContent(node: any): string {
 
 export default function WorkspacePage() {
   const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedDocId = searchParams.get('document')
+  const requestedTaskId = searchParams.get('task')
   const [docs, setDocs] = useState<WorkspaceDoc[]>([])
   const [selected, setSelected] = useState<WorkspaceDoc | null>(null)
   const [content, setContent] = useState<Record<string, unknown>>({ type: 'doc', content: [] })
@@ -89,14 +94,14 @@ export default function WorkspacePage() {
   const canManageTasks = ['admin', 'manager'].includes(role)
   const canManageInternTasks = role === 'dpo'
 
-  const loadComments = async (documentId: string) => {
+  const loadComments = useCallback(async (documentId: string) => {
     const [{ data, error: queryError }, staff] = await Promise.all([
       supabase.from('workspace_comments').select('*').eq('document_id', documentId).order('created_at'),
       loadStaffDirectory(supabase),
     ])
     if (queryError) setError(queryError.message); else setComments((data || []).map(item => ({ ...item, profiles: staffProfile(staff, item.author_id) || undefined })))
-  }
-  const openDoc = (doc: WorkspaceDoc) => { setSelected(doc); setContent(doc.content || { type: 'doc', content: [] }); void loadComments(doc.id) }
+  }, [supabase])
+  const openDoc = useCallback((doc: WorkspaceDoc) => { setSelected(doc); setContent(doc.content || { type: 'doc', content: [] }); void loadComments(doc.id) }, [loadComments])
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser(); if (!user) return
     setUserId(user.id)
@@ -111,10 +116,7 @@ export default function WorkspacePage() {
     const tasks = (taskResult.data || []).map(task => ({ ...task, profiles: staffProfile(directory, task.created_by) }))
     if (docResult.error) setError(docResult.error.message); else {
       setDocs(docs)
-      const requestedDocId = new URLSearchParams(window.location.search).get('document')
-      const requestedDoc = requestedDocId ? docs.find(doc => doc.id === requestedDocId) : undefined
-      if (requestedDoc) openDoc(requestedDoc)
-      else if (!selected && docs[0]) openDoc(docs[0])
+      if (!requestedDocId && !selected && docs[0]) openDoc(docs[0])
     }
     if (taskResult.error) setError(taskResult.error.message); else setTasks(tasks)
     setRole(profileResult.data?.role || '')
@@ -129,10 +131,20 @@ export default function WorkspacePage() {
     void load()
   }, [])
   useEffect(() => {
-    const taskId = new URLSearchParams(window.location.search).get('task')
-    if (!taskId || !tasks.some(task => task.id === taskId)) return
-    document.getElementById(`task-${taskId}`)?.scrollIntoView({ block: 'center' })
-  }, [tasks])
+    if (!requestedDocId) return
+    const requestedDoc = docs.find(doc => doc.id === requestedDocId)
+    if (!requestedDoc || requestedDoc.id === selected?.id) return
+    // The URL selects the workspace document after the available list hydrates.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    openDoc(requestedDoc)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('document')
+    router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false })
+  }, [docs, openDoc, requestedDocId, router, selected?.id])
+  useEffect(() => {
+    if (!requestedTaskId || !tasks.some(task => task.id === requestedTaskId)) return
+    document.getElementById(`task-${requestedTaskId}`)?.scrollIntoView({ block: 'center' })
+  }, [requestedTaskId, tasks])
   useEffect(() => {
     const channel = supabase
       .channel('workspace-task-attachments')

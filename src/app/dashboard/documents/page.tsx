@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback, useMemo, type ComponentProps } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import InlineConfirm from '@/components/InlineConfirm'
@@ -88,13 +89,19 @@ export default function DocumentsPage() {
   const [assigneesLoaded, setAssigneesLoaded] = useState(false)
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
   const [documentsLoaded, setDocumentsLoaded] = useState(false)
-  const [chatDocumentId, setChatDocumentId] = useState<string | null>(null)
-  const [chatRequestStatus, setChatRequestStatus] = useState('')
+  const [chatRequest, setChatRequest] = useState<{ documentId: string; status: string; error: string }>({ documentId: '', status: '', error: '' })
   const [chatRequestReason, setChatRequestReason] = useState('')
-  const [chatRequestError, setChatRequestError] = useState('')
   const [requestingChatAccess, setRequestingChatAccess] = useState(false)
-  const chatDocumentHandled = useRef(false)
+  const chatRequestStatusFetchedFor = useRef<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedChatDocumentId = searchParams.get('document')
+  const linkedChatDocument = requestedChatDocumentId
+    ? docs.find(doc => doc.id === requestedChatDocumentId) || null
+    : null
+  const chatRequestStatus = chatRequest.documentId === requestedChatDocumentId ? chatRequest.status : ''
+  const chatRequestError = chatRequest.documentId === requestedChatDocumentId ? chatRequest.error : ''
 
   const fetchDocs = useCallback(async () => {
     try {
@@ -114,20 +121,6 @@ export default function DocumentsPage() {
       setAssigneesLoaded(true)
       const loadedDocs = (data || []).map(doc => ({ ...doc, profiles: staffProfile(staff, doc.uploaded_by) })) as Document[]
       setDocs(loadedDocs)
-      const requestedChatDocumentId = new URLSearchParams(window.location.search).get('document')
-      const linkedDocument = requestedChatDocumentId
-        ? loadedDocs.find(doc => doc.id === requestedChatDocumentId)
-        : null
-      if (linkedDocument) {
-        chatDocumentHandled.current = true
-        setSelectedDoc(linkedDocument)
-        setChatDocumentId(null)
-        const url = new URL(window.location.href)
-        url.searchParams.delete('document')
-        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
-      } else {
-        setChatDocumentId(requestedChatDocumentId)
-      }
       setCurrentUserId(authData.user?.id || '')
       const { data: ownProfile } = authData.user
         ? await supabase.from('profiles').select('role').eq('id', authData.user.id).single()
@@ -169,53 +162,55 @@ export default function DocumentsPage() {
 
     if (requestError) {
       console.error('Document access request status could not be loaded:', requestError)
-      setChatRequestError('The request status could not be checked. Refresh and try again.')
+      setChatRequest({ documentId, status: '', error: 'The request status could not be checked. Refresh and try again.' })
       return
     }
 
-    setChatRequestStatus(data?.status || '')
-    setChatRequestError('')
+    setChatRequest({ documentId, status: data?.status || '', error: '' })
   }, [currentUserId, supabase])
 
   useEffect(() => {
-    if (!chatDocumentId || !documentsLoaded || !currentUserId || chatDocumentHandled.current) return
-    chatDocumentHandled.current = true
-    void refreshChatRequestStatus(chatDocumentId)
-  }, [chatDocumentId, currentUserId, documentsLoaded, refreshChatRequestStatus])
+    if (!requestedChatDocumentId || linkedChatDocument || !documentsLoaded || !currentUserId) return
+    if (chatRequestStatusFetchedFor.current === requestedChatDocumentId) return
+    chatRequestStatusFetchedFor.current = requestedChatDocumentId
+    void refreshChatRequestStatus(requestedChatDocumentId)
+  }, [currentUserId, documentsLoaded, linkedChatDocument, refreshChatRequestStatus, requestedChatDocumentId])
 
   async function requestChatDocumentAccess() {
-    if (!chatDocumentId) return
+    if (!requestedChatDocumentId) return
     setRequestingChatAccess(true)
-    setChatRequestError('')
     const { error: requestError } = await supabase.rpc('request_document_access', {
-      p_document_id: chatDocumentId,
+      p_document_id: requestedChatDocumentId,
       p_reason: chatRequestReason.trim() || null,
     })
     if (requestError) {
       console.error('Document access request failed:', requestError)
-      setChatRequestError(requestError.message || 'The access request could not be submitted.')
+      setChatRequest({ documentId: requestedChatDocumentId, status: '', error: requestError.message || 'The access request could not be submitted.' })
       setRequestingChatAccess(false)
       return
     }
 
-    setChatRequestStatus('pending')
+    setChatRequest({ documentId: requestedChatDocumentId, status: 'pending', error: '' })
     setRequestingChatAccess(false)
   }
 
   async function checkChatDocumentAccess() {
-    if (!chatDocumentId) return
-    setChatRequestError('')
+    if (!requestedChatDocumentId) return
     const refreshedDocs = await fetchDocs()
-    const accessibleDocument = refreshedDocs.find(doc => doc.id === chatDocumentId)
+    const accessibleDocument = refreshedDocs.find(doc => doc.id === requestedChatDocumentId)
     if (accessibleDocument) {
       setSelectedDoc(accessibleDocument)
-      setChatDocumentId(null)
-      const url = new URL(window.location.href)
-      url.searchParams.delete('document')
-      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
       return
     }
-    await refreshChatRequestStatus(chatDocumentId)
+    await refreshChatRequestStatus(requestedChatDocumentId)
+  }
+
+  function closeDocumentPreview() {
+    setSelectedDoc(null)
+    if (!requestedChatDocumentId) return
+    const url = new URL(window.location.href)
+    url.searchParams.delete('document')
+    router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false })
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -371,7 +366,7 @@ export default function DocumentsPage() {
 
       {currentRole === 'admin' && <DocumentAccessRequests />}
 
-      {chatDocumentId && documentsLoaded && currentUserId && !docs.some(doc => doc.id === chatDocumentId) && (
+      {requestedChatDocumentId && documentsLoaded && currentUserId && !linkedChatDocument && (
         <section aria-labelledby="chat-document-access-title" className="card mb-6 border-accent/30 p-4 sm:p-6">
           <div className="flex items-start gap-3">
             <ShieldCheck size={21} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
@@ -401,8 +396,8 @@ export default function DocumentsPage() {
 
       {/* Modal */}
       <DocumentModal
-        doc={selectedDoc}
-        onClose={() => setSelectedDoc(null)}
+        doc={linkedChatDocument || selectedDoc}
+        onClose={closeDocumentPreview}
         onSave={handleSaveDocument}
         assignees={assignees}
       />

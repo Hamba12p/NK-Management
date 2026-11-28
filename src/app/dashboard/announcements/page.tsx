@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import { AlertCircle, CheckCircle2, Pin, Plus, Trash2, Users } from 'lucide-react'
@@ -34,6 +35,9 @@ type Announcement = {
 type StaffMember = { id: string; full_name: string }
 
 export default function AnnouncementsPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedAnnouncementId = searchParams.get('announcement')
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [profile, setProfile] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
@@ -93,6 +97,16 @@ export default function AnnouncementsPage() {
       supabase.removeChannel(channel)
     }
   }, [])
+
+  useEffect(() => {
+    if (!requestedAnnouncementId || !announcements.some(item => item.id === requestedAnnouncementId)) return
+    const announcementElement = document.getElementById(`announcement-${requestedAnnouncementId}`)
+    if (!announcementElement) return
+    announcementElement.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const url = new URL(window.location.href)
+    url.searchParams.delete('announcement')
+    router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false })
+  }, [announcements, requestedAnnouncementId, router])
 
   async function handleCreateAnnouncement(e: React.FormEvent) {
     e.preventDefault()
@@ -301,6 +315,7 @@ export default function AnnouncementsPage() {
               return (
                 <div
                   key={announcement.id}
+                  id={`announcement-${announcement.id}`}
                   className={`record-surface overflow-hidden ${
                     announcement.pinned
                       ? 'bg-pink-accent/10'

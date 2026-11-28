@@ -17,4 +17,5 @@ test('chat references open their matching workspace destinations safely', () => 
   assert.equal(chatResourceHref({ id: 'doc 1', kind: 'workspace', title: 'Report' }), '/dashboard/workspace?document=doc%201')
   assert.equal(chatResourceHref({ id: 'task/2', kind: 'task', title: 'Follow up' }), '/dashboard/workspace?task=task%2F2')
   assert.equal(chatResourceHref({ id: 'file-3', kind: 'document', title: 'Policy' }), '/dashboard/documents?document=file-3')
+  assert.equal(chatResourceHref({ id: 'meeting 4', kind: 'meeting', title: 'Check-in' }), '/dashboard/meetings?meeting=meeting%204')
 })

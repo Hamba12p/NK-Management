@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bell, CalendarDays, FileText, ListTodo, Loader2, Search, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { dashboardResourceHref } from '@/lib/team-chat'
 
 type SearchResult = {
   id: string
@@ -77,11 +78,11 @@ export default function GlobalSearch() {
       }
 
       setResults([
-        ...(documents.data || []).map(item => ({ id: item.id, label: item.name, kind: 'Document' as const, href: '/dashboard/documents' })),
-        ...(workspaceDocs.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Workspace document' as const, href: `/dashboard/workspace?document=${item.id}` })),
-        ...(tasks.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Task' as const, href: `/dashboard/workspace?task=${item.id}` })),
-        ...(meetings.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Meeting' as const, href: `/dashboard/meetings?meeting=${item.id}` })),
-        ...(announcements.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Announcement' as const, href: `/dashboard/announcements?announcement=${item.id}` })),
+        ...(documents.data || []).map(item => ({ id: item.id, label: item.name, kind: 'Document' as const, href: dashboardResourceHref('document', item.id) })),
+        ...(workspaceDocs.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Workspace document' as const, href: dashboardResourceHref('workspace', item.id) })),
+        ...(tasks.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Task' as const, href: dashboardResourceHref('task', item.id) })),
+        ...(meetings.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Meeting' as const, href: dashboardResourceHref('meeting', item.id) })),
+        ...(announcements.data || []).map(item => ({ id: item.id, label: item.title, kind: 'Announcement' as const, href: dashboardResourceHref('announcement', item.id) })),
       ])
       setLoading(false)
       setOpen(true)

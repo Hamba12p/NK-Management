@@ -1,4 +1,21 @@
 export type ChatResourceKind = 'document' | 'workspace' | 'task' | 'meeting'
+export type DashboardResourceKind = ChatResourceKind | 'announcement'
+
+export function dashboardResourceHref(kind: DashboardResourceKind, id: string) {
+  const encodedId = encodeURIComponent(id)
+  switch (kind) {
+    case 'document':
+      return `/dashboard/documents?document=${encodedId}`
+    case 'workspace':
+      return `/dashboard/workspace?document=${encodedId}`
+    case 'task':
+      return `/dashboard/workspace?task=${encodedId}`
+    case 'meeting':
+      return `/dashboard/meetings?meeting=${encodedId}`
+    case 'announcement':
+      return `/dashboard/announcements?announcement=${encodedId}`
+  }
+}
 
 export type ChatResource = {
   id: string
@@ -24,16 +41,7 @@ export function parseChatResources(value: unknown): ChatResource[] {
 }
 
 export function chatResourceHref(resource: ChatResource) {
-  switch (resource.kind) {
-    case 'document':
-      return `/dashboard/documents?document=${encodeURIComponent(resource.id)}`
-    case 'workspace':
-      return `/dashboard/workspace?document=${encodeURIComponent(resource.id)}`
-    case 'task':
-      return `/dashboard/workspace?task=${encodeURIComponent(resource.id)}`
-    case 'meeting':
-      return '/dashboard/meetings'
-  }
+  return dashboardResourceHref(resource.kind, resource.id)
 }
 
 export function chatResourceLabel(kind: ChatResourceKind) {
